@@ -1,0 +1,1 @@
+Scaffold-DbContext "Server=.\sqlexpress;Database=ShopifyApp;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models/EF -f

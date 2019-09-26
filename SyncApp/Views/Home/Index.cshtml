@@ -1,0 +1,45 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Welcome!</h1>
+<h3>
+</h3>
+<h4>
+
+</h4>
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+@*<script>
+    $(document).ready(function () {
+        IniateProcesses();
+    });
+    function IniateProcesses() {
+        var interval = 1000 * 60 * 5;
+        $.ajax({
+            type: "GET",
+            url: "/Home/IniateProcesses",
+            cache: false,
+            async: true,
+            headers: {
+                "SCFR-TOKEN_HEADER": $('input[name="SCFR-TOKEN_HEADER"]').val()
+            },
+            success: function (response) {
+                if (response.valid) {
+                    console.log("Pocesses Started");
+                }
+                else {
+                    setTimeout(IniateProcesses, interval);
+                    console.log("Error");
+                }
+            },
+            error: function () {
+                setTimeout(IniateProcesses, interval);
+                console.log("Error");
+            }
+        });
+    }
+
+
+</script>*@

@@ -1,0 +1,70 @@
+﻿@model string
+
+<style>
+    #pageloader {
+        background: rgba( 255, 255, 255, 0.8 );
+        display: none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        z-index: 9999;
+    }
+
+        #pageloader img {
+            left: 35%;
+            margin-left: -32px;
+            margin-top: -32px;
+            position: absolute;
+            top: 35%;
+        }
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<div id="pageloader">
+    <img src="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif" alt="processing..." />
+</div>
+
+<div class="container">
+    <form method="post" style="text-align:center" id="frmMain" action="@Url.Action("ExportSales")">
+        <div class="alert alert-info" style="margin-top:20px">
+            <strong>Export</strong> Daily Sales Invoices.
+        </div>
+        <input type="hidden" value="true" name="fromWeb" />
+
+        <div class="input-group">
+            <input id="msg" type="date" class="form-control" name="dateToRetrive" placeholder="Date">
+        </div>
+        <br />
+        <button id="btnSubmit" class="btn btn-success btn-lg" style="width:30%" type="submit">Export</button>
+
+    </form>
+    @{
+        if (Model == "N/A")
+        {
+            <div class="alert alert-danger" style="margin-top:30px">
+                <strong>No such orders to export. </strong>
+            </div>
+
+        }
+        else
+        if (Model.IsNotNullOrEmpty())
+        {
+            <div class="alert alert-success" style="margin-top:30px">
+                <strong>Your file is ready. </strong> <a style="float:right" target="_blank" download href="@Url.Action("DownloadFile", "Home", new {fileToDownload = Model, subFolder = "Data/invoices" })">Click here to download your file</a>
+            </div>
+        }
+         
+    }
+</div>
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script>
+    $(document).ready(function () {
+        $("#frmMain").on("submit", function () {
+            $("#pageloader").fadeIn();
+            $('#btnSubmit').prop("disabled", true);
+        });//submit
+    });
+
+</script>

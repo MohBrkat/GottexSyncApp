@@ -1,0 +1,192 @@
+﻿@model ShopifyApp2.ViewModel.ImportCSVViewModel
+
+<style>
+    #pageloader {
+        background: rgba( 255, 255, 255, 0.8 );
+        display: none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        z-index: 9999;
+    }
+
+        #pageloader img {
+            left: 35%;
+            margin-left: -32px;
+            margin-top: -32px;
+            position: absolute;
+            top: 35%;
+        }
+</style>
+
+<div class="alert alert-info" style="margin-top:20px">
+    <strong>Update</strong> Inventory by uploading csv file. <a href="@Url.Action("DownloadFile", "Home", new {fileToDownload = "Inventory_Update_Sample.dat", subFolder = "samples" })" style="float:right">Download Sample</a>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<div id="pageloader">
+    <img src="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif" alt="processing..." />
+</div>
+
+<form asp-antiforgery="false" method="post" enctype="multipart/form-data" action="ImportInventoryUpdatesFromCSV" style="text-align:center" id="frmMain" >
+    <input type="hidden" value="false" id="hdnIsValidate" name="IsValidate" />
+    <div class="input-group">
+
+        <div class="custom-file" style="margin-right:10px">
+            <input Id="fileUploadCSV" accept=".dat" type="file" name="file" class="custom-file-input" aria-describedby="inputGroupFileAddon01" required>
+            <label class="custom-file-label" for="inputGroupFile01">Choose file</label>
+        </div>
+ 
+        <div class="input-group-prepend">
+            @*<button id="btnValidate" class="btn btn-info" style="margin-right:3px" type="button">Validate</button>*@
+            <button id="btnSubmit" class="btn btn-success" style=" " type="submit">Import</button>
+        </div>
+    </div>
+    <div class="col-md-12" style="margin-top:50px;text-align:center">
+
+    </div>
+</form>
+
+@{
+    if (Model != null && Model.SucessCount.HasValue && Model.ErrorCount.HasValue)
+    {
+<span class="badge badge-success">Success : @Model.SucessCount</span>
+<span class="badge badge-danger">Failed : @Model.ErrorCount</span>
+
+    }
+}
+
+@{
+    if (Model != null && Model.LsOfErrors != null && Model.LsOfErrors.Count > 0)
+    {
+<div class="">
+
+    @{
+        if (Model.Validate)
+        {
+    <div class="alert alert-danger" style="margin-top:30px">
+        <strong>Errors</strong> Please fix the below errors.
+    </div>
+        }
+        else
+        {
+            <div class="alert alert-danger" style="margin-top:30px">
+                <strong>Errors</strong> occured during the inventory update please check below report.
+            </div>
+        }
+    }
+
+
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Error Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int counter = 1;
+                foreach (var item in Model.LsOfErrors)
+                {
+                    <tr>
+                        <td>@counter</td>
+                        <td>@item</td>
+                    </tr>
+                    counter++;
+                }
+            }
+        </tbody>
+    </table>
+
+</div>
+    }
+
+}
+
+
+@{
+    if (Model != null && Model.LsOfSucess != null && Model.LsOfSucess.Count > 0)
+    {
+<div class="">
+    @if (Model.Validate)
+    {
+        <div class="alert alert-info" style="margin-top:30px">
+          The below will be updated successfully, to import and affect Inventory please choose the file and click import.
+        </div>
+
+    }
+    else
+    {
+        <div class="alert alert-success" style="margin-top:30px">
+            <strong>Success transactions:</strong> The below updated successfully.
+        </div>
+    }
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int counter = 1;
+                foreach (var item in Model.LsOfSucess)
+                {
+                    <tr>
+                        <td>@counter</td>
+                        <td>@item</td>
+                    </tr>
+                    counter++;
+                }
+            }
+        </tbody>
+    </table>
+
+</div>
+    }
+
+}
+<script src="~/lib/jquery/dist/jquery.js"></script>
+
+<script>
+   
+
+    $(document).ready(function () {
+
+        $('#fileUploadCSV').on('change', function () {
+            //get the file name
+            var fileName = document.getElementById("fileUploadCSV").files[0].name;
+
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+
+
+        $("#frmMain").on("submit", function () {
+            $("#pageloader").fadeIn();
+            $('#btnSubmit').prop("disabled", true);
+            $('#btnValidate').prop("disabled", true);
+        });//submit
+
+
+        $("#btnValidate").on('click', function () {
+            $("#hdnIsValidate").val('true');
+            $("#frmMain").submit();
+        });
+
+
+
+
+    });//document ready
+
+
+
+
+</script>
+
+
+
+
