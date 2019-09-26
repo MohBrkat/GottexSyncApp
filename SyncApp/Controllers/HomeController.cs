@@ -1349,14 +1349,15 @@ namespace ShopifyApp2.Controllers
                             //var xyz = orderItem.TaxLines.Sum(a => a.Price).GetValueOrDefault();
                             //var taxes = orderItem.TaxLines;
 
-                           var  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
+                           //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
+                           decimal taxPercentage = (decimal)_config.TaxPercentage;
 
-                            
+
                             file.WriteLine(
                                  "1" + "\t" +
                                  orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
                                  orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                 (orderItem.Price.GetValueOrDefault() - taxLineAmount).GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                 (orderItem.Price.GetValueOrDefault() / ((taxPercentage / 100.0m) + 1.0m)).GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                                  "".InsertLeadingSpaces(4) + "\t" + // agent code
 
                                  /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
@@ -1375,7 +1376,7 @@ namespace ShopifyApp2.Controllers
                         var discountZero = 0;
 
                         var shippingAmount = (order.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
-
+                        
                         if (shippingAmount > 0)
                         {
                             file.WriteLine(
