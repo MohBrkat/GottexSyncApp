@@ -27,10 +27,12 @@ namespace ShopifyApp2.Controllers
     {
         private readonly ShopifyAppContext _context;
         private readonly IHostingEnvironment _hostingEnvironment;
+        OrderService orderService;
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
+            orderService = new OrderService(StoreUrl, api_secret);
         }
 
 
@@ -1339,7 +1341,8 @@ namespace ShopifyApp2.Controllers
 
                     foreach (var order in DayOrders.Data)
                     {
-
+                        //var shipRefOrder = GetSpecificOrder((long)order.Id);
+                        var shipRefOrder = order;
                         foreach (var orderItem in order.LineItems)
                         {
 
@@ -1352,12 +1355,27 @@ namespace ShopifyApp2.Controllers
                            //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
                            decimal taxPercentage = (decimal)_config.TaxPercentage;
 
+                            
+                            decimal? price;
+                            price = orderItem.Price.GetValueOrDefault() / ((taxPercentage / 100.0m) + 1.0m);
+                            //if (order.FinancialStatus != "paid")
+                            
 
-                            file.WriteLine(
+                                
+                                //var transactions = new TransactionService(StoreUrl, api_secret).ListAsync((long)order.Id).Result.Where(a => a.Kind == "refund").Sum(a => a.Amount);
+
+                                //decimal refundMoney = (decimal)transactions;
+                                //if (shipRefOrder.Transactions != null)
+
+                                if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
+
+                                    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
+                            
+                                file.WriteLine(
                                  "1" + "\t" +
                                  orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
                                  orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                 (orderItem.Price.GetValueOrDefault() / ((taxPercentage / 100.0m) + 1.0m)).GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                 price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                                  "".InsertLeadingSpaces(4) + "\t" + // agent code
 
                                  /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
@@ -1374,15 +1392,24 @@ namespace ShopifyApp2.Controllers
 
 
                         var discountZero = 0;
-
-                        var shippingAmount = (order.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
+                        var shipOrder = order;
+                        int quant = 0;
                         
-                        if (shippingAmount > 0)
+                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
+                        
+                        if (shippingAmount > 0 && shipOrder.FinancialStatus != "partially_refunded")
                         {
+                            var mQuant = "1";
+                            if (shipOrder.FinancialStatus != "paid")
+                            {
+                                foreach (var item in shipOrder.LineItems)
+                                    quant += (int)item.Quantity;
+                                mQuant = quant+"";
+                            }
                             file.WriteLine(
                                     "1" + "\t" +
                                     "921".InsertLeadingSpaces(15) + "\t" +
-                                    "1".InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
                                     shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                                     "".InsertLeadingSpaces(4) + "\t" + // agent code
 
@@ -1435,7 +1462,7 @@ namespace ShopifyApp2.Controllers
 
             return FileName;
         }
-
+        
         private void UpdateOrderStatus(List<Order> orders, string fileName, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             foreach (var order in orders)
@@ -1677,7 +1704,8 @@ namespace ShopifyApp2.Controllers
 
         private int GetPaymentMeanCode(string company)
         {
-            var paymentMean = _context.PaymentMeans.Where(a => company.Contains(a.Name)).FirstOrDefault();
+            
+            var paymentMean = _context.PaymentMeans.Where(a => company.ToLower().Contains(a.Name.ToLower())).FirstOrDefault();
             if (paymentMean != null)
             {
                 return paymentMean.Code.GetValueOrDefault();
@@ -1701,24 +1729,26 @@ namespace ShopifyApp2.Controllers
 
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
-
+            
             var filter = new ShopifySharp.Filters.OrderFilter
             {
-                FinancialStatus = "paid",
+                FinancialStatus = "any",
                 Status = "any",
                 FulfillmentStatus = "any"
             };
-
+            
             var ordersCount = OrderService.CountAsync(filter).Result;
 
             List<Order> orders = new List<Order>();
-            var loops = Math.Ceiling((double)ordersCount / 250);
+            var loops = Math.Ceiling((double)(ordersCount) / 250);
 
             for (int i = 1; i <= loops; i++)
             {
-                var ordersResult = OrderService.ListAsync(new ShopifySharp.Filters.OrderFilter { FinancialStatus = "paid", Status = "any", Limit = 250, Page = i }).Result;
+                var ordersResult = OrderService.ListAsync(new ShopifySharp.Filters.OrderFilter { FinancialStatus = "any", Status = "any", Limit = 250, Page = i }).Result;
                 // orders.AddRange(ordersResult.Select(a => a).Where(a => !a.Tags.Contains(prefix)));
-                orders.AddRange(ordersResult.Select(a => a));
+
+                orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
+                a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
                 // this condtion should be done after this loop
                 // if 
 
@@ -1787,9 +1817,14 @@ namespace ShopifyApp2.Controllers
                 orderToReturn.OrderNumber = order.OrderNumber;
                 orderToReturn.Id = order.Id;
                 orderToReturn.Tags = order.Tags;
- 
-                var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date == date).ToList();
 
+                orderToReturn.FinancialStatus = order.FinancialStatus;
+                orderToReturn.ShippingLines = order.ShippingLines;
+
+                var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date == date).ToList();
+                DateTime momo = orderToReturn.CreatedAt.GetValueOrDefault().Date;
+                
+                
                 foreach (var refund in targetRefunds)
                 {
                     //if (!order.Tags.Contains(refund.Id.ToString()))
@@ -1818,6 +1853,8 @@ namespace ShopifyApp2.Controllers
 
                     orderToReturn.TaxLines = order.TaxLines;
 
+                    
+
                     ordersToReturn.Add(orderToReturn);
 
                     //}
@@ -1835,7 +1872,11 @@ namespace ShopifyApp2.Controllers
 
             return ordersToReturn.ToList();
         }
-
+        
+        public Order GetSpecificOrder(long id)
+        {
+            return orderService.GetAsync((long)id).Result;
+        }
 
         //private List<Order> GetTodayFulfill(List<Order> orders)
         //{

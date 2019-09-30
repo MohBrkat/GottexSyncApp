@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Log4NetLibrary;
 using Renci.SshNet;
+using ShopifySharp;
 
 namespace SyncApp
 {
@@ -320,7 +321,6 @@ namespace SyncApp
         }
 
 
-
     }
 
     public class FtpHandler
@@ -599,6 +599,7 @@ namespace SyncApp
             }
 
         }
+        
 
     }
 }
