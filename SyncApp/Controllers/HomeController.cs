@@ -1366,9 +1366,8 @@ namespace ShopifyApp2.Controllers
                                 //if (shipRefOrder.Transactions != null)
 
                                 if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
-
                                     price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
-                            
+
                                 file.WriteLine(
                                  "1" + "\t" +
                                  orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
@@ -1391,19 +1390,21 @@ namespace ShopifyApp2.Controllers
 
                         var discountZero = 0;
                         var shipOrder = order;
+
                         int quant = 0;
-                        
-                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
-                        
-                        if (shippingAmount > 0 && shipOrder.FinancialStatus != "partially_refunded")
+                        var mQuant = "1";
+                        if (shipOrder.FinancialStatus != "paid")
                         {
-                            var mQuant = "1";
-                            if (shipOrder.FinancialStatus != "paid")
-                            {
-                                foreach (var item in shipOrder.LineItems)
-                                    quant += (int)item.Quantity;
-                                mQuant = quant+"";
-                            }
+                            foreach (var item in shipOrder.LineItems)
+                                quant += (int)item.Quantity;
+                            mQuant = quant + "";
+                        }
+                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
+                        bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
+
+                        if ((shippingAmount > 0 && !isPartiallyRefunded) || (isPartiallyRefunded && quant > 0))
+                        {
+                            
                             file.WriteLine(
                                     "1" + "\t" +
                                     "921".InsertLeadingSpaces(15) + "\t" +
