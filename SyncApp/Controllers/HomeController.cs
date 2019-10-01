@@ -27,12 +27,10 @@ namespace ShopifyApp2.Controllers
     {
         private readonly ShopifyAppContext _context;
         private readonly IHostingEnvironment _hostingEnvironment;
-        OrderService orderService;
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
-            orderService = new OrderService(StoreUrl, api_secret);
         }
 
 
@@ -1873,9 +1871,9 @@ namespace ShopifyApp2.Controllers
             return ordersToReturn.ToList();
         }
         
-        public Order GetSpecificOrder(long id)
+        private Order GetSpecificOrder(long id)
         {
-            return orderService.GetAsync((long)id).Result;
+            return OrderServiceInstance.GetAsync((long)id).Result;
         }
 
         //private List<Order> GetTodayFulfill(List<Order> orders)
