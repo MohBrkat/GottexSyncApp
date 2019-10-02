@@ -13,129 +13,201 @@
 
 <h4>Configrations</h4>
 <hr />
-<div class="row">
-    <div class="col-md-12">
+
         <form action="Edit" method="post">
             <input type="hidden" asp-for="Id" />
 
-            @*<div class="form-group">
+            @*<div class="column">
             <label asp-for="InventoryUpdateHour" class="control-label">Inventory update Hour</label>
             <input asp-for="InventoryUpdateHour" class="form-control" />
         </div>
-        <div class="form-group">
+        <div class="column">
             <label asp-for="InventoryUpdateMinute" class="control-label">Inventory update Minute</label>
             <input asp-for="InventoryUpdateMinute" class="form-control" />
         </div>*@
+        
+        <div class="row">
+            <div class="form-group col-sm-6">
 
-            <div class="form-group">
                 <label asp-for="InventoryUpdateEveryMinute" class="control-label">Inventory Update Frequency in Minutes</label>
                 <input min="1" max="59" asp-for="InventoryUpdateEveryMinute" class="form-control" />
+
             </div>
-            
-            <div class="form-group">
+            <div class="form-group col-sm-6">
+
+                <label asp-for="FtpHost" class="control-label">Ftp Host Url</label>
+                <input asp-for="FtpHost" class="form-control" />
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
                 <label asp-for="DailyRecieptsHour" class="control-label">Daily Reciept Export Hour</label>
                 <input asp-for="DailyRecieptsHour" class="form-control" />
             </div>
-            <div class="form-group">
-                <label asp-for="DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
-                <input asp-for="DailyRecieptsMinute" class="form-control" />
-            </div>
+            
+            <div class="form-group col-sm-6">
 
-            <div class="form-group">
-                <label asp-for="DailySalesHour" class="control-label">Daily Sales Export Hour</label>
-                <input asp-for="DailySalesHour" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label asp-for="DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
-                <input asp-for="DailySalesMinute" class="form-control" />
-            </div>
-
-            <div class="form-group">
-                <label asp-for="FtpHost" class="control-label">Ftp Host Url</label>
-                <input asp-for="FtpHost" class="form-control" />
-            </div>
-            <div class="form-group">
                 <label asp-for="FtpUserName" class="control-label">Ftp User Name</label>
                 <input asp-for="FtpUserName" class="form-control" />
+
             </div>
-            <div class="form-group">
+
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
+
+                <label asp-for="DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
+                <input asp-for="DailyRecieptsMinute" class="form-control" />
+
+            </div>
+
+            
+            <div class="form-group col-sm-6">
+
                 <label asp-for="FtpPassword" class="control-label">Ftp Password</label>
                 <input asp-for="FtpPassword" class="form-control" />
+
             </div>
-            <div class="form-group">
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
+
+                <label asp-for="DailySalesHour" class="control-label">Daily Sales Export Hour</label>
+                <input asp-for="DailySalesHour" class="form-control" />
+
+            </div>
+
+
+            
+            <div class="form-group col-sm-6">
+
                 <label asp-for="FtpPort" class="control-label">Ftp Port</label>
                 <input asp-for="FtpPort" class="form-control" />
+
             </div>
-            <div class="form-group">
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
+
+                <label asp-for="DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
+                <input asp-for="DailySalesMinute" class="form-control" />
+
+            </div>
+            <div class="form-group col-sm-6">
+
+                <label asp-for="SmtpHost" class="control-label">Smtp Host</label>
+                <input asp-for="SmtpHost" class="form-control" />
+
+            </div>
+            
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="StoreUrl" class="control-label">Store Url</label>
                 <input asp-for="StoreUrl" class="form-control" />
+
             </div>
-            <div class="form-group">
+            <div class="form-group col-sm-6">
+
+                <label asp-for="SmtpPort" class="control-label">Smtp Port</label>
+                <input asp-for="SmtpPort" class="form-control" />
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="ApiKey" class="control-label">Api Key</label>
                 <input asp-for="ApiKey" class="form-control" />
+
             </div>
-            <div class="form-group">
+
+            <div class="form-group col-sm-6">
+
+                <label asp-for="SenderEmail" class="control-label">Sender Email</label>
+                <input readonly asp-for="SenderEmail" class="form-control" />
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="ApiSecret" class="control-label">Api Secret</label>
                 <input asp-for="ApiSecret" class="form-control" />
             </div>
+            
+            <div class="form-group col-sm-6">
 
-            <div class="form-group">
-                <label asp-for="SmtpHost" class="control-label">Smtp Host</label>
-                <input asp-for="SmtpHost" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label asp-for="SmtpPort" class="control-label">Smtp Port</label>
-                <input asp-for="SmtpPort" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label asp-for="SenderEmail" class="control-label">Sender Email</label>
-                <input readonly asp-for="SenderEmail" class="form-control" />
-            </div>
-            <div class="form-group">
                 <label asp-for="SenderemailPassword" class="control-label">Sender email Password</label>
                 <input readonly asp-for="SenderemailPassword" class="form-control" />
-            </div>
 
-            <div class="form-group">
-                <label asp-for="DisplayName" class="control-label">Email Display Name</label>
-                <input asp-for="DisplayName" class="form-control" />
             </div>
-            <div class="form-group">
+        </div>
+
+
+        <div class="row">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="NotificationEmail" class="control-label">Notification Email</label>
                 <input asp-for="NotificationEmail" class="form-control" />
+
             </div>
+            <div class="form-group col-sm-6">
 
+                <label asp-for="DisplayName" class="control-label">Email Display Name</label>
+                <input asp-for="DisplayName" class="form-control" />
 
-            <div class="form-group">
+            </div>
+            <div class="form-group col-sm-6">
+
                 <label asp-for="WareHouseCode" class="control-label">WareHouse Code</label>
                 <input asp-for="WareHouseCode" class="form-control" />
+
             </div>
-            <div class="form-group">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="CustoemrCode" class="control-label">Customer code</label>
                 <input asp-for="CustoemrCode" class="form-control" />
+
             </div>
-            <div class="form-group">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="BranchCodeReceipt" class="control-label">Branch Code for Receipts</label>
                 <input asp-for="BranchCodeReceipt" class="form-control" />
+
             </div>
-            <div class="form-group">
+            <div class="form-group col-sm-6">
+
                 <label asp-for="BranchcodeSalesInvoices" class="control-label">Branch code for Sales Invoices</label>
                 <input asp-for="BranchcodeSalesInvoices" class="form-control" />
-            </div> 
-            <div class="form-group">
-                <label asp-for="TaxPercentage" class="control-label">Tax Percentage value to calculate shipping without tax <b>(%)</b></label>
-                <input asp-for="TaxPercentage" class="form-control" /> 
+
             </div>
-            <div class="form-group">
-                <label asp-for="UseRecurringJob" class="control-label">Use Recurring Job</label>
-                <input type="checkbox" class="" name="UseRecurringJob" value="true" checked="@Model.UseRecurringJob" />
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+
+        </div>
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        
+                        <label asp-for="TaxPercentage" class="control-label">Tax Percentage <b>(%)</b></label>
+                            <input asp-for="TaxPercentage" class="form-control" />
+                        
+                    </div>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label asp-for="UseRecurringJob" class="control-label">Use Recurring Job</label>
+                    <input type="checkbox" class="" name="UseRecurringJob" value="true" checked="@Model.UseRecurringJob" />
+                </div>
+
+                <div class="form-group col-sm-6">
+                    <input type="submit" value="Save" class="btn btn-primary" />
+                </div>
+            
+</form>
+
 
   
 </body>

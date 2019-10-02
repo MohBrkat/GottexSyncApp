@@ -1319,7 +1319,7 @@ namespace ShopifyApp2.Controllers
 
                 foreach (var DayOrders in ordersGroupedByDate)
                 {
-
+                    decimal taxPercentage = (decimal)_config.TaxPercentage;
                     var InvoiceDate = DayOrders.OrdersDate;
 
                     var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
@@ -1345,17 +1345,23 @@ namespace ShopifyApp2.Controllers
                         {
 
                             var discountPercentage = (orderItem.TotalDiscount / orderItem.Price).GetValueOrDefault();
-
+                            
 
                             //var xyz = orderItem.TaxLines.Sum(a => a.Price).GetValueOrDefault();
                             //var taxes = orderItem.TaxLines;
 
                            //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
-                           decimal taxPercentage = (decimal)_config.TaxPercentage;
-
-                            
+                           
                             decimal? price;
-                            price = orderItem.Price.GetValueOrDefault() / ((taxPercentage / 100.0m) + 1.0m);
+                            decimal totalDiscount = 0;
+
+                            //Calculate Discount on single lineItem
+                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
+                                totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
+
+                            //Discounted Price without TAX
+                            price = (orderItem.Price.GetValueOrDefault() - totalDiscount) 
+                                / ((taxPercentage / 100.0m) + 1.0m);
                             //if (order.FinancialStatus != "paid")
                             
 
@@ -1365,8 +1371,8 @@ namespace ShopifyApp2.Controllers
                                 //decimal refundMoney = (decimal)transactions;
                                 //if (shipRefOrder.Transactions != null)
 
-                                if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
-                                    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
+                                //if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
+                                //    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
 
                                 file.WriteLine(
                                  "1" + "\t" +
@@ -1386,25 +1392,27 @@ namespace ShopifyApp2.Controllers
                         }
 
 
-
-
                         var discountZero = 0;
                         var shipOrder = order;
-
-                        int quant = 0;
-                        var mQuant = "1";
-                        if (shipOrder.FinancialStatus != "paid")
-                        {
-                            foreach (var item in shipOrder.LineItems)
-                                quant += (int)item.Quantity;
-                            mQuant = quant + "";
-                        }
+                        
                         var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
-                        bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
+                        //bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
 
-                        if ((shippingAmount > 0 && !isPartiallyRefunded) || (isPartiallyRefunded && quant > 0))
+                        //If the order (e.g partially/refunded or paid) 
+                        //has shipping cost and this cost is not refunded,
+                        //then write shipping data
+                        if (shippingAmount > 0 && 
+                            (shipOrder.OrderStatusUrl != "refund_discrepancy"
+                            && shipOrder.OrderStatusUrl != null))
                         {
-                            
+                            var mQuant = "1";
+                            if (shipOrder.OrderStatusUrl == "shipping_refund")
+                            {
+                                mQuant = "-1";
+                                //Calculate refunded shipping
+                                shippingAmount = Math.Abs((decimal)(shipOrder.LineItems?.Where(a=>a.Id==order.Id)?.First()?.Grams/100.0)
+                                    / ((taxPercentage / 100.0m) + 1.0m));
+                            }
                             file.WriteLine(
                                     "1" + "\t" +
                                     "921".InsertLeadingSpaces(15) + "\t" +
@@ -1817,11 +1825,12 @@ namespace ShopifyApp2.Controllers
                 orderToReturn.Id = order.Id;
                 orderToReturn.Tags = order.Tags;
 
+                orderToReturn.SubtotalPrice = order.SubtotalPrice;
                 orderToReturn.FinancialStatus = order.FinancialStatus;
                 orderToReturn.ShippingLines = order.ShippingLines;
 
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date == date).ToList();
-                DateTime momo = orderToReturn.CreatedAt.GetValueOrDefault().Date;
+                //DateTime momo = orderToReturn.CreatedAt.GetValueOrDefault().Date;
                 
                 
                 foreach (var refund in targetRefunds)
@@ -1831,28 +1840,45 @@ namespace ShopifyApp2.Controllers
                     // you have the refund object
                     // not exported refund
                     var refundLineItems = refund.RefundLineItems;
-
+                    
                     List<LineItem> lsOfLineItems = new List<LineItem>();
 
                     lsOfTag.Add(refund.Id.ToString());
-
+                    
                     foreach (var itemRefund in refundLineItems)
                     {
                         lsOfLineItems.Add(new LineItem
                         {
                             Quantity = itemRefund.Quantity * -1,
                             Price = itemRefund.LineItem.Price,
-                            SKU = itemRefund.LineItem.SKU
-                        });
+                            SKU = itemRefund.LineItem.SKU,
+                            DiscountAllocations = itemRefund.LineItem.DiscountAllocations,
+                            
+                            //Grams = Amount of refunded shipping cost !! - Temporary
+                            Grams = refund.OrderAdjustments.Count() != 0 ?
+                                (int)refund.OrderAdjustments.First().Amount * 100 :
+                                -1,
+                            //This line to make catching the Grams(Amount of refunded shipping)
+                            //easy while writing reports - Temporary
+                            Id = order.Id  
+                    });
+
                     }
 
                     orderToReturn.CreatedAt = refund.CreatedAt;
-
+                    
                     orderToReturn.LineItems = lsOfLineItems;
 
                     orderToReturn.TaxLines = order.TaxLines;
 
                     
+                    //Overriding method operation : Taking advantage of OrderStatusUrl method 
+                    //to save the kind of the refunded order
+                    if (refund.OrderAdjustments.Count() != 0)
+                    {
+                        orderToReturn.OrderStatusUrl =
+                                    refund.OrderAdjustments.First().Kind;
+                    }
 
                     ordersToReturn.Add(orderToReturn);
 
