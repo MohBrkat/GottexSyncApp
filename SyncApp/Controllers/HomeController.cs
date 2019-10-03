@@ -1872,7 +1872,7 @@ namespace ShopifyApp2.Controllers
                     orderToReturn.TaxLines = order.TaxLines;
 
                     
-                    //Overriding method operation : Taking advantage of OrderStatusUrl method 
+                    //Overriding property operation : Taking advantage of OrderStatusUrl method 
                     //to save the kind of the refunded order
                     if (refund.OrderAdjustments.Count() != 0)
                     {
