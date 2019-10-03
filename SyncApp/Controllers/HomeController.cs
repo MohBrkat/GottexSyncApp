@@ -1356,8 +1356,11 @@ namespace ShopifyApp2.Controllers
                             decimal totalDiscount = 0;
 
                             //Calculate Discount on single lineItem
-                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
+                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0
+                                && orderItem.Quantity > 0)
+                            {
                                 totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
+                            }
 
                             //Discounted Price without TAX
                             price = (orderItem.Price.GetValueOrDefault() - totalDiscount) 
@@ -1850,13 +1853,14 @@ namespace ShopifyApp2.Controllers
                         lsOfLineItems.Add(new LineItem
                         {
                             Quantity = itemRefund.Quantity * -1,
-                            Price = itemRefund.LineItem.Price,
+                            Price = itemRefund.SubTotal,
                             SKU = itemRefund.LineItem.SKU,
                             DiscountAllocations = itemRefund.LineItem.DiscountAllocations,
                             
                             //Grams = Amount of refunded shipping cost !! - Temporary
                             Grams = refund.OrderAdjustments.Count() != 0 ?
-                                (int)refund.OrderAdjustments.First().Amount * 100 :
+                                (int)((refund.OrderAdjustments.First().Amount +
+                                refund.OrderAdjustments.First().TaxAmount) * 100) :
                                 -1,
                             //This line to make catching the Grams(Amount of refunded shipping)
                             //easy while writing reports - Temporary
