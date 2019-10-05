@@ -28,12 +28,15 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.3" />
     <PackageReference Include="RestSharp" Version="106.6.9" />
-    <PackageReference Include="ShopifySharp" Version="4.19.2" />
     <PackageReference Include="SSH.NET" Version="2016.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Log4Net\Log4NetLibrary.csproj" />
+    <ProjectReference Include="..\ShopifySharp\ShopifySharp.Experimental.Tests\ShopifySharp.Experimental.Tests.fsproj" />
+    <ProjectReference Include="..\ShopifySharp\ShopifySharp.Experimental\ShopifySharp.Experimental.fsproj" />
+    <ProjectReference Include="..\ShopifySharp\ShopifySharp.Tests\ShopifySharp.Tests.csproj" />
+    <ProjectReference Include="..\ShopifySharp\ShopifySharp\ShopifySharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

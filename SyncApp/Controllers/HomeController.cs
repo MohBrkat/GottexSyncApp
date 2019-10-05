@@ -1354,17 +1354,20 @@ namespace ShopifyApp2.Controllers
                            
                             decimal? price;
                             decimal totalDiscount = 0;
-
+                            
                             //Calculate Discount on single lineItem
-                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0
-                                && orderItem.Quantity > 0)
+                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
                             {
                                 totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
                             }
 
-                            //Discounted Price without TAX
-                            price = (orderItem.Price.GetValueOrDefault() - totalDiscount) 
-                                / ((taxPercentage / 100.0m) + 1.0m);
+                            decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
+                            decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
+                            //Discounted Price without TAX and Discount
+                            price = (orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2));
+
+                            if (orderItem.Taxable == false || order.TaxesIncluded == true)
+                                price /= totalWithVatPercentage;
                             //if (order.FinancialStatus != "paid")
                             
 
@@ -1404,17 +1407,14 @@ namespace ShopifyApp2.Controllers
                         //If the order (e.g partially/refunded or paid) 
                         //has shipping cost and this cost is not refunded,
                         //then write shipping data
-                        if (shippingAmount > 0 && 
-                            (shipOrder.OrderStatusUrl != "refund_discrepancy"
-                            && shipOrder.OrderStatusUrl != null))
+                        if (shippingAmount > 0 && shipOrder.RefundKind != "refund_discrepancy")
                         {
                             var mQuant = "1";
-                            if (shipOrder.OrderStatusUrl == "shipping_refund")
+                            if (shipOrder.RefundKind == "shipping_refund")
                             {
                                 mQuant = "-1";
                                 //Calculate refunded shipping
-                                shippingAmount = Math.Abs((decimal)(shipOrder.LineItems?.Where(a=>a.Id==order.Id)?.First()?.Grams/100.0)
-                                    / ((taxPercentage / 100.0m) + 1.0m));
+                                shippingAmount = Math.Abs(shipOrder.RefundAmount / ((taxPercentage / 100.0m) + 1.0m));
                             }
                             file.WriteLine(
                                     "1" + "\t" +
@@ -1744,7 +1744,10 @@ namespace ShopifyApp2.Controllers
             {
                 FinancialStatus = "any",
                 Status = "any",
-                FulfillmentStatus = "any"
+                FulfillmentStatus = "any",
+                CreatedAtMin = date,
+                CreatedAtMax = date.AddDays(1)//,
+                //Order="asc"
             };
             
             var ordersCount = OrderService.CountAsync(filter).Result;
@@ -1752,9 +1755,11 @@ namespace ShopifyApp2.Controllers
             List<Order> orders = new List<Order>();
             var loops = Math.Ceiling((double)(ordersCount) / 250);
 
+            filter.Limit = 250;
             for (int i = 1; i <= loops; i++)
             {
-                var ordersResult = OrderService.ListAsync(new ShopifySharp.Filters.OrderFilter { FinancialStatus = "any", Status = "any", Limit = 250, Page = i }).Result;
+                filter.Page = i;
+                var ordersResult = OrderService.ListAsync(filter).Result;
                 // orders.AddRange(ordersResult.Select(a => a).Where(a => !a.Tags.Contains(prefix)));
 
                 orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
@@ -1767,7 +1772,7 @@ namespace ShopifyApp2.Controllers
 
             // orders = orders.Where(a => a.Transactions != null && a.Transactions.Count() > 0).ToList();
 
-            orders = orders.Where(a => a.CreatedAt.GetValueOrDefault().Date == date.Date).ToList();
+            //orders = orders.Where(a => a.CreatedAt.GetValueOrDefault().Date == date.Date).ToList();
 
 
 
@@ -1804,9 +1809,11 @@ namespace ShopifyApp2.Controllers
             List<Order> orders = new List<Order>();
             var loops = Math.Ceiling((double)ordersCount / 250);
 
+            filter.Limit = 250;
             for (int i = 1; i <= loops; i++)
             {
-                var ordersResult = OrderService.ListAsync(new ShopifySharp.Filters.OrderFilter { FinancialStatus = "any", Status = "any", Limit = 250, Page = i }).Result;
+                filter.Page = i;
+                var ordersResult = OrderService.ListAsync(filter).Result;
                 orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
             }
             //.Where(a => !a.Tags.Contains("refund-exported"))
@@ -1820,17 +1827,7 @@ namespace ShopifyApp2.Controllers
             {
                 var lsOfTag = new List<string>();
 
-                var orderToReturn = new Order();
-
-              //  orderToReturn.CreatedAt = order.CreatedAt;
-                orderToReturn.TotalDiscounts = order.TotalDiscounts;
-                orderToReturn.OrderNumber = order.OrderNumber;
-                orderToReturn.Id = order.Id;
-                orderToReturn.Tags = order.Tags;
-
-                orderToReturn.SubtotalPrice = order.SubtotalPrice;
-                orderToReturn.FinancialStatus = order.FinancialStatus;
-                orderToReturn.ShippingLines = order.ShippingLines;
+                
 
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date == date).ToList();
                 //DateTime momo = orderToReturn.CreatedAt.GetValueOrDefault().Date;
@@ -1838,6 +1835,17 @@ namespace ShopifyApp2.Controllers
                 
                 foreach (var refund in targetRefunds)
                 {
+                    var orderToReturn = new Order();
+
+                    //  orderToReturn.CreatedAt = order.CreatedAt;
+                    orderToReturn.TotalDiscounts = order.TotalDiscounts;
+                    orderToReturn.OrderNumber = order.OrderNumber;
+                    orderToReturn.Id = order.Id;
+                    orderToReturn.Tags = order.Tags;
+
+                    orderToReturn.SubtotalPrice = order.SubtotalPrice;
+                    orderToReturn.FinancialStatus = order.FinancialStatus;
+                    orderToReturn.ShippingLines = order.ShippingLines;
                     //if (!order.Tags.Contains(refund.Id.ToString()))
                     //{
                     // you have the refund object
@@ -1853,37 +1861,43 @@ namespace ShopifyApp2.Controllers
                         lsOfLineItems.Add(new LineItem
                         {
                             Quantity = itemRefund.Quantity * -1,
-                            Price = itemRefund.SubTotal,
+                            Price = itemRefund.LineItem.Price,
                             SKU = itemRefund.LineItem.SKU,
-                            DiscountAllocations = itemRefund.LineItem.DiscountAllocations,
-                            
-                            //Grams = Amount of refunded shipping cost !! - Temporary
-                            Grams = refund.OrderAdjustments.Count() != 0 ?
-                                (int)((refund.OrderAdjustments.First().Amount +
-                                refund.OrderAdjustments.First().TaxAmount) * 100) :
-                                -1,
-                            //This line to make catching the Grams(Amount of refunded shipping)
-                            //easy while writing reports - Temporary
-                            Id = order.Id  
+                            Taxable = itemRefund.LineItem.Taxable,
+                            Id = itemRefund.LineItem.Id,
+                            DiscountAllocations = itemRefund.LineItem.DiscountAllocations,  
                     });
-
+                        foreach(var discount in lsOfLineItems.Last().DiscountAllocations)
+                        {
+                            List<LineItem> tt = order.LineItems.Where(a => a.Id == lsOfLineItems.Last().Id).ToList();
+                            decimal quantity = (decimal)tt.First().Quantity;
+                            discount.Amount = (decimal.Parse(discount.Amount) / quantity)
+                                + "";
+                        }
                     }
-
-                    orderToReturn.CreatedAt = refund.CreatedAt;
                     
+                    orderToReturn.CreatedAt = refund.CreatedAt;
+
+                    orderToReturn.TaxesIncluded = false;
+
                     orderToReturn.LineItems = lsOfLineItems;
 
                     orderToReturn.TaxLines = order.TaxLines;
 
-                    
-                    //Overriding property operation : Taking advantage of OrderStatusUrl method 
-                    //to save the kind of the refunded order
-                    if (refund.OrderAdjustments.Count() != 0)
+                    orderToReturn.TaxesIncluded = order.TaxesIncluded;
+
+                    var refundInfo = refund.OrderAdjustments;
+
+                    orderToReturn.RefundKind = "refund_discrepancy";
+
+                    if (refundInfo != null && refundInfo.Count() != 0)
                     {
-                        orderToReturn.OrderStatusUrl =
-                                    refund.OrderAdjustments.First().Kind;
+                        orderToReturn.RefundAmount = (decimal)((refund.OrderAdjustments.First().Amount +
+                                    refund.OrderAdjustments.First().TaxAmount));
+                        orderToReturn.RefundKind = refund.OrderAdjustments.First().Kind;
                     }
 
+                    
                     ordersToReturn.Add(orderToReturn);
 
                     //}

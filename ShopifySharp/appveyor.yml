@@ -1,0 +1,35 @@
+version: b{build}
+image: Visual Studio 2019
+branches:
+  only:
+    - master
+environment:
+  SHOPIFYSHARP_API_KEY:
+    secure: uF/ZRFFV19rv9tyOtspau/SpzMLQaGFWgBYge7kRC4vk/HHRxKda7BaNi46QhzN/
+  SHOPIFYSHARP_SECRET_KEY:
+    secure: 36pbnnyMdnyPXqzIPVTMNzv8qAzEUs/f7LaheBMCsZHC7EO11llgiMPCwHPhtms4
+  SHOPIFYSHARP_ACCESS_TOKEN:
+    secure: Lt70HrGBrQwKIFWE13zFZRGGwRoPKi1VKjtqBzuR3rdz3w6zD1YXXXe/Zb7xaqX+
+  SHOPIFYSHARP_MY_SHOPIFY_URL:
+    secure: aWjxVhXImxXX98GcYDmAbGVDxZk9kRaMKGnhm0CLuJ0aFYs0OMNaJOqyT8S4sh9P
+build_script:
+- ps: ./scripts/build.ps1
+test_script:
+- ps: ./scripts/test.ps1
+skip_commits:
+  message: /\[skip\]/
+  files:
+    - readme.md
+    - LICENSE
+    - .gitignore
+    - .vscode/*
+    - changelog.md
+#deploy_script:
+#  - ./scripts/deploy.ps1
+deploy:
+ # Automatically publish all Nuget packages. Duplicate versions will be skipped by AppVeyor.
+ - provider: NuGet
+   api_key:
+     secure: uUJ91Fu+H69EdZ8RTYIa7G7UufCgCw1UXfZ2jAOEWJfKi8KNwDTFYaEDQCJS9xOc
+   on:
+     branch: master
