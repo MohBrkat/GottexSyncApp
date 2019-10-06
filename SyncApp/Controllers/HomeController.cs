@@ -1364,7 +1364,7 @@ namespace ShopifyApp2.Controllers
                             decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
                             decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
                             //Discounted Price without TAX and Discount
-                            price = (orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2));
+                            price = orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
 
                             if (orderItem.Taxable == false || order.TaxesIncluded == true)
                                 price /= totalWithVatPercentage;

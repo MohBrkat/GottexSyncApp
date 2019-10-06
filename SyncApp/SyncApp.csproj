@@ -33,9 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Log4Net\Log4NetLibrary.csproj" />
-    <ProjectReference Include="..\ShopifySharp\ShopifySharp.Experimental.Tests\ShopifySharp.Experimental.Tests.fsproj" />
-    <ProjectReference Include="..\ShopifySharp\ShopifySharp.Experimental\ShopifySharp.Experimental.fsproj" />
-    <ProjectReference Include="..\ShopifySharp\ShopifySharp.Tests\ShopifySharp.Tests.csproj" />
     <ProjectReference Include="..\ShopifySharp\ShopifySharp\ShopifySharp.csproj" />
   </ItemGroup>
 
