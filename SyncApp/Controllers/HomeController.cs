@@ -353,8 +353,8 @@ namespace ShopifyApp2.Controllers
 
             var minutes = InventoryImportEveryMinute == 0 ? 30 : InventoryImportEveryMinute;
             RecurringJob.AddOrUpdate(() => DoImoportAsync(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportSales(false, default(DateTime)), SalesCron, TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportReceipts(false, default(DateTime)), RecieptsCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportSales(false, default(DateTime), default(DateTime)), SalesCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportReceipts(false, default(DateTime), default(DateTime)), RecieptsCron, TimeZoneInfo.Local);
 
 
 
@@ -1258,14 +1258,22 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public ActionResult ExportSales(bool fromWeb, DateTime dateToRetrive = default(DateTime))
+        public ActionResult ExportSales(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
+            , DateTime dateToRetriveTo = default(DateTime))
         {
             List<Order> lsOfOrders = new List<Order>();
 
-            if (dateToRetrive != default(DateTime))
+            //Date period option
+            if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
             {
-                lsOfOrders = GetNotExportedOrders("invoices", dateToRetrive);
+                lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom, dateToRetriveTo);
             }
+            //Single day option
+            else if (dateToRetriveFrom != default(DateTime))
+            {
+                lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom);
+            }
+            //Yesterday option (Default)
             else
             {
                 lsOfOrders = GetNotExportedOrders("invoices");
@@ -1273,13 +1281,14 @@ namespace ShopifyApp2.Controllers
 
             Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
 
-            var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetrive);
+            var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetriveFrom, dateToRetriveTo);
 
             if (refunded.Count > 0)
             {
                 lsOfOrders.AddRange(refunded);
             }
 
+            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
             string path = string.Empty;
             if (lsOfOrders.Count() > 0)
             {
@@ -1308,7 +1317,7 @@ namespace ShopifyApp2.Controllers
             var FolderDirectory = "/Data/invoices/";
 
             var path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + FileName;
-
+            
             var ordersGroupedByDate = orders
         .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
         .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
@@ -1332,7 +1341,7 @@ namespace ShopifyApp2.Controllers
                        "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
                        "\t" + ShortBranchCodeSales
                        );
-
+                    
                     //var shippingAmount = order.ShippingLines.Sum(a => a.Price);
                     //var TotalWithoutShipping = (order.TotalPrice - shippingAmount);
                     //var TotalWithoutShippingAndTax = TotalWithoutShipping - order.TaxLines.Sum(a => a.Price);
@@ -1431,7 +1440,7 @@ namespace ShopifyApp2.Controllers
                                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                                     + "\t" +
                                     order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-
+                            
                         }
 
                         // line item discount cannot be percent, percent on overall order by shopify design
@@ -1516,26 +1525,30 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public ActionResult ExportReceipts(bool fromWeb, DateTime dateToRetrive = default(DateTime))
+        public ActionResult ExportReceipts(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
+            , DateTime dateToRetriveTo = default(DateTime))
         {
             List<Order> lsOfOrders = new List<Order>();
 
-
-
-            if (dateToRetrive != default(DateTime))
+            //Date period Option
+            if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
             {
-                lsOfOrders = GetNotExportedOrders("receipts", dateToRetrive);
-
+                lsOfOrders = GetNotExportedOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
             }
+            //Single day Option
+            else if (dateToRetriveFrom != default(DateTime))
+            {
+                lsOfOrders = GetNotExportedOrders("receipts", dateToRetriveFrom);
+            }
+            //Yesterday Option (Default)
             else
             {
                 lsOfOrders = GetNotExportedOrders("receipts");
-
             }
 
-           // Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
+            // Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
 
-           // var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetrive);
+            // var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetrive);
 
             //if (refunded.Count > 0)
             //{
@@ -1714,7 +1727,9 @@ namespace ShopifyApp2.Controllers
 
         private int GetPaymentMeanCode(string company)
         {
-            
+            if (company == null)
+                return 0;
+
             var paymentMean = _context.PaymentMeans.Where(a => company.ToLower().Contains(a.Name.ToLower())).FirstOrDefault();
             if (paymentMean != null)
             {
@@ -1729,13 +1744,21 @@ namespace ShopifyApp2.Controllers
 
         #endregion
 
-        private List<Order> GetNotExportedOrders(string prefix, DateTime date = default(DateTime))
+        private List<Order> GetNotExportedOrders(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
-            if (date == default(DateTime))
+            if (dateFrom == default(DateTime)) //Yesterday option (Default)
             {
-                date = DateTime.Now.AddDays(-1); // by default
+                dateFrom = DateTime.Now.AddDays(-1); // by default
+                dateTo = DateTime.Now.AddDays(-1);
             }
-            date = date.Date; // to trim hours and minutes, ...
+            else if(dateTo == default(DateTime)) //Single day option
+            {
+                dateTo = dateFrom.Date;
+            }
+
+            // to trim hours and minutes, ...
+            dateFrom = dateFrom.Date;
+            dateTo = dateTo.Date;
 
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
@@ -1745,8 +1768,8 @@ namespace ShopifyApp2.Controllers
                 FinancialStatus = "any",
                 Status = "any",
                 FulfillmentStatus = "any",
-                CreatedAtMin = date,
-                CreatedAtMax = date.AddDays(1)//,
+                CreatedAtMin = dateFrom,
+                CreatedAtMax = dateTo.AddDays(1)//,
                 //Order="asc"
             };
             
@@ -1758,14 +1781,22 @@ namespace ShopifyApp2.Controllers
             filter.Limit = 250;
             for (int i = 1; i <= loops; i++)
             {
-                filter.Page = i;
-                var ordersResult = OrderService.ListAsync(filter).Result;
-                // orders.AddRange(ordersResult.Select(a => a).Where(a => !a.Tags.Contains(prefix)));
+                try
+                {
+                    filter.Page = i;
+                    var ordersResult = OrderService.ListAsync(filter).Result;
+                    // orders.AddRange(ordersResult.Select(a => a).Where(a => !a.Tags.Contains(prefix)));
 
-                orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
-                a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
-                // this condtion should be done after this loop
-                // if 
+                    orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
+                    a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
+                    // this condtion should be done after this loop
+                    // if 
+                }catch(ShopifySharp.ShopifyRateLimitException ex)
+                {
+                    i--;
+                    Thread.Sleep(2000);
+                    
+                }
 
             }
             // handle refund- before check tag , check if refunded then fetch refund transaction adn fill it in new rwo
@@ -1783,16 +1814,24 @@ namespace ShopifyApp2.Controllers
             return orders;
         }
 
-        private List<Order> GetRefundedOrders(out Dictionary<string, List<string>> lslsOfTagsToBeAdded, DateTime date = default(DateTime))
+        private List<Order> GetRefundedOrders(out Dictionary<string, List<string>> lslsOfTagsToBeAdded, DateTime dateFrom = default(DateTime)
+            , DateTime dateTo = default(DateTime))
         {
             Dictionary<string, List<string>> lsOfTagsToBeAddedTemp = new Dictionary<string, List<string>>();
 
-            if (date == default(DateTime))
+            if (dateFrom == default(DateTime)) //Yesterday option (Default)
             {
-                date = DateTime.Now.AddDays(-1); // by default
+                dateFrom = DateTime.Now.AddDays(-1); // by default
+                dateTo = DateTime.Now;
+            }
+            else if(dateTo == default(DateTime)) //Single day option
+            {
+                dateTo = dateFrom.Date;
             }
 
-            date = date.Date; // to trim hours and minutes, ...
+            // to trim hours and minutes, ...
+            dateFrom = dateFrom.Date; 
+            dateTo = dateTo.Date;
 
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
@@ -1801,7 +1840,9 @@ namespace ShopifyApp2.Controllers
             {
                 FinancialStatus = "any",
                 Status = "any",
-                FulfillmentStatus = "any"
+                FulfillmentStatus = "any",
+                //CreatedAtMin = dateFrom,
+                //CreatedAtMax = dateTo.AddDays(1)
             };
 
             var ordersCount = OrderService.CountAsync(filter).Result;
@@ -1812,10 +1853,20 @@ namespace ShopifyApp2.Controllers
             filter.Limit = 250;
             for (int i = 1; i <= loops; i++)
             {
-                filter.Page = i;
-                var ordersResult = OrderService.ListAsync(filter).Result;
-                orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
-            }
+                try
+                {
+                    filter.Page = i;
+                    var ordersResult = OrderService.ListAsync(filter).Result;
+                    orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
+                }
+                catch (ShopifySharp.ShopifyRateLimitException ex)
+                {
+                    i--;
+                    Thread.Sleep(2000);
+
+                }
+
+        }
             //.Where(a => !a.Tags.Contains("refund-exported"))
             //  orders = orders.Where(a => a.UpdatedAt.GetValueOrDefault().Date == date.Date).ToList();
 
@@ -1827,9 +1878,8 @@ namespace ShopifyApp2.Controllers
             {
                 var lsOfTag = new List<string>();
 
-                
-
-                var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date == date).ToList();
+                var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom &&
+                a.CreatedAt.GetValueOrDefault().Date < dateTo.AddDays(1)).ToList();
                 //DateTime momo = orderToReturn.CreatedAt.GetValueOrDefault().Date;
                 
                 

@@ -1,23 +1,24 @@
 ﻿@model string
 
-<style>
-    #pageloader {
-        background: rgba( 255, 255, 255, 0.8 );
-        display: none;
-        height: 100%;
-        position: fixed;
-        width: 100%;
-        z-index: 9999;
-    }
-
-        #pageloader img {
-            left: 35%;
-            margin-left: -32px;
-            margin-top: -32px;
-            position: absolute;
-            top: 35%;
+    <style>
+        #pageloader {
+            background: rgba( 255, 255, 255, 0.8 );
+            display: none;
+            height: 100%;
+            position: fixed;
+            width: 100%;
+            z-index: 9999;
         }
-</style>
+
+            #pageloader img {
+                left: 42%;
+                margin-left: -32px;
+                margin-top: -32px;
+                position: absolute;
+                top: 35%;
+            }
+            
+    </style>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
@@ -33,12 +34,22 @@
         <input type="hidden" value="true" name="fromWeb" />
 
         <div class="input-group">
-            <input id="msg" type="date" class="form-control" name="dateToRetrive" placeholder="Date">
+            <div class="form-group col-sm-6">
+                <b> From (or Single Day Option)</b>
+                <input id="msg" type="date" class="form-control" name="dateToRetriveFrom" placeholder="Date">
+            </div>
+            <div class="form-group col-sm-6">
+                <b>To (Choose to activate Date Period Option)</b>
+                <input id="msg2" type="date" class="form-control" name="dateToRetriveTo" placeholder="Date">
+            </div>
         </div>
         <br />
-        <button id="btnSubmit" class="btn btn-success btn-lg" style="width:30%" type="submit">Export</button>
+        <button id="btnSubmit" class="btn btn-success btn-lg" style="width:30%" type="button">Export</button>
 
     </form>
+    <div id="errorLabel" class="alert alert-danger" style="margin-top:30px">
+        <strong>Invalid Date Period.</strong>
+    </div>
     @{
         if (Model == "N/A")
         {
@@ -54,17 +65,33 @@
                 <strong>Your file is ready. </strong> <a style="float:right" target="_blank" download href="@Url.Action("DownloadFile", "Home", new {fileToDownload = Model, subFolder = "Data/invoices" })">Click here to download your file</a>
             </div>
         }
-         
+
     }
 </div>
 
 <script src="~/lib/jquery/dist/jquery.js"></script>
 <script>
+    $("#errorLabel").hide();
     $(document).ready(function () {
+    
+        $("#btnSubmit").click( function () {
+            var dt1 = $("#msg").val();
+            var dt2 = $("#msg2").val();
+
+            var dateFrom = new Date(dt1);
+            var dateTo = new Date(dt2);
+            if (dateFrom > dateTo) {
+                $("#errorLabel").show();
+                }
+            else {
+                
+                $("#frmMain").submit(); 
+            }
+        });//submit
         $("#frmMain").on("submit", function () {
             $("#pageloader").fadeIn();
-            $('#btnSubmit').prop("disabled", true);
-        });//submit
+                $('#btnSubmit').prop("disabled", true);
+        });
     });
 
 </script>
