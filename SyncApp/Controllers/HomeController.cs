@@ -1793,9 +1793,7 @@ namespace ShopifyApp2.Controllers
                     // if 
                 }catch(ShopifySharp.ShopifyRateLimitException ex)
                 {
-                    i--;
-                    Thread.Sleep(2000);
-                    
+                    i--;                    
                 }
 
             }
@@ -1862,8 +1860,6 @@ namespace ShopifyApp2.Controllers
                 catch (ShopifySharp.ShopifyRateLimitException ex)
                 {
                     i--;
-                    Thread.Sleep(2000);
-
                 }
 
         }
