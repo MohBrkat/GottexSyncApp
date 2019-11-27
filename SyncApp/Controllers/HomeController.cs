@@ -1353,15 +1353,15 @@ namespace ShopifyApp2.Controllers
                         foreach (var orderItem in order.LineItems)
                         {
 
-                            var discountPercentage = 0;//(orderItem.TotalDiscount / orderItem.Price).GetValueOrDefault();
-
+                            var discountPercentage = (orderItem.TotalDiscount / orderItem.Price).GetValueOrDefault();
+                            
 
                             //var xyz = orderItem.TaxLines.Sum(a => a.Price).GetValueOrDefault();
                             //var taxes = orderItem.TaxLines;
 
-                            //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
-
-                            decimal ? price;
+                           //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
+                           
+                            decimal? price;
                             decimal totalDiscount = 0;
                             
                             //Calculate Discount on single lineItem
@@ -1546,30 +1546,23 @@ namespace ShopifyApp2.Controllers
                 lsOfOrders = GetNotExportedOrders("receipts");
             }
 
-            Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
+            // Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
 
-            var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetriveFrom, dateToRetriveTo);
+            // var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetrive);
 
-            if (refunded.Count > 0)
-            {
-                lsOfOrders.AddRange(refunded);
-            }
+            //if (refunded.Count > 0)
+            //{
 
-            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            //    lsOfOrders.AddRange(refunded);
+            //}
+
+
             string path = string.Empty;
+
             if (lsOfOrders.Count() > 0)
             {
-                if (refunded.Count > 0)
-                {
-                    path = GenerateReceiptFile(lsOfOrders, fromWeb,lsOfTagToBeAdded);
-                }
-                else
-                {
-                    path = GenerateReceiptFile(lsOfOrders, fromWeb);
-                }
-                
+                path = GenerateReceiptFile(lsOfOrders, fromWeb);
                 return View("~/Views/Home/ExportDailyReceipts.cshtml", path);
-
             }
             else
             {
@@ -1583,7 +1576,7 @@ namespace ShopifyApp2.Controllers
 
 
 
-        private string GenerateReceiptFile(List<Order> orders, bool fromWeb,Dictionary<string,List<string>> lsOfTagTobeAdded = null)
+        private string GenerateReceiptFile(List<Order> orders, bool fromWeb)
         {
             var FileName = ReceiptsFileName.Clone().ToString();
             var FolderDirectory = "/Data/receipts/";
@@ -1611,7 +1604,7 @@ namespace ShopifyApp2.Controllers
                     //}
 
                     var InvoiceNumber = GetInvoiceNumber(order);
-                    var priceWithoutTaxes = order.TotalPrice - order.TotalTax;
+                    var priceWithoutTaxes = (order.TotalPrice - order.TotalTax).ToString();
                     var priceWithTaxes = order.TotalPrice;
 
                     var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
@@ -1625,10 +1618,7 @@ namespace ShopifyApp2.Controllers
                         PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
                         if (transaction.x_timestamp.IsNotNullOrEmpty())
                         {
-                            
-                            //var timestamp = DateTime.ParseExact(transaction.x_timestamp, "yyyy-MM-ddThh:mm:ss+00:00", System.Globalization.CultureInfo.InvariantCulture);
                             invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
-                            
                         }
                     }
                     else
@@ -1644,27 +1634,20 @@ namespace ShopifyApp2.Controllers
                     //    PaymentMeanCode = paymentMean == null ? 0 : paymentMean.Id;
                     //}
 
-                    //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
-                    if (order.RefundKind != "no_refund")
-                    {
-                        priceWithTaxes *= -1;
-                        priceWithoutTaxes = priceWithTaxes;
-                    }
-
                     file.WriteLine(
                         "0" +  // spaces to fit indexes
                         " " + _customerCodeWithLeadingSpaces +
                         " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
                         " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
                         " " + _shortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
-                        " " + priceWithoutTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+                        " " + priceWithoutTaxes.InsertLeadingSpaces(13));
 
                     file.WriteLine(
                    "2" +
                    " " + PaymentMeanCode.ToString().InsertLeadingZeros(2) +
-                   " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                   " " + order.TotalPrice.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
                    " " + "00" + //term code
-                   " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                   " " + order.TotalPrice.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
                    " " + invoiceDate +
                    " " + "".InsertLeadingSpaces(8) +//card number
                    " " + "".InsertLeadingZeros(16));//Payment account
@@ -1690,7 +1673,8 @@ namespace ShopifyApp2.Controllers
                 {
                     _log.Info(FileName + "[receipts] Uploaded sucesfully - the time is : " + DateTime.Now);
                 }
-                UpdateOrderStatus(orders, FileName, lsOfTagTobeAdded);
+
+                UpdateOrderStatus(orders, FileName);
             }
             else
             {
@@ -1712,31 +1696,14 @@ namespace ShopifyApp2.Controllers
         //}
         private Receipt GetTransactionByOrder(Order order)
         {
-            Receipt r = null;
-            if (order.RefundKind == "no_refund" || !order.Transactions.Any())
+            var service = new TransactionService(StoreUrl, api_secret);
+            var transactions = service.ListAsync((long)order.Id).Result;
+            if (transactions.FirstOrDefault() != null)
             {
-                var service = new TransactionService(StoreUrl, api_secret);
-                var transactions = service.ListAsync((long)order.Id).Result;
-                if (transactions.FirstOrDefault() != null)
-                {
-
-                    r = JsonConvert.DeserializeObject<Receipt>(transactions.FirstOrDefault().Receipt.ToString());
-
-                   /*
-                    * x_timestamp which is basically from the payment provider(Payplus) and it's inaccurate and wrong
-                    * (it is in 12h UTC format and without AM or PM !)
-                    * So transaction's created_at DateTime value used instead
-                    */
-                    r.x_timestamp = transactions.FirstOrDefault().CreatedAt.ToString();
-                }
+                Receipt r = new Receipt();
+                return JsonConvert.DeserializeObject<Receipt>(transactions.FirstOrDefault().Receipt.ToString());
             }
-            else
-            {
-                r = JsonConvert.DeserializeObject<Receipt>(
-                    order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().Receipt.ToString());
-                r.x_timestamp = order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().CreatedAt.ToString();
-            }
-            return r;
+            return null;
         }
 
         //private string GetInvoiceTotalWithoutTax(Order order)
@@ -1823,7 +1790,7 @@ namespace ShopifyApp2.Controllers
                     orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
                     a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
                     // this condtion should be done after this loop
-                    // if
+                    // if 
                 }catch(ShopifySharp.ShopifyRateLimitException ex)
                 {
                     i--;                    
@@ -1871,7 +1838,7 @@ namespace ShopifyApp2.Controllers
             {
                 FinancialStatus = "any",
                 Status = "any",
-                FulfillmentStatus = "any"
+                FulfillmentStatus = "any",
                 //CreatedAtMin = dateFrom,
                 //CreatedAtMax = dateTo.AddDays(1)
             };
@@ -1901,7 +1868,7 @@ namespace ShopifyApp2.Controllers
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             var ordersToReturn = new List<Order>();
-            decimal taxPercentage = (decimal)_config.TaxPercentage;
+
 
             foreach (var order in OrdersHasRefunds)
             {
@@ -1925,7 +1892,6 @@ namespace ShopifyApp2.Controllers
                     orderToReturn.SubtotalPrice = order.SubtotalPrice;
                     orderToReturn.FinancialStatus = order.FinancialStatus;
                     orderToReturn.ShippingLines = order.ShippingLines;
-                    
                     //if (!order.Tags.Contains(refund.Id.ToString()))
                     //{
                     // you have the refund object
@@ -1965,14 +1931,6 @@ namespace ShopifyApp2.Controllers
                     orderToReturn.TaxLines = order.TaxLines;
 
                     orderToReturn.TaxesIncluded = order.TaxesIncluded;
-
-                    orderToReturn.Transactions = refund.Transactions;
-
-                    var totalPrice = refund.Transactions.Sum(t => t.Amount);
-                    decimal priceWithVat = (decimal)totalPrice / ((taxPercentage / 100.0m) + 1.0m);
-
-                    orderToReturn.TotalTax = totalPrice - priceWithVat;
-                    orderToReturn.TotalPrice = totalPrice;
 
                     var refundInfo = refund.OrderAdjustments;
 
