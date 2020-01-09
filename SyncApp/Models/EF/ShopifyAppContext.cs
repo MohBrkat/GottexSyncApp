@@ -36,13 +36,13 @@ namespace SyncApp.Models.EF
             if (!optionsBuilder.IsConfigured)
             {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseSqlServer("Server=.\\sqlexpress;Database=ShopifyApp;Trusted_Connection=True;");
+                optionsBuilder.UseSqlServer("Server=(LocalDb)\\MSSQLLocalDB;Database=ShopifyApp;Trusted_Connection=True;");
             }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.HasAnnotation("ProductVersion", "2.2.4-servicing-10062");
+            modelBuilder.HasAnnotation("ProductVersion", "2.2.6-servicing-10079");
 
             modelBuilder.Entity<AggregatedCounter>(entity =>
             {

@@ -32,5 +32,9 @@ namespace SyncApp.Models.EF
         public bool? UseRecurringJob { get; set; }
         public int? InventoryUpdateEveryMinute { get; set; }
         public int? TaxPercentage { get; set; }
+        public int? DailyReportHour { get; set; }
+        public int? DailyReportMinute { get; set; }
+        public string ReportEmailAddress1 { get; set; }
+        public string ReportEmailAddress2 { get; set; }
     }
 }

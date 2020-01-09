@@ -6,8 +6,12 @@ using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Log4NetLibrary;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using OfficeOpenXml;
 using Renci.SshNet;
 using ShopifySharp;
 
@@ -283,6 +287,38 @@ namespace SyncApp
             smtpClient.Send(mail);
         }
 
+        public static void SendReportEmail(string host, int port, string email, string password, string displayName, string to1,string to2, string message, string subject,string detaileFileName, byte[] detailedFIle, string summarizedFileName, byte[] summarizedFile)
+        {
+            SmtpClient smtpClient = new SmtpClient(host, port);
+            smtpClient.UseDefaultCredentials = false;
+            smtpClient.Credentials = new System.Net.NetworkCredential(email, password);
+            smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+            smtpClient.EnableSsl = true;
+
+            MailMessage mail = new MailMessage();
+
+            //Setting From , To and CC
+            mail.From = new MailAddress(email, displayName);
+            mail.To.Add(new MailAddress(to1));
+            mail.To.Add(new MailAddress(to2));
+            mail.Subject = subject;
+            mail.Body = message;
+            mail.IsBodyHtml = true;
+
+            if (detailedFIle != null)
+            {
+                Attachment att = new Attachment(new MemoryStream(detailedFIle), detaileFileName);
+                mail.Attachments.Add(att);
+            }
+
+            if (summarizedFile != null)
+            {
+                Attachment att = new Attachment(new MemoryStream(summarizedFile), summarizedFileName);
+                mail.Attachments.Add(att);
+            }
+            smtpClient.Send(mail);
+        }
+
         internal static bool MakeRequest(string host, string user, string password)
         {
             var connectionInfo = new ConnectionInfo(host, 22, user, new PasswordAuthenticationMethod(user, password));
@@ -320,6 +356,205 @@ namespace SyncApp
             }
         }
 
+        public static byte[] ExportToExcel<T>(List<T> list, string extension)
+        {
+            if (extension == "xlsx")
+            {
+                return ExportXlsxReport(list);
+            }
+            else if (extension == "xls")
+            {
+                return ExportXlsReport(list);
+            }
+            else if (extension == "csv")
+            {
+                return ExportCsvReport(list);
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+
+        public static List<List<T>> Split<T>(List<T> collection, int size)
+        {
+            Logger.EnterScope();
+
+            var chunks = new List<List<T>>();
+            var chunkCount = collection.Count() / size;
+
+            if (collection.Count % size > 0)
+                chunkCount++;
+
+            for (var i = 0; i < chunkCount; i++)
+                chunks.Add(collection.Skip(i * size).Take(size).ToList());
+
+            Logger.ExitScope();
+
+            return chunks;
+        }
+
+        public static byte[] ExportXlsxReport<T>(List<T> list)
+        {
+            var stream = new MemoryStream();
+
+            using (ExcelPackage package = new ExcelPackage(stream))
+            {
+
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("report");
+                worksheet.PrinterSettings.FitToPage = true;
+                worksheet.PrinterSettings.PaperSize = ePaperSize.A4;
+
+                //worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                int totalRows = list.Count;
+
+                var properties = typeof(T).GetProperties().ToList();
+
+                for (int j = 1; j <= properties.Count; j++)
+                {
+                    worksheet.Column(j).Width = 30;
+                    worksheet.Cells[1, j].Value = Regex.Replace(Regex.Replace(properties[j - 1].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2"); ;
+                }
+
+                int i = 0;
+
+                for (int row = 2; row <= totalRows + 1; row++)
+                {
+                    for (int j = 1; j <= properties.Count; j++)
+                    {
+                        worksheet.Cells[row, j].Value = list[i].GetType()
+                            .GetProperty(properties[j - 1].Name)
+                            ?.GetValue(list[i]);
+
+                        if(IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
+                        {
+                            worksheet.Cells[row, j].Style.Numberformat.Format = "0";
+                            double convertedValue = Convert.ToDouble(worksheet.Cells[row, j].Value);
+                            worksheet.Cells[row, j].Value = convertedValue;
+                        }
+
+                        if (worksheet.Cells[row, j].Value is DateTime)
+                            worksheet.Cells[row, j].Value = ((DateTime)worksheet.Cells[row, j].Value).ToShortDateString();
+                    }
+
+                    i++;
+                }
+
+                return package.GetAsByteArray();
+            }
+        }
+
+
+
+        public static byte[] ExportCsvReport<T>(List<T> list)
+        {
+            var stream = new MemoryStream();
+            using (ExcelPackage package = new ExcelPackage(stream))
+            {
+
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("report");
+                int totalRows = list.Count;
+
+                var properties = typeof(T).GetProperties().ToList();
+                StringBuilder sb = new StringBuilder();
+
+                //For Headers
+                //for (int j = 1; j <= properties.Count; j++)
+                //{
+                //    worksheet.Cells[1, j].Value = Regex.Replace(Regex.Replace(properties[j - 1].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2");
+                //    sb.Append(worksheet.Cells[1, j].Value + ",");
+                //}
+
+                //sb.AppendLine();
+
+                int i = 0;
+
+                for (int row = 1; row <= totalRows; row++)
+                {
+                    for (int j = 1; j <= properties.Count; j++)
+                    {
+                        worksheet.Cells[row, j].Value = list[i].GetType()
+                            .GetProperty(properties[j - 1].Name)
+                            ?.GetValue(list[i]);
+
+                        if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
+                        {
+                            worksheet.Cells[row, j].Style.Numberformat.Format = "0";
+                            double convertedValue = Convert.ToDouble(worksheet.Cells[row, j].Value);
+                            worksheet.Cells[row, j].Value = convertedValue;
+                        }
+
+                        if (worksheet.Cells[row, j].Value is DateTime)
+                            worksheet.Cells[row, j].Value = ((DateTime)worksheet.Cells[row, j].Value).ToShortDateString();
+
+                        if (j == properties.Count)
+                        {
+                            sb.Append(worksheet.Cells[row, j].Value);
+                        }
+                        else
+                        {
+                            sb.Append(worksheet.Cells[row, j].Value + ",");
+                        }
+                    }
+                    sb.AppendLine();
+                    i++;
+                }
+
+                return Encoding.ASCII.GetBytes(sb.ToString());
+            }
+        }
+
+        public static byte[] ExportXlsReport<T>(List<T> list)
+        {
+            IWorkbook workbook;
+            workbook = new HSSFWorkbook();
+            ISheet sheet1 = workbook.CreateSheet("Sheet 1");
+            IRow row1 = sheet1.CreateRow(0);
+
+            var properties = typeof(T).GetProperties().ToList();
+            for (int j = 0; j < properties.Count; j++)
+            {
+                ICell cell = row1.CreateCell(j);
+                cell.SetCellValue(Regex.Replace(Regex.Replace(properties[j].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2"));
+            }
+
+            for (int r = 0; r < list.Count; r++)
+            {
+                IRow row = sheet1.CreateRow(r + 1);
+                for (int j = 0; j < properties.Count; j++)
+                {
+                    ICell cell = row.CreateCell(j);
+                    var value = list[r].GetType().GetProperty(properties[j].Name)?.GetValue(list[r]);
+
+                    if (IsExponentialFormat(value.ToString()) || double.TryParse(value.ToString(), out double dummy))
+                    {
+                        cell.CellStyle.DataFormat = HSSFDataFormat.GetBuiltinFormat("0");
+                        double convertedValue = Convert.ToDouble(value);
+                        value = convertedValue;
+                    }
+
+
+                    if (value is DateTime)
+                        value = ((DateTime)value).ToShortDateString();
+
+                    cell.SetCellValue(value.ToString());
+                }
+            }
+
+            using (var exportData = new MemoryStream())
+            {
+                workbook.Write(exportData);
+                return exportData.GetBuffer();
+            }
+        }
+
+        private static bool IsExponentialFormat(string str)
+        {
+            double dummy;
+            return (str.Contains("E") || str.Contains("e")) && double.TryParse(str, out dummy);
+        }
 
     }
 
@@ -428,7 +663,7 @@ namespace SyncApp
                 // Do something such as log error, but this is based on OP's original code
                 // so for now we do nothing.
             }
-
+            
         }
 
         public static string DwonloadFile(string fileName, string ServerUrl, string path, string userName, string password)

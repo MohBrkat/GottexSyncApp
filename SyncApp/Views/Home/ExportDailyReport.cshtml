@@ -1,0 +1,112 @@
+﻿@model SyncApp.ViewModel.FileModel
+<style>
+    #pageloader {
+        background: rgba( 255, 255, 255, 0.8 );
+        display: none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        z-index: 9999;
+    }
+
+        #pageloader img {
+            left: 42%;
+            margin-left: -32px;
+            margin-top: -32px;
+            position: absolute;
+            top: 35%;
+        }
+    .alert-success
+    {
+        text-align:left!important;
+
+    }
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<div id="pageloader">
+    <img src="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif" alt="processing..." />
+</div>
+
+
+<div class="container">
+    <form method="post" style="text-align:center" id="frmMain" action="@Url.Action("ExportReport")">
+        <div class="alert alert-info" style="margin-top:20px">
+            <strong>Export</strong> Daily Report.
+        </div>
+        <input type="hidden" value="true" name="fromWeb" />
+        <input id="reportType" type="hidden" value="" name="reportType" />
+
+        <div class="input-group">
+            <div class="form-group col-sm-6">
+                <b>  From (or Single Day Option)</b>
+                <input id="msg" type="date" class="form-control" name="dateToRetriveFrom" placeholder="Date">
+            </div>
+            <div class="form-group col-sm-6">
+                <b>To (Choose to activate Date Period Option)</b>
+                <input id="msg2" type="date" class="form-control" name="dateToRetriveTo" placeholder="Date">
+            </div>
+        </div>
+        <br />
+        <button id="btnExportReportSubmit" class="btn btn-success btn-lg" style="width:30%" type="button">Export Reports</button>
+    </form>
+    @{
+        if (Model != null && Model.DetailedFile != null && Model.SummarizedFile != null)
+        {
+            <form method="post" style="text-align:center" id="downloadDetailedFrm" controller="Home" action="DownloadReport">
+                <input type="hidden" value="@System.Convert.ToBase64String(Model.DetailedFile.FileData)" name="fileData" />
+                <input type="hidden" value="@Model.DetailedFile.FileContentType" name="contentType" />
+                <input type="hidden" value="@Model.DetailedFile.FileName" name="fileName" />
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong style="text-align:unset !important">Detailed Report file is ready. </strong> <button style="float:right" target="_blank" type="submit">Click here to download file</button>
+                </div>
+            </form>
+
+            <form method="post" style="text-align:center" id="downloadSummraizedFrm" controller="Home" action="DownloadReport">
+                <input type="hidden" value="@System.Convert.ToBase64String(Model.SummarizedFile.FileData)" name="fileData" />
+                <input type="hidden" value="@Model.SummarizedFile.FileContentType" name="contentType" />
+                <input type="hidden" value="@Model.SummarizedFile.FileName" name="fileName" />
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong style="text-align:unset !important">Summarized Report file is ready. </strong> <button style="float:right" target="_blank" type="submit">Click here to download file</button>
+                </div>
+            </form>
+        }
+        else if (Model != null && (Model.DetailedFile == null || Model.SummarizedFile == null))
+        {
+            <div class="alert alert-danger" style="margin-top:30px">
+                <strong>No such orders to export. </strong>
+            </div>
+        }
+
+    }
+</div>
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script>
+    $("#errorLabel").hide();
+    $(document).ready(function () {
+
+        $("#btnExportReportSubmit").click(function () {
+            var dt1 = $("#msg").val();
+            var dt2 = $("#msg2").val();
+            $("#reportType").val("detailed");
+
+            var dateFrom = new Date(dt1);
+            var dateTo = new Date(dt2);
+            if (dateFrom > dateTo) {
+                $("#errorLabel").show();
+            }
+            else {
+                $("#frmMain").submit();
+            }
+        });//submit
+
+       
+        $("#btnExportReportSubmit").on("submit", function () {
+            $("#pageloader").fadeIn();
+            $('#btnExportReportSubmit').prop("disabled", true);
+        });
+
+    });
+
+</script>

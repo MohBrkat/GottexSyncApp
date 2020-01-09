@@ -231,6 +231,39 @@ namespace ShopifyApp2.Controllers
                 //return Int32.Parse(ConfigurationManager.GetConfig("Schedule", "minute"));
             }
         }
+
+        private int DailyReportHour
+        {
+            get
+            {
+                return _config.DailyReportHour.GetValueOrDefault();
+            }
+        }
+
+        private int DailyReportMinute
+        {
+            get
+            {
+                return _config.DailyReportMinute.GetValueOrDefault();
+            }
+        }
+
+        private string ReportEmailAddress1
+        {
+            get
+            {
+                return _config.ReportEmailAddress1;
+            }
+        }
+
+        private string ReportEmailAddress2
+        {
+            get
+            {
+                return _config.ReportEmailAddress2;
+            }
+        }
+
         private string smtpHost
         {
             get
@@ -349,12 +382,14 @@ namespace ShopifyApp2.Controllers
 
             var SalesCron = Cron.Daily(DailySalesHour, DailySalesMinute);
             var RecieptsCron = Cron.Daily(DailyRecieptsHour, DailyRecieptsMinute);
+            var ReportsCron = Cron.Daily(DailyReportHour, DailyReportMinute);
 
 
             var minutes = InventoryImportEveryMinute == 0 ? 30 : InventoryImportEveryMinute;
             RecurringJob.AddOrUpdate(() => DoImoportAsync(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
             RecurringJob.AddOrUpdate(() => ExportSales(false, default(DateTime), default(DateTime)), SalesCron, TimeZoneInfo.Local);
             RecurringJob.AddOrUpdate(() => ExportReceipts(false, default(DateTime), default(DateTime)), RecieptsCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportReport(false, default(DateTime), default(DateTime),string.Empty), ReportsCron, TimeZoneInfo.Local);
 
 
 
@@ -1579,9 +1614,217 @@ namespace ShopifyApp2.Controllers
             }
         }
 
+        public ActionResult ExportDailyReport()
+        {
+            return View();
+        }
 
 
+        public ActionResult ExportReport(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo,string reportType = "")
+        {
+            List<Order> lsOfOrders = new List<Order>();
+            FileModel file = new FileModel();
+            try
+            {
+                //Date period Option
+                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
+                {
+                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
+                }
+                //Single day Option
+                else if (dateToRetriveFrom != default(DateTime))
+                {
+                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
+                }
+                //Yesterday Option (Default)
+                else
+                {
+                    lsOfOrders = GetReportOrders("receipts");
+                }
 
+                lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+
+                if (lsOfOrders.Count > 0)
+                {
+                    var contentType = "application/octet-stream";
+                    string extension = "xlsx";
+
+                    byte[] detailedFile = GenerateDetailedReportFile(lsOfOrders);
+                    string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}.{extension}";
+
+                    byte[] summarizedFile = GenerateSummarizedReportFile(lsOfOrders);
+                    string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
+
+                    string subject = "Detailed And Summarized Report Files";
+                    string body = ReportEmailMessageBody();
+
+                    Utility.SendReportEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
+
+                    _log.Info($"[Daily Report] Generated and sent to : {ReportEmailAddress1} , {ReportEmailAddress2} sucesfully. File Names : {detailedFileName} , {summarizedFileName} - the time is : {DateTime.Now}");
+
+                    file.DetailedFile = new FileContent()
+                    {
+                        FileName = detailedFileName,
+                        FileContentType = contentType,
+                        FileData = detailedFile
+                    };
+
+                    file.SummarizedFile = new FileContent()
+                    {
+                        FileName = summarizedFileName,
+                        FileContentType = contentType,
+                        FileData = summarizedFile
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+            }
+
+            return View("~/Views/Home/ExportDailyReport.cshtml", file);
+        }
+
+        private byte[] GenerateSummarizedReportFile(List<Order> orders)
+        {
+            var productsList = GetProducts();
+            List<LineItem> lineItems = new List<LineItem>();
+            List<SummarizedAutomaticReportModel> summarizedAutomaticReport = new List<SummarizedAutomaticReportModel>();
+
+            foreach (var order in orders)
+            {
+                lineItems.AddRange(order.LineItems);
+            }
+
+            var lineItemsGroupedByVariantId = lineItems
+            .Where(l => l.VariantId != null)
+            .GroupBy(o => o.VariantId)
+            .Select(g => new { VariantId = g.Key, Data = g.ToList() });
+
+            foreach (var variantLineItems in lineItemsGroupedByVariantId)
+            {
+                string productVendor = string.Empty;
+                string variantSKU = string.Empty;
+                string productBarcode = string.Empty;
+
+                int orderedQuantity = variantLineItems.Data.Count();
+
+                var lineItem = variantLineItems.Data.FirstOrDefault();
+                if (lineItem.ProductId != null)
+                {
+                    var productObj = productsList.FirstOrDefault(p => p.Id == lineItem.ProductId.Value);
+                    productVendor = productObj.Vendor;
+                    if (lineItem.VariantId != null)
+                    {
+                        variantSKU = productObj.Variants.Where(v => v.Id == lineItem.VariantId).Select(v => v.SKU).FirstOrDefault();
+                        productBarcode = productObj.Variants.Where(v => v.Id == lineItem.VariantId).Select(v => v.Barcode).FirstOrDefault();
+                    }
+                }
+
+                summarizedAutomaticReport.Add(new SummarizedAutomaticReportModel()
+                {
+                    ProductVendor = !string.IsNullOrEmpty(productVendor) ? productVendor : !string.IsNullOrEmpty(lineItem.Vendor) ? lineItem.Vendor : "N/A",
+                    VariantSKU = !string.IsNullOrEmpty(variantSKU) ? variantSKU : !string.IsNullOrEmpty(lineItem.SKU) ? lineItem.SKU  : "N/A" ,
+                    ProductBarcode = !string.IsNullOrEmpty(productBarcode) ? productBarcode : "N/A" ,
+                    OrderedQuantity = orderedQuantity
+                });
+
+            }
+
+            summarizedAutomaticReport.OrderBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU);
+
+            string extension = "xlsx";
+
+            try
+            {
+                List<List<SummarizedAutomaticReportModel>> splittedData = Utility.Split(summarizedAutomaticReport, 1000000);
+                List<byte> data = new List<byte>();
+                foreach (var summarizedReportModel in splittedData)
+                {
+                    var result = Utility.ExportToExcel(summarizedReportModel, extension).ToList();
+                    data.AddRange(result);
+                }
+
+                var fileResult = data.ToArray();
+
+                return fileResult;
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+                throw e;
+            }
+        }
+
+        [HttpPost]
+        public FileResult DownloadReport(string fileData,string contentType,string fileName)
+        {
+            return File(System.Convert.FromBase64String(fileData), contentType, fileName);
+        }
+
+        private byte[] GenerateDetailedReportFile(List<Order> orders)
+        {
+            var productsList = GetProducts();
+
+            List<DetailedAutomaticReportModel> detailedAutomaticReport = new List<DetailedAutomaticReportModel>();
+            foreach (var order in orders)
+            {
+                string customerName = $"{order.Customer?.FirstName} {order.Customer?.LastName}";
+
+                foreach (var lineItem in order.LineItems)
+                {
+                    string productVendor = string.Empty;
+                    string variantSKU = string.Empty;
+                    string productBarcode = string.Empty;
+                    
+                    if (lineItem.ProductId != null)
+                    {
+                        var productObj = productsList.FirstOrDefault(p => p.Id == lineItem.ProductId.Value);
+                        productVendor = productObj.Vendor;
+                        if (lineItem.VariantId != null)
+                        {
+                            variantSKU = productObj.Variants.Where(v => v.Id == lineItem.VariantId).Select(v => v.SKU).FirstOrDefault();
+                            productBarcode = productObj.Variants.Where(v => v.Id == lineItem.VariantId).Select(v => v.Barcode).FirstOrDefault();
+                        }
+                    }
+
+                    detailedAutomaticReport.Add(new DetailedAutomaticReportModel()
+                    {
+                        OrderName = order.Name,
+                        CustomerName = !string.IsNullOrWhiteSpace(customerName) ? customerName : "N/A",
+                        OrderDay = order.CreatedAt.Value.ToString("dd MMM"),
+                        ProductVendor = !string.IsNullOrWhiteSpace(productVendor) ? productVendor :  !string.IsNullOrWhiteSpace(lineItem.Vendor) ? lineItem.Vendor :  "N/A",
+                        VariantSKU = !string.IsNullOrWhiteSpace(variantSKU) ? variantSKU : !string.IsNullOrWhiteSpace(lineItem.SKU) ? lineItem.SKU : "N/A",
+                        OrderedQuantity = lineItem.Quantity.Value,
+                        ProductBarcode = !string.IsNullOrWhiteSpace(productBarcode) ? productBarcode : "N/A"
+                    });
+                }               
+            }
+
+            detailedAutomaticReport.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU);
+
+            string extension = "xlsx";
+
+            try
+            {
+                List<List<DetailedAutomaticReportModel>> splittedData= Utility.Split(detailedAutomaticReport, 1000000);
+                List<byte> data = new List<byte>();
+                foreach (var detailedReportModel in splittedData)
+                {
+                    var result = Utility.ExportToExcel(detailedReportModel, extension).ToList();
+                    data.AddRange(result);
+                }
+
+                var fileResult = data.ToArray();
+
+                return fileResult;
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+                throw e;
+            }
+        }
 
         private string GenerateReceiptFile(List<Order> orders, bool fromWeb,Dictionary<string,List<string>> lsOfTagTobeAdded = null)
         {
@@ -1777,6 +2020,91 @@ namespace ShopifyApp2.Controllers
 
         #endregion
 
+        private List<Order> GetReportOrders(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
+        {
+            if (dateFrom == default(DateTime)) //Yesterday option (Default)
+            {
+                dateFrom = DateTime.Now.AddDays(-1); // by default
+                dateTo = DateTime.Now.AddDays(-1);
+            }
+            else if (dateTo == default(DateTime)) //Single day option
+            {
+                dateTo = dateFrom.Date;
+            }
+
+            // to trim hours and minutes, ...
+            dateFrom = dateFrom.Date;
+            dateTo = dateTo.Date;
+
+            // looop , need new logic , [aging , sice id
+            var OrderService = new OrderService(StoreUrl, api_secret);
+
+            var filter = new ShopifySharp.Filters.OrderFilter
+            {
+                FinancialStatus = "paid",               
+                Status = "open",
+                FulfillmentStatus = "any",
+                CreatedAtMin = dateFrom,
+                CreatedAtMax = dateTo.AddDays(1)
+            };
+
+            var ordersCount = OrderService.CountAsync(filter).Result;
+
+            List<Order> orders = new List<Order>();
+            var loops = Math.Ceiling((double)(ordersCount) / 250);
+
+            filter.Limit = 250;
+            for (int i = 1; i <= loops; i++)
+            {
+                try
+                {
+                    filter.Page = i;
+                    var ordersResult = OrderService.ListAsync(filter).Result;
+
+                    orders.AddRange(ordersResult.Select(a => a).Where(a => a.FulfillmentStatus == null ||
+                    a.FulfillmentStatus == "partial" || a.FulfillmentStatus == "fulfilled"));
+                }
+                catch (ShopifySharp.ShopifyRateLimitException ex)
+                {
+                    i--;
+                }
+
+            }
+            return orders;
+        }
+
+        public List<Product> GetProducts()
+        {
+            var productServices = new ProductService(StoreUrl, api_secret);
+
+            var filter = new ShopifySharp.Filters.ProductFilter
+            {
+                Limit = 250,
+                Fields = "id,vendor,Variants"
+            };
+
+            var productsCount = productServices.CountAsync().Result;
+
+            List<Product> products = new List<Product>();
+            var loops = Math.Ceiling((double)(productsCount) / 250);
+
+            for (int i = 1; i <= loops; i++)
+            {
+                try
+                {
+                    filter.Page = i;
+                    var productsResult = productServices.ListAsync(filter).Result;
+
+                    products.AddRange(productsResult);
+                }
+                catch (ShopifySharp.ShopifyRateLimitException ex)
+                {
+                    i--;
+                }
+
+            }
+            return products;
+        }
         private List<Order> GetNotExportedOrders(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
             if (dateFrom == default(DateTime)) //Yesterday option (Default)
@@ -2027,6 +2355,16 @@ namespace ShopifyApp2.Controllers
             string body = "Hi - <br /><br />Operation: " + operationName + "<br />";
             body += "Status: " + status + "<br />";
             body += "Log File Location: " + fileName + "<br /><br />";
+            body += "Thank you<br />";
+            body += "Gottex";
+
+            return body;
+        }
+
+        private string ReportEmailMessageBody()
+        {
+            string body = "Hi - <br /><br /> Detailed and Summraized Report Files Generated. <br />";
+            body += "Please Find them in the attachments <br /><br />";
             body += "Thank you<br />";
             body += "Gottex";
 
