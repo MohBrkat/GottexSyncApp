@@ -2062,7 +2062,7 @@ namespace ShopifyApp2.Controllers
                     var ordersResult = OrderService.ListAsync(filter).Result;
 
                     orders.AddRange(ordersResult.Select(a => a).Where(a => a.FulfillmentStatus == null ||
-                    a.FulfillmentStatus == "partial" || a.FulfillmentStatus == "fulfilled"));
+                    a.FulfillmentStatus == "partial"));
                 }
                 catch (ShopifySharp.ShopifyRateLimitException ex)
                 {
