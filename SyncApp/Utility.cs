@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Log4NetLibrary;
 using NPOI.HSSF.UserModel;
+using NPOI.HSSF.Util;
 using NPOI.SS.UserModel;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -529,16 +530,32 @@ namespace SyncApp
             ISheet sheet1 = workbook.CreateSheet("Sheet 1");
             IRow row1 = sheet1.CreateRow(0);
 
+            var font = workbook.CreateFont();
+            font.FontName = "Calibri";
+            font.FontHeightInPoints = 11;
+            font.Boldweight = (short)FontBoldWeight.Bold;
+
+            row1.RowStyle.BorderTop = BorderStyle.Thin;
+
             var properties = typeof(T).GetProperties().ToList();
             for (int j = 0; j < properties.Count; j++)
             {
                 ICell cell = row1.CreateCell(j);
+                cell.CellStyle.Alignment = HorizontalAlignment.Center;
+                cell.CellStyle.FillBackgroundColor = HSSFColor.LightYellow.Index;
+                cell.CellStyle.SetFont(font);
+                cell.CellStyle.FillPattern = FillPattern.SolidForeground;
+                cell.CellStyle.BorderRight = BorderStyle.Thin;
+                sheet1.SetColumnWidth(j,30);
+
                 cell.SetCellValue(Regex.Replace(Regex.Replace(properties[j].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2"));
             }
 
             for (int r = 0; r < list.Count; r++)
             {
                 IRow row = sheet1.CreateRow(r + 1);
+                row.RowStyle.BorderBottom = BorderStyle.Thin;
+
                 for (int j = 0; j < properties.Count; j++)
                 {
                     ICell cell = row.CreateCell(j);
@@ -551,6 +568,8 @@ namespace SyncApp
                         value = convertedValue;
                     }
 
+                    cell.CellStyle.BorderRight = BorderStyle.Thin;
+                    cell.CellStyle.Alignment = HorizontalAlignment.Center;
 
                     if (value is DateTime)
                         value = ((DateTime)value).ToShortDateString();
