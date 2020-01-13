@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,7 @@ using Log4NetLibrary;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using Renci.SshNet;
 using ShopifySharp;
 
@@ -287,7 +289,7 @@ namespace SyncApp
             smtpClient.Send(mail);
         }
 
-        public static void SendReportEmail(string host, int port, string email, string password, string displayName, string to1,string to2, string message, string subject,string detaileFileName, byte[] detailedFIle, string summarizedFileName, byte[] summarizedFile)
+        public static void SendReportEmail(string host, int port, string email, string password, string displayName, string to1, string to2, string message, string subject, string detaileFileName, byte[] detailedFIle, string summarizedFileName, byte[] summarizedFile)
         {
             SmtpClient smtpClient = new SmtpClient(host, port);
             smtpClient.UseDefaultCredentials = false;
@@ -405,6 +407,7 @@ namespace SyncApp
                 ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("report");
                 worksheet.PrinterSettings.FitToPage = true;
                 worksheet.PrinterSettings.PaperSize = ePaperSize.A4;
+                worksheet.PrinterSettings.ShowGridLines = true;
 
                 //worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
@@ -412,8 +415,17 @@ namespace SyncApp
 
                 var properties = typeof(T).GetProperties().ToList();
 
+                worksheet.Column(1).Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                worksheet.Row(1).Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                worksheet.Row(1).Style.Border.Top.Style = ExcelBorderStyle.Thin;
+
                 for (int j = 1; j <= properties.Count; j++)
                 {
+                    worksheet.Cells[1, j].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    worksheet.Cells[1, j].Style.Font.Bold = true;
+                    worksheet.Cells[1, j].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    worksheet.Cells[1, j].Style.Fill.BackgroundColor.SetColor(Color.LightYellow);
+                    worksheet.Column(j).Style.Border.Right.Style = ExcelBorderStyle.Thin;
                     worksheet.Column(j).Width = 30;
                     worksheet.Cells[1, j].Value = Regex.Replace(Regex.Replace(properties[j - 1].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2"); ;
                 }
@@ -422,13 +434,17 @@ namespace SyncApp
 
                 for (int row = 2; row <= totalRows + 1; row++)
                 {
+                    worksheet.Row(row).Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+
                     for (int j = 1; j <= properties.Count; j++)
                     {
+                        worksheet.Cells[row, j].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
                         worksheet.Cells[row, j].Value = list[i].GetType()
                             .GetProperty(properties[j - 1].Name)
                             ?.GetValue(list[i]);
 
-                        if(IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
+                        if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
                         {
                             worksheet.Cells[row, j].Style.Numberformat.Format = "0";
                             double convertedValue = Convert.ToDouble(worksheet.Cells[row, j].Value);
@@ -615,7 +631,7 @@ namespace SyncApp
                     {
                         var result = lsOfValid.ToArray();
                         Array.Sort(result);
-                        return result.First()+".dat";
+                        return result.First() + ".dat";
                     }
                     else
                     {
@@ -645,7 +661,7 @@ namespace SyncApp
         public static string ReadLatestFileFromFtp(string Host, string UserName, string Password, string FolderPath, out string fileName)
         {
             WebClient request = new WebClient();
-            string url = Host + "/" + FolderPath+"/";
+            string url = Host + "/" + FolderPath + "/";
             request.Credentials = new NetworkCredential(UserName, Password);
             try
             {
@@ -663,7 +679,7 @@ namespace SyncApp
                 // Do something such as log error, but this is based on OP's original code
                 // so for now we do nothing.
             }
-            
+
         }
 
         public static string DwonloadFile(string fileName, string ServerUrl, string path, string userName, string password)
@@ -785,7 +801,7 @@ namespace SyncApp
                 }
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return false;
             }
@@ -834,7 +850,7 @@ namespace SyncApp
             }
 
         }
-        
+
 
     }
 }

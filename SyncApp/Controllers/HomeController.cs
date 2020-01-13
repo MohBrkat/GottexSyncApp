@@ -1792,7 +1792,7 @@ namespace ShopifyApp2.Controllers
                     {
                         OrderName = order.Name,
                         CustomerName = !string.IsNullOrWhiteSpace(customerName) ? customerName : "N/A",
-                        OrderDay = order.CreatedAt.Value.ToString("dd MMM"),
+                        OrderDay = order.CreatedAt.Value.ToString("dd/MM/yyyy"),
                         ProductVendor = !string.IsNullOrWhiteSpace(productVendor) ? productVendor :  !string.IsNullOrWhiteSpace(lineItem.Vendor) ? lineItem.Vendor :  "N/A",
                         VariantSKU = !string.IsNullOrWhiteSpace(variantSKU) ? variantSKU : !string.IsNullOrWhiteSpace(lineItem.SKU) ? lineItem.SKU : "N/A",
                         OrderedQuantity = lineItem.Quantity.Value,
