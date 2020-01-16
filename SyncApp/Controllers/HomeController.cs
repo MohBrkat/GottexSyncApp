@@ -1658,7 +1658,14 @@ namespace ShopifyApp2.Controllers
                     string subject = "Detailed And Summarized Report Files";
                     string body = ReportEmailMessageBody();
 
-                    Utility.SendReportEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
+                    if(!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
+                    {
+                        Utility.SendReportEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
+                    }
+                    else
+                    {
+                        _log.Error("Email Addresses are Empty");
+                    }
 
                     _log.Info($"[Daily Report] Generated and sent to : {ReportEmailAddress1} , {ReportEmailAddress2} sucesfully. File Names : {detailedFileName} , {summarizedFileName} - the time is : {DateTime.Now}");
 
