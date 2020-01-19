@@ -445,12 +445,12 @@ namespace SyncApp
                             .GetProperty(properties[j - 1].Name)
                             ?.GetValue(list[i]);
 
-                        if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
-                        {
-                            worksheet.Cells[row, j].Style.Numberformat.Format = "0";
-                            double convertedValue = Convert.ToDouble(worksheet.Cells[row, j].Value);
-                            worksheet.Cells[row, j].Value = convertedValue;
-                        }
+                        //if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
+                        //{
+                        //    worksheet.Cells[row, j].Style.Numberformat.Format = "0";
+                        //    double convertedValue = Convert.ToDouble(worksheet.Cells[row, j].Value);
+                        //    worksheet.Cells[row, j].Value = convertedValue;
+                        //}
 
                         if (worksheet.Cells[row, j].Value is DateTime)
                             worksheet.Cells[row, j].Value = ((DateTime)worksheet.Cells[row, j].Value).ToShortDateString();
@@ -585,7 +585,7 @@ namespace SyncApp
             }
         }
 
-        private static bool IsExponentialFormat(string str)
+        public static bool IsExponentialFormat(string str)
         {
             double dummy;
             return (str.Contains("E") || str.Contains("e")) && double.TryParse(str, out dummy);

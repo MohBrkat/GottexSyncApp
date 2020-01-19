@@ -1655,6 +1655,10 @@ namespace ShopifyApp2.Controllers
                     byte[] summarizedFile = GenerateSummarizedReportFile(lsOfOrders);
                     string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
+                    //Get Products with Invalid Barcode
+                    //byte[] invalidProducts = GenerateProductsReportFile(lsOfOrders);
+                    //string invalidProductsName = $"invalidProductsName{DateTime.Now.ToShortDateString()}.{extension}";
+
                     string subject = "Detailed And Summarized Report Files";
                     string body = ReportEmailMessageBody();
 
@@ -1682,6 +1686,13 @@ namespace ShopifyApp2.Controllers
                         FileContentType = contentType,
                         FileData = summarizedFile
                     };
+
+                    //file.InvalidProducts = new FileContent()
+                    //{
+                    //    FileName = invalidProductsName,
+                    //    FileContentType = contentType,
+                    //    FileData = invalidProducts
+                    //};
                 }
             }
             catch (Exception e)
@@ -1833,6 +1844,50 @@ namespace ShopifyApp2.Controllers
             }
         }
 
+        private byte[] GenerateProductsReportFile(List<Order> orders)
+        {
+            var productsList = GetProducts();
+            List<InvalidProducts> productVariants = new List<InvalidProducts>();
+
+            foreach(var prod in productsList)
+            {
+                foreach(var vari in prod.Variants)
+                {
+                    if (Utility.IsExponentialFormat(vari.Barcode))
+                    {
+                        productVariants.Add(new InvalidProducts() { 
+                            SKU = vari.SKU,
+                            Barcode = vari.Barcode,
+                            Title = vari.Title
+                        });
+                    }
+                }
+            }
+
+            productVariants.OrderBy(r => r.Title).ThenBy(r => r.SKU);
+
+            string extension = "xlsx";
+
+            try
+            {
+                List<List<InvalidProducts>> splittedData = Utility.Split(productVariants, 1000000);
+                List<byte> data = new List<byte>();
+                foreach (var detailedReportModel in splittedData)
+                {
+                    var result = Utility.ExportToExcel(detailedReportModel, extension).ToList();
+                    data.AddRange(result);
+                }
+
+                var fileResult = data.ToArray();
+
+                return fileResult;
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+                throw e;
+            }
+        }
         private string GenerateReceiptFile(List<Order> orders, bool fromWeb,Dictionary<string,List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = ReceiptsFileName.Clone().ToString();
@@ -1960,6 +2015,7 @@ namespace ShopifyApp2.Controllers
         //    var transactions = service.ListAsync((long)order.Id).Result.Select(t => t);
         //    return transactions.FirstOrDefault();
         //}
+
         private Receipt GetTransactionByOrder(Order order)
         {
             Receipt r = null;

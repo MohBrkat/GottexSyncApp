@@ -9,6 +9,7 @@ namespace SyncApp.ViewModel
     {
         public FileContent DetailedFile { get; set; }
         public FileContent SummarizedFile { get; set; }
+        public FileContent InvalidProducts { get; set; }
     }
 
     public class FileContent

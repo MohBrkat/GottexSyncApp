@@ -52,6 +52,17 @@
         <button id="btnExportReportSubmit" class="btn btn-success btn-lg" style="width:30%" type="button">Export Reports</button>
     </form>
     @{
+        if (Model != null && Model.InvalidProducts != null)
+        {
+            <form method="post" style="text-align:center" id="downloadSummraizedFrm" controller="Home" action="DownloadReport">
+                <input type="hidden" value="@System.Convert.ToBase64String(Model.InvalidProducts.FileData)" name="fileData" />
+                <input type="hidden" value="@Model.InvalidProducts.FileContentType" name="contentType" />
+                <input type="hidden" value="@Model.InvalidProducts.FileName" name="fileName" />
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong style="text-align:unset !important">Invalid Products file is ready. </strong> <button style="float:right" target="_blank" type="submit">Click here to download file</button>
+                </div>
+            </form>
+        }
         if (Model != null && Model.DetailedFile != null && Model.SummarizedFile != null)
         {
             <form method="post" style="text-align:center" id="downloadDetailedFrm" controller="Home" action="DownloadReport">
