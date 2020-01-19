@@ -445,6 +445,12 @@ namespace SyncApp
                             .GetProperty(properties[j - 1].Name)
                             ?.GetValue(list[i]);
 
+                        var type = properties[j - 1].Name;
+                        if (type.Trim().ToLower() == "productbarcode")
+                        {
+                            worksheet.Cells[row, j].Formula = "=\"" + worksheet.Cells[row, j].Value.ToString() + "\"";
+                        }
+
                         //if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
                         //{
                         //    worksheet.Cells[row, j].Style.Numberformat.Format = "0";

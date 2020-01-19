@@ -44,7 +44,7 @@
         <div class="row">
             <div class="form-group col-sm-6">
                 <label asp-for="DailyRecieptsHour" class="control-label">Daily Reciept Export Hour</label>
-                <input asp-for="DailyRecieptsHour" class="form-control" />
+                <input asp-for="DailyRecieptsHour" class="form-control" min="0" max="23" />
             </div>
             
             <div class="form-group col-sm-6">
@@ -59,7 +59,7 @@
             <div class="form-group col-sm-6">
 
                 <label asp-for="DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
-                <input asp-for="DailyRecieptsMinute" class="form-control" />
+                <input asp-for="DailyRecieptsMinute" class="form-control" min="0" max="59" />
 
             </div>
 
@@ -75,7 +75,7 @@
             <div class="form-group col-sm-6">
 
                 <label asp-for="DailySalesHour" class="control-label">Daily Sales Export Hour</label>
-                <input asp-for="DailySalesHour" class="form-control" />
+                <input asp-for="DailySalesHour" class="form-control" min="0" max="23" />
 
             </div>
 
@@ -92,7 +92,7 @@
             <div class="form-group col-sm-6">
 
                 <label asp-for="DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
-                <input asp-for="DailySalesMinute" class="form-control" />
+                <input asp-for="DailySalesMinute" class="form-control" min="0" max="59" />
 
             </div>
             <div class="form-group col-sm-6">
@@ -191,27 +191,27 @@
             <div class="form-group col-sm-6">
 
                 <label asp-for="ReportEmailAddress1" class="control-label">First Daily Report Email Address</label>
-                <input type="email" asp-for="ReportEmailAddress1" class="form-control" />
+                <input type="email" asp-for="ReportEmailAddress1" class="form-control" required/>
 
             </div>
 
             <div class="form-group col-sm-6">
 
                 <label asp-for="ReportEmailAddress2" class="control-label">Second Daily Report Email Address</label>
-                <input type="email" asp-for="ReportEmailAddress2" class="form-control" />
+                <input type="email" asp-for="ReportEmailAddress2" class="form-control" required/>
 
             </div>
             <div class="form-group col-sm-6">
 
                 <label asp-for="DailyReportHour" class="control-label">Daily Report Hour</label>
-                <input asp-for="DailyReportHour" class="form-control" />
+                <input asp-for="DailyReportHour" class="form-control" min="0" max="23" required/>
 
             </div>
 
             <div class="form-group col-sm-6">
 
                 <label asp-for="DailyReportMinute" class="control-label">Daily Report Minute</label>
-                <input asp-for="DailyReportMinute" class="form-control" />
+                <input asp-for="DailyReportMinute" class="form-control" min="0" max="59" required/>
 
             </div>
         </div>
