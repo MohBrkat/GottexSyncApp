@@ -1943,7 +1943,7 @@ namespace ShopifyApp2.Controllers
 
             }
 
-            summarizedAutomaticReport.OrderBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU);
+            summarizedAutomaticReport = summarizedAutomaticReport.OrderBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
 
             string extension = "xlsx";
 
@@ -2007,7 +2007,7 @@ namespace ShopifyApp2.Controllers
                 }
             }
 
-            detailedAutomaticReport.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU);
+            detailedAutomaticReport = detailedAutomaticReport.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
 
             string extension = "xlsx";
 
@@ -2062,9 +2062,9 @@ namespace ShopifyApp2.Controllers
             {
                 List<List<InvalidProducts>> splittedData = Utility.Split(productVariants, 1000000);
                 List<byte> data = new List<byte>();
-                foreach (var detailedReportModel in splittedData)
+                foreach (var productReportModel in splittedData)
                 {
-                    var result = Utility.ExportToExcel(detailedReportModel, extension).ToList();
+                    var result = Utility.ExportToExcel(productReportModel, extension).ToList();
                     data.AddRange(result);
                 }
 
