@@ -7,6 +7,7 @@ namespace SyncApp.Models
 {
     public class InvalidProducts
     {
+        public string ProductHandle { get; set; }
         public string Title { get; set; }
         public string SKU { get; set; }
         public string Barcode { get; set; }
