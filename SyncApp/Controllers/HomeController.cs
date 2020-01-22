@@ -1829,6 +1829,12 @@ namespace ShopifyApp2.Controllers
                 else if (dateToRetriveFrom != default(DateTime))
                 {
                     lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
+                
+                }
+                else if(dateToRetriveTo != default(DateTime))
+                {
+                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
+
                 }
                 //Yesterday Option (Default)
                 else
@@ -1887,6 +1893,22 @@ namespace ShopifyApp2.Controllers
                     //    FileContentType = contentType,
                     //    FileData = invalidProducts
                     //};
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
+                    {
+                        string subject = "Detailed And Summarized Report Files";
+                        string body = NoOrdersEmailMessageBody();
+                        Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject);
+                    }
+                    else
+                    {
+                        _log.Error("Email Addresses are Empty");
+                    }
+
+                    _log.Info($"No such orders");
+
                 }
             }
             catch (Exception e)
@@ -2128,35 +2150,75 @@ namespace ShopifyApp2.Controllers
             return body;
         }
 
+        private string NoOrdersEmailMessageBody()
+        {
+            string body = "Hi - <br /><br /> ";
+            body += "No Such Orders To FulFill <br /><br />";
+            body += "Thank you<br />";
+            body += "Gottex";
+
+            return body;
+        }
+
         #endregion
 
         private List<Order> GetReportOrders(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
-            if (dateFrom == default(DateTime)) //Yesterday option (Default)
-            {
-                dateFrom = DateTime.Now.AddDays(-1); // by default
-                dateTo = DateTime.Now.AddDays(-1);
-            }
-            else if (dateTo == default(DateTime)) //Single day option
-            {
-                dateTo = dateFrom.Date;
-            }
-
             // to trim hours and minutes, ...
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
+            ShopifySharp.Filters.OrderFilter filter = new ShopifySharp.Filters.OrderFilter();
+
+            if(dateFrom != default(DateTime) && dateTo == default(DateTime))
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "paid",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    CreatedAtMin = dateFrom,
+                    //CreatedAtMax = dateTo
+                };
+            }
+            else if(dateFrom == default(DateTime) && dateTo != default(DateTime))
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "paid",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    //CreatedAtMin = dateFrom,
+                    CreatedAtMax = dateTo
+                };
+            }
+            else if (dateFrom == default(DateTime) && dateTo == default(DateTime))
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "paid",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    //CreatedAtMin = dateFrom,
+                    //CreatedAtMax = dateTo.AddDays(1)
+                };
+            }
+            else
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "paid",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    CreatedAtMin = dateFrom,
+                    CreatedAtMax = dateTo
+                };
+
+            }
+
+
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
-
-            var filter = new ShopifySharp.Filters.OrderFilter
-            {
-                FinancialStatus = "paid",               
-                Status = "open",
-                FulfillmentStatus = "any",
-                CreatedAtMin = dateFrom,
-                CreatedAtMax = dateTo.AddDays(1)
-            };
 
             var ordersCount = OrderService.CountAsync(filter).Result;
 
@@ -2438,6 +2500,7 @@ namespace ShopifyApp2.Controllers
 
             return body;
         }
+
 
         public FileResult DownloadFile(string fileToDownload, string subFolder)
         {
