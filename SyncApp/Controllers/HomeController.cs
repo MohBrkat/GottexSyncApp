@@ -2189,7 +2189,7 @@ namespace ShopifyApp2.Controllers
                     Status = "open",
                     FulfillmentStatus = "any",
                     //CreatedAtMin = dateFrom,
-                    CreatedAtMax = dateTo
+                    CreatedAtMax = dateTo.AddDays(1)
                 };
             }
             else if (dateFrom == default(DateTime) && dateTo == default(DateTime))
@@ -2211,7 +2211,7 @@ namespace ShopifyApp2.Controllers
                     Status = "open",
                     FulfillmentStatus = "any",
                     CreatedAtMin = dateFrom,
-                    CreatedAtMax = dateTo
+                    CreatedAtMax = dateTo.AddDays(1)
                 };
 
             }
