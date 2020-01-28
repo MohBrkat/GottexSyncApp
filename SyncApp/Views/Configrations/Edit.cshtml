@@ -1,6 +1,6 @@
 ﻿@model SyncApp.Models.EF.Configrations
 
- 
+
 
 <!DOCTYPE html>
 
@@ -11,13 +11,13 @@
 </head>
 <body>
 
-<h4>Configrations</h4>
-<hr />
+    <h4>Configurations </h4>
+    <hr />
 
-        <form action="Edit" method="post">
-            <input type="hidden" asp-for="Id" />
+    <form action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
 
-            @*<div class="column">
+        @*<div class="column">
             <label asp-for="InventoryUpdateHour" class="control-label">Inventory update Hour</label>
             <input asp-for="InventoryUpdateHour" class="form-control" />
         </div>
@@ -25,216 +25,253 @@
             <label asp-for="InventoryUpdateMinute" class="control-label">Inventory update Minute</label>
             <input asp-for="InventoryUpdateMinute" class="form-control" />
         </div>*@
-        
-        <div class="row">
-            <div class="form-group col-sm-6">
 
-                <label asp-for="InventoryUpdateEveryMinute" class="control-label">Inventory Update Frequency in Minutes</label>
-                <input min="1" max="59" asp-for="InventoryUpdateEveryMinute" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="FtpHost" class="control-label">Ftp Host Url</label>
-                <input asp-for="FtpHost" class="form-control" />
-
-            </div>
-
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-                <label asp-for="DailyRecieptsHour" class="control-label">Daily Reciept Export Hour</label>
-                <input asp-for="DailyRecieptsHour" class="form-control" min="0" max="23" />
-            </div>
-            
-            <div class="form-group col-sm-6">
-
-                <label asp-for="FtpUserName" class="control-label">Ftp User Name</label>
-                <input asp-for="FtpUserName" class="form-control" />
-
-            </div>
-
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
-                <input asp-for="DailyRecieptsMinute" class="form-control" min="0" max="59" />
-
-            </div>
-
-            
-            <div class="form-group col-sm-6">
-
-                <label asp-for="FtpPassword" class="control-label">Ftp Password</label>
-                <input asp-for="FtpPassword" class="form-control" />
-
-            </div>
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="DailySalesHour" class="control-label">Daily Sales Export Hour</label>
-                <input asp-for="DailySalesHour" class="form-control" min="0" max="23" />
-
-            </div>
-
-
-            
-            <div class="form-group col-sm-6">
-
-                <label asp-for="FtpPort" class="control-label">Ftp Port</label>
-                <input asp-for="FtpPort" class="form-control" />
-
-            </div>
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
-                <input asp-for="DailySalesMinute" class="form-control" min="0" max="59" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="SmtpHost" class="control-label">Smtp Host</label>
-                <input asp-for="SmtpHost" class="form-control" />
-
-            </div>
-            
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="StoreUrl" class="control-label">Store Url</label>
-                <input asp-for="StoreUrl" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="SmtpPort" class="control-label">Smtp Port</label>
-                <input asp-for="SmtpPort" class="form-control" />
-
-            </div>
-
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="ApiKey" class="control-label">Api Key</label>
-                <input asp-for="ApiKey" class="form-control" />
-
-            </div>
-
-            <div class="form-group col-sm-6">
-
-                <label asp-for="SenderEmail" class="control-label">Sender Email</label>
-                <input readonly asp-for="SenderEmail" class="form-control" />
-
-            </div>
-
-        </div>
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="ApiSecret" class="control-label">Api Secret</label>
-                <input asp-for="ApiSecret" class="form-control" />
-            </div>
-            
-            <div class="form-group col-sm-6">
-
-                <label asp-for="SenderemailPassword" class="control-label">Sender email Password</label>
-                <input readonly asp-for="SenderemailPassword" class="form-control" />
-
-            </div>
-        </div>
-
-
-        <div class="row">
-            <div class="form-group col-sm-6">
-
-                <label asp-for="NotificationEmail" class="control-label">Notification Email</label>
-                <input type="email" asp-for="NotificationEmail" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="DisplayName" class="control-label">Email Display Name</label>
-                <input asp-for="DisplayName" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="WareHouseCode" class="control-label">WareHouse Code</label>
-                <input asp-for="WareHouseCode" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="CustoemrCode" class="control-label">Customer code</label>
-                <input asp-for="CustoemrCode" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="BranchCodeReceipt" class="control-label">Branch Code for Receipts</label>
-                <input asp-for="BranchCodeReceipt" class="form-control" />
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="BranchcodeSalesInvoices" class="control-label">Branch code for Sales Invoices</label>
-                <input asp-for="BranchcodeSalesInvoices" class="form-control" />
-
-            </div>
-
-            <div class="form-group col-sm-6">
-
-                <label asp-for="ReportEmailAddress1" class="control-label">First Daily Report Email Address</label>
-                <input type="email" asp-for="ReportEmailAddress1" class="form-control" required/>
-
-            </div>
-
-            <div class="form-group col-sm-6">
-
-                <label asp-for="ReportEmailAddress2" class="control-label">Second Daily Report Email Address</label>
-                <input type="email" asp-for="ReportEmailAddress2" class="form-control" required/>
-
-            </div>
-            <div class="form-group col-sm-6">
-
-                <label asp-for="DailyReportHour" class="control-label">Daily Report Hour</label>
-                <input asp-for="DailyReportHour" class="form-control" min="0" max="23" required/>
-
-            </div>
-
-            <div class="form-group col-sm-6">
-
-                <label asp-for="DailyReportMinute" class="control-label">Daily Report Minute</label>
-                <input asp-for="DailyReportMinute" class="form-control" min="0" max="59" required/>
-
-            </div>
-        </div>
+        <section id="general-content">
+            <h5>General Configurations </h5>
+            <hr />
+            <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        
-                        <label asp-for="TaxPercentage" class="control-label">Tax Percentage <b>(%)</b></label>
-                            <input asp-for="TaxPercentage" class="form-control" />
-                        
+                        <label asp-for="NotificationEmail" class="control-label">Notification Email</label>
+                        <input type="email" asp-for="NotificationEmail" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="InventoryUpdateEveryMinute" class="control-label">Inventory Update Frequency in Minutes</label>
+                        <input min="1" max="59" asp-for="InventoryUpdateEveryMinute" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="WareHouseCode" class="control-label">WareHouse Code</label>
+                        <input asp-for="WareHouseCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="CustoemrCode" class="control-label">Customer code</label>
+                        <input asp-for="CustoemrCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="BranchCodeReceipt" class="control-label">Branch Code for Receipts</label>
+                        <input asp-for="BranchCodeReceipt" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="BranchcodeSalesInvoices" class="control-label">Branch code for Sales Invoices</label>
+                        <input asp-for="BranchcodeSalesInvoices" class="form-control" />
                     </div>
                 </div>
-                <div class="form-group col-sm-6">
-                    <label asp-for="UseRecurringJob" class="control-label">Use Recurring Job</label>
-                    <input type="checkbox" class="" name="UseRecurringJob" value="true" checked="@Model.UseRecurringJob" />
+            </div>
+        </section>
+
+        <section id="ftp-content">
+            <h5>FTP Configurations </h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="FtpHost" class="control-label">Ftp Host Url</label>
+                        <input asp-for="FtpHost" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="FtpUserName" class="control-label">Ftp User Name</label>
+                        <input asp-for="FtpUserName" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="FtpPassword" class="control-label">Ftp Password</label>
+                        <input asp-for="FtpPassword" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="FtpPort" class="control-label">Ftp Port</label>
+                        <input asp-for="FtpPort" class="form-control" />
+                    </div>
                 </div>
-
-                <div class="form-group col-sm-6">
-                    <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </section>
+        <section id="emailSMTP-content">
+            <h5>Sender Email & SMTP Configurations </h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="SmtpHost" class="control-label">Smtp Host</label>
+                        <input asp-for="SmtpHost" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="SmtpPort" class="control-label">Smtp Port</label>
+                        <input asp-for="SmtpPort" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="SenderEmail" class="control-label">Sender Email</label>
+                        <input readonly asp-for="SenderEmail" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="SenderemailPassword" class="control-label">Sender email Password</label>
+                        <input readonly asp-for="SenderemailPassword" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="DisplayName" class="control-label">Email Display Name</label>
+                        <input asp-for="DisplayName" class="form-control" />
+                    </div>
                 </div>
-            
-</form>
+            </div>
+        </section>
+        <section id="store-content">
+            <h5>Store Configurations</h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="StoreUrl" class="control-label">Store Url</label>
+                        <input asp-for="StoreUrl" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="ApiKey" class="control-label">Api Key</label>
+                        <input asp-for="ApiKey" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="ApiSecret" class="control-label">Api Secret</label>
+                        <input asp-for="ApiSecret" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </section>
 
 
-  
+        <section id="dailyReciept-content">
+            <h5>Daily Reciept Configurations </h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="DailyRecieptsHour" class="control-label">Daily Reciept Export Hour</label>
+                        <input asp-for="DailyRecieptsHour" class="form-control" min="0" max="23" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
+                        <input asp-for="DailyRecieptsMinute" class="form-control" min="0" max="59" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="dailySales-content">
+            <h5>Daily Sales Configurations </h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="DailySalesHour" class="control-label">Daily Sales Export Hour</label>
+                        <input asp-for="DailySalesHour" class="form-control" min="0" max="23" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
+                        <input asp-for="DailySalesMinute" class="form-control" min="0" max="59" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="dailyReport-content">
+            <h5>Daily Report Configurations</h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+
+                        <label asp-for="ReportEmailAddress1" class="control-label">First Daily Report Email Address</label>
+                        <input type="email" asp-for="ReportEmailAddress1" class="form-control" required />
+
+                    </div>
+
+                    <div class="form-group col-sm-6">
+
+                        <label asp-for="ReportEmailAddress2" class="control-label">Second Daily Report Email Address</label>
+                        <input type="email" asp-for="ReportEmailAddress2" class="form-control" required />
+
+                    </div>
+                    <div class="form-group col-sm-6">
+
+                        <label asp-for="DailyReportHour" class="control-label">Daily Report Hour</label>
+                        <input asp-for="DailyReportHour" class="form-control" min="0" max="23" required />
+
+                    </div>
+
+                    <div class="form-group col-sm-6">
+
+                        <label asp-for="DailyReportMinute" class="control-label">Daily Report Minute</label>
+                        <input asp-for="DailyReportMinute" class="form-control" min="0" max="59" required />
+
+                    </div>
+                    <section id="dailyReport-content">
+                        <h6>Daily Report Working Days</h6>
+                        <hr />
+                        <div class="container">
+                            <div class="row">
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Saturday" class="control-label">Saturday</label>
+                                    <input type="checkbox" class="" name="Saturday" value="true" checked="@Model.Saturday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Sunday" class="control-label">Sunday</label>
+                                    <input type="checkbox" class="" name="Sunday" value="true" checked="@Model.Sunday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Monday" class="control-label">Monday</label>
+                                    <input type="checkbox" class="" name="Monday" value="true" checked="@Model.Monday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Tuesday" class="control-label">Tuesday</label>
+                                    <input type="checkbox" class="" name="Tuesday" value="true" checked="@Model.Tuesday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Wednesday" class="control-label">Wednesday</label>
+                                    <input type="checkbox" class="" name="Wednesday" value="true" checked="@Model.Wednesday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Thursday" class="control-label">Thursday</label>
+                                    <input type="checkbox" class="" name="Thursday" value="true" checked="@Model.Thursday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Friday" class="control-label">Friday</label>
+                                    <input type="checkbox" class="" name="Friday" value="true" checked="@Model.Friday" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <section id="tax-content">
+            <h5>Tax Configurations</h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="TaxPercentage" class="control-label">Tax Percentage <b>(%)</b></label>
+                        <input asp-for="TaxPercentage" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="recurring-content">
+            <h5>Recurring Configurations</h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="UseRecurringJob" class="control-label">Use Recurring Job</label>
+                        <input type="checkbox" class="" name="UseRecurringJob" value="true" checked="@Model.UseRecurringJob" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="form-group col-sm-6">
+            <input type="submit" value="Save" class="btn btn-primary" />
+        </div>
+
+    </form>
+
+
+
 </body>
 </html>

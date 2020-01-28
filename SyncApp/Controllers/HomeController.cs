@@ -389,7 +389,7 @@ namespace ShopifyApp2.Controllers
             RecurringJob.AddOrUpdate(() => DoImoportAsync(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
             RecurringJob.AddOrUpdate(() => ExportSales(false, default(DateTime), default(DateTime)), SalesCron, TimeZoneInfo.Local);
             RecurringJob.AddOrUpdate(() => ExportReceipts(false, default(DateTime), default(DateTime)), RecieptsCron, TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportReport(false, default(DateTime), default(DateTime),string.Empty), ReportsCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportReport(false, default(DateTime), default(DateTime), string.Empty), ReportsCron, TimeZoneInfo.Local);
 
 
 
@@ -596,7 +596,7 @@ namespace ShopifyApp2.Controllers
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing "+ info.fileName+" has been satrted.");
+                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
                     var sucess = ImportValidInvenotryUpdatesFromCSV(filerows);
                     // _log.Logger.Repository.Shutdown();
@@ -609,7 +609,7 @@ namespace ShopifyApp2.Controllers
                         importSuccess = true;
                     }
                 }
-              
+
 
                 if (importSuccess)
                 {
@@ -1352,7 +1352,7 @@ namespace ShopifyApp2.Controllers
             var FolderDirectory = "/Data/invoices/";
 
             var path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + FileName;
-            
+
             var ordersGroupedByDate = orders
         .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
         .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
@@ -1367,7 +1367,7 @@ namespace ShopifyApp2.Controllers
                     var InvoiceDate = DayOrders.OrdersDate;
 
                     var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
-                   
+
                     file.WriteLine(
                        "0" +
                        "\t" + _customerCodeWithLeadingSpaces +
@@ -1376,7 +1376,7 @@ namespace ShopifyApp2.Controllers
                        "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
                        "\t" + ShortBranchCodeSales
                        );
-                    
+
                     //var shippingAmount = order.ShippingLines.Sum(a => a.Price);
                     //var TotalWithoutShipping = (order.TotalPrice - shippingAmount);
                     //var TotalWithoutShippingAndTax = TotalWithoutShipping - order.TaxLines.Sum(a => a.Price);
@@ -1396,9 +1396,9 @@ namespace ShopifyApp2.Controllers
 
                             //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
 
-                            decimal ? price;
+                            decimal? price;
                             decimal totalDiscount = 0;
-                            
+
                             //Calculate Discount on single lineItem
                             if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
                             {
@@ -1413,38 +1413,38 @@ namespace ShopifyApp2.Controllers
                             if (orderItem.Taxable == false || order.TaxesIncluded == true)
                                 price /= totalWithVatPercentage;
                             //if (order.FinancialStatus != "paid")
-                            
-
-                                
-                                //var transactions = new TransactionService(StoreUrl, api_secret).ListAsync((long)order.Id).Result.Where(a => a.Kind == "refund").Sum(a => a.Amount);
-
-                                //decimal refundMoney = (decimal)transactions;
-                                //if (shipRefOrder.Transactions != null)
-
-                                //if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
-                                //    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
-
-                                file.WriteLine(
-                                 "1" + "\t" +
-                                 orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
-                                 orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                 price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                 "".InsertLeadingSpaces(4) + "\t" + // agent code
-
-                                 /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
 
 
-                                 discountPercentage.ToString("F") +
-                                 "\t" + "\t" + "\t" +
-                                 order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                 + "\t" +
-                                 order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+
+                            //var transactions = new TransactionService(StoreUrl, api_secret).ListAsync((long)order.Id).Result.Where(a => a.Kind == "refund").Sum(a => a.Amount);
+
+                            //decimal refundMoney = (decimal)transactions;
+                            //if (shipRefOrder.Transactions != null)
+
+                            //if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
+                            //    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
+
+                            file.WriteLine(
+                             "1" + "\t" +
+                             orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                             orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
+                             price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                             "".InsertLeadingSpaces(4) + "\t" + // agent code
+
+                             /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
+
+
+                             discountPercentage.ToString("F") +
+                             "\t" + "\t" + "\t" +
+                             order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                             + "\t" +
+                             order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
                         }
 
 
                         var discountZero = 0;
                         var shipOrder = order;
-                        
+
                         var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
                         //bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
 
@@ -1475,7 +1475,7 @@ namespace ShopifyApp2.Controllers
                                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                                     + "\t" +
                                     order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                            
+
                         }
 
                         // line item discount cannot be percent, percent on overall order by shopify design
@@ -1516,7 +1516,7 @@ namespace ShopifyApp2.Controllers
 
             return FileName;
         }
-        
+
         private void UpdateOrderStatus(List<Order> orders, string fileName, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             foreach (var order in orders)
@@ -1596,13 +1596,13 @@ namespace ShopifyApp2.Controllers
             {
                 if (refunded.Count > 0)
                 {
-                    path = GenerateReceiptFile(lsOfOrders, fromWeb,lsOfTagToBeAdded);
+                    path = GenerateReceiptFile(lsOfOrders, fromWeb, lsOfTagToBeAdded);
                 }
                 else
                 {
                     path = GenerateReceiptFile(lsOfOrders, fromWeb);
                 }
-                
+
                 return View("~/Views/Home/ExportDailyReceipts.cshtml", path);
 
             }
@@ -1614,7 +1614,7 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private string GenerateReceiptFile(List<Order> orders, bool fromWeb,Dictionary<string,List<string>> lsOfTagTobeAdded = null)
+        private string GenerateReceiptFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = ReceiptsFileName.Clone().ToString();
             var FolderDirectory = "/Data/receipts/";
@@ -1646,7 +1646,7 @@ namespace ShopifyApp2.Controllers
                     var priceWithTaxes = order.TotalPrice;
 
                     var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
-                    
+
 
                     var PaymentMeanCode = 0;
                     if (transaction != null)
@@ -1656,10 +1656,10 @@ namespace ShopifyApp2.Controllers
                         PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
                         if (transaction.x_timestamp.IsNotNullOrEmpty())
                         {
-                            
+
                             //var timestamp = DateTime.ParseExact(transaction.x_timestamp, "yyyy-MM-ddThh:mm:ss+00:00", System.Globalization.CultureInfo.InvariantCulture);
                             invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
-                            
+
                         }
                     }
                     else
@@ -1754,11 +1754,11 @@ namespace ShopifyApp2.Controllers
 
                     r = JsonConvert.DeserializeObject<Receipt>(transactions.FirstOrDefault().Receipt.ToString());
 
-                   /*
-                    * x_timestamp which is basically from the payment provider(Payplus) and it's inaccurate and wrong
-                    * (it is in 12h UTC format and without AM or PM !)
-                    * So transaction's created_at DateTime value used instead
-                    */
+                    /*
+                     * x_timestamp which is basically from the payment provider(Payplus) and it's inaccurate and wrong
+                     * (it is in 12h UTC format and without AM or PM !)
+                     * So transaction's created_at DateTime value used instead
+                     */
                     r.x_timestamp = transactions.FirstOrDefault().CreatedAt.ToString();
                 }
             }
@@ -1820,6 +1820,12 @@ namespace ShopifyApp2.Controllers
             FileModel file = new FileModel();
             try
             {
+                bool isWorkingDay = CheckWorkingDays();
+                if (!isWorkingDay && !fromWeb)
+                {
+                    return View("~/Views/Home/ExportDailyReport.cshtml");
+                }
+
                 //Date period Option
                 if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                 {
@@ -1829,9 +1835,9 @@ namespace ShopifyApp2.Controllers
                 else if (dateToRetriveFrom != default(DateTime))
                 {
                     lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
-                
+
                 }
-                else if(dateToRetriveTo != default(DateTime))
+                else if (dateToRetriveTo != default(DateTime))
                 {
                     lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
 
@@ -1917,6 +1923,33 @@ namespace ShopifyApp2.Controllers
             }
 
             return View("~/Views/Home/ExportDailyReport.cshtml", file);
+        }
+
+        private bool CheckWorkingDays()
+        {
+            var culture = new System.Globalization.CultureInfo("en-US");
+            string currentDay = culture.DateTimeFormat.GetDayName(DateTime.Today.DayOfWeek);
+
+            switch (currentDay)
+            {
+                case "Saturday":
+                    return _config.Saturday ?? false;
+                case "Sunday":
+                    return _config.Sunday ?? false;
+                case "Monday":
+                    return _config.Monday ?? false;
+                case "Tuesday":
+                    return _config.Tuesday ?? false;
+                case "Wednesday":
+                    return _config.Wednesday ?? false;
+                case "Thursday":
+                    return _config.Thursday ?? false;
+                case "Friday":
+                    return _config.Friday ?? false;
+                default:
+                    return false;
+
+            }
         }
 
         private byte[] GenerateSummarizedReportFile(List<Order> orders)
@@ -2170,7 +2203,7 @@ namespace ShopifyApp2.Controllers
 
             ShopifySharp.Filters.OrderFilter filter = new ShopifySharp.Filters.OrderFilter();
 
-            if(dateFrom != default(DateTime) && dateTo == default(DateTime))
+            if (dateFrom != default(DateTime) && dateTo == default(DateTime))
             {
                 filter = new ShopifySharp.Filters.OrderFilter
                 {
@@ -2181,7 +2214,7 @@ namespace ShopifyApp2.Controllers
                     //CreatedAtMax = dateTo
                 };
             }
-            else if(dateFrom == default(DateTime) && dateTo != default(DateTime))
+            else if (dateFrom == default(DateTime) && dateTo != default(DateTime))
             {
                 filter = new ShopifySharp.Filters.OrderFilter
                 {
@@ -2252,7 +2285,7 @@ namespace ShopifyApp2.Controllers
                 dateFrom = DateTime.Now.AddDays(-1); // by default
                 dateTo = DateTime.Now.AddDays(-1);
             }
-            else if(dateTo == default(DateTime)) //Single day option
+            else if (dateTo == default(DateTime)) //Single day option
             {
                 dateTo = dateFrom.Date;
             }
@@ -2263,7 +2296,7 @@ namespace ShopifyApp2.Controllers
 
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
-            
+
             var filter = new ShopifySharp.Filters.OrderFilter
             {
                 FinancialStatus = "any",
@@ -2273,7 +2306,7 @@ namespace ShopifyApp2.Controllers
                 CreatedAtMax = dateTo.AddDays(1)//,
                 //Order="asc"
             };
-            
+
             var ordersCount = OrderService.CountAsync(filter).Result;
 
             List<Order> orders = new List<Order>();
@@ -2292,9 +2325,10 @@ namespace ShopifyApp2.Controllers
                     a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
                     // this condtion should be done after this loop
                     // if
-                }catch(ShopifySharp.ShopifyRateLimitException ex)
+                }
+                catch (ShopifySharp.ShopifyRateLimitException ex)
                 {
-                    i--;                    
+                    i--;
                 }
 
             }
@@ -2323,13 +2357,13 @@ namespace ShopifyApp2.Controllers
                 dateFrom = DateTime.Now.AddDays(-1); // by default
                 dateTo = DateTime.Now;
             }
-            else if(dateTo == default(DateTime)) //Single day option
+            else if (dateTo == default(DateTime)) //Single day option
             {
                 dateTo = dateFrom.Date;
             }
 
             // to trim hours and minutes, ...
-            dateFrom = dateFrom.Date; 
+            dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
             // looop , need new logic , [aging , sice id
@@ -2363,7 +2397,7 @@ namespace ShopifyApp2.Controllers
                     i--;
                 }
 
-        }
+            }
             //.Where(a => !a.Tags.Contains("refund-exported"))
             //  orders = orders.Where(a => a.UpdatedAt.GetValueOrDefault().Date == date.Date).ToList();
 
@@ -2378,8 +2412,8 @@ namespace ShopifyApp2.Controllers
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom &&
                 a.CreatedAt.GetValueOrDefault().Date < dateTo.AddDays(1)).ToList();
                 //DateTime momo = orderToReturn.CreatedAt.GetValueOrDefault().Date;
-                
-                
+
+
                 foreach (var refund in targetRefunds)
                 {
                     var orderToReturn = new Order();
@@ -2393,17 +2427,17 @@ namespace ShopifyApp2.Controllers
                     orderToReturn.SubtotalPrice = order.SubtotalPrice;
                     orderToReturn.FinancialStatus = order.FinancialStatus;
                     orderToReturn.ShippingLines = order.ShippingLines;
-                    
+
                     //if (!order.Tags.Contains(refund.Id.ToString()))
                     //{
                     // you have the refund object
                     // not exported refund
                     var refundLineItems = refund.RefundLineItems;
-                    
+
                     List<LineItem> lsOfLineItems = new List<LineItem>();
 
                     lsOfTag.Add(refund.Id.ToString());
-                    
+
                     foreach (var itemRefund in refundLineItems)
                     {
                         lsOfLineItems.Add(new LineItem
@@ -2413,9 +2447,9 @@ namespace ShopifyApp2.Controllers
                             SKU = itemRefund.LineItem.SKU,
                             Taxable = itemRefund.LineItem.Taxable,
                             Id = itemRefund.LineItem.Id,
-                            DiscountAllocations = itemRefund.LineItem.DiscountAllocations,  
-                    });
-                        foreach(var discount in lsOfLineItems.Last().DiscountAllocations)
+                            DiscountAllocations = itemRefund.LineItem.DiscountAllocations,
+                        });
+                        foreach (var discount in lsOfLineItems.Last().DiscountAllocations)
                         {
                             List<LineItem> tt = order.LineItems.Where(a => a.Id == lsOfLineItems.Last().Id).ToList();
                             decimal quantity = (decimal)tt.First().Quantity;
@@ -2423,7 +2457,7 @@ namespace ShopifyApp2.Controllers
                                 + "";
                         }
                     }
-                    
+
                     orderToReturn.CreatedAt = refund.CreatedAt;
 
                     orderToReturn.TaxesIncluded = false;
@@ -2453,7 +2487,7 @@ namespace ShopifyApp2.Controllers
                         orderToReturn.RefundKind = refund.OrderAdjustments.First().Kind;
                     }
 
-                    
+
                     ordersToReturn.Add(orderToReturn);
 
                     //}
@@ -2471,7 +2505,7 @@ namespace ShopifyApp2.Controllers
 
             return ordersToReturn.ToList();
         }
-        
+
         private Order GetSpecificOrder(long id)
         {
             return OrderServiceInstance.GetAsync((long)id).Result;

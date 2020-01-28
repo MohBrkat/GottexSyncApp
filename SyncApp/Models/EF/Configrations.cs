@@ -36,5 +36,12 @@ namespace SyncApp.Models.EF
         public int? DailyReportMinute { get; set; }
         public string ReportEmailAddress1 { get; set; }
         public string ReportEmailAddress2 { get; set; }
+        public bool? Saturday { get; set; }
+        public bool? Sunday { get; set; }
+        public bool? Monday { get; set; }
+        public bool? Tuesday { get; set; }
+        public bool? Wednesday { get; set; }
+        public bool? Thursday { get; set; }
+        public bool? Friday { get; set; }
     }
 }
