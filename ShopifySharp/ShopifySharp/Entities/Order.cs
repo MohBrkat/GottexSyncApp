@@ -11,7 +11,7 @@ namespace ShopifySharp
     /// <summary>
     /// An object representing a Shopify order.
     /// </summary>
-    public partial class Order : ShopifyObject
+    public class Order : ShopifyObject
     {
         [JsonProperty("app_id")]
         /// <summary>

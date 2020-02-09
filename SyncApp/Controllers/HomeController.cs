@@ -1478,6 +1478,28 @@ namespace ShopifyApp2.Controllers
 
                         }
 
+                        if (order.LineItems.Count() == 0)
+                        {
+                            var mQuant = "-1";
+
+                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax());
+                            file.WriteLine(
+                                    "1" + "\t" +
+                                    "925".InsertLeadingSpaces(15) + "\t" +
+                                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                    refundedAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+
+                                    /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
+
+
+                                    discountZero.ToString("F") +
+                                    "\t" + "\t" + "\t" +
+                                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                                    + "\t" +
+                                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                        }
+
                         // line item discount cannot be percent, percent on overall order by shopify design
                         //"".InsertLeadingSpaces(10) + "\t" + // warehouse code always empty
                         //"".InsertLeadingSpaces(10)); // location code always empty 
