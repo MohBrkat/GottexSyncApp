@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using ShopifySharp.Converters;
 
 namespace ShopifySharp
 {
@@ -99,7 +98,6 @@ namespace ShopifySharp
         /// The estimated date of delivery.
         /// </summary>
         [JsonProperty("estimated_delivery_at")]
-        [JsonConverter(typeof(InvalidDateToNullConverter))]
         public DateTimeOffset? EstimatedDeliveryAt { get; set; }
 
         /// <summary>

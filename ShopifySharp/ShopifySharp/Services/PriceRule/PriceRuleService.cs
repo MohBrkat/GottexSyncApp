@@ -1,4 +1,3 @@
-using System;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using ShopifySharp.Filters;
@@ -6,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
-using System;
 
 namespace ShopifySharp
 {
@@ -23,7 +21,6 @@ namespace ShopifySharp
         /// <summary>
         /// Gets a list of up to 250 of the shop's price rules.
         /// </summary>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<PriceRule>> ListAsync(PriceRuleFilter options = null)
         {
             var req = PrepareRequest("price_rules.json");
@@ -39,7 +36,6 @@ namespace ShopifySharp
         /// <summary>
         /// Gets a list of up to 250 of the shop's price rules.
         /// </summary>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<PriceRule>> ListAsync(Dictionary<string, object> options)
         {
             var req = PrepareRequest("price_rules.json");

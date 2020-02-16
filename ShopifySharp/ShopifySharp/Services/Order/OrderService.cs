@@ -1,5 +1,4 @@
-﻿using System;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
@@ -42,7 +41,6 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="options">Options for filtering the list.</param>
         /// <returns>The list of orders matching the filter.</returns>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<Order>> ListAsync(OrderFilter options = null)
         {
             var req = PrepareRequest("orders.json");
@@ -61,7 +59,6 @@ namespace ShopifySharp
         /// <param name="customerId">The id of the customer to list orders for.</param>
         /// <param name="options">Options for filtering the list.</param>
         /// <returns>The list of orders matching the filter.</returns>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<Order>> ListForCustomerAsync(long customerId, OrderFilter options = null)
         {
             var req = PrepareRequest("orders.json");

@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace ShopifySharp
 {
-    internal static class ObjectExtensions
+    public static class ObjectExtensions
     {
         /// <summary>
         /// Converts the object to a dictionary./>

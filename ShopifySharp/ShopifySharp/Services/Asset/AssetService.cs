@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Http;
-using System;
 using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
@@ -47,7 +46,6 @@ namespace ShopifySharp
         /// <param name="themeId">The id of the theme that the asset belongs to.</param>
         /// <param name="fields">A comma-separated list of fields to return.</param>
         /// <returns>The list of <see cref="Asset"/> objects.</returns>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<Asset>> ListAsync(long themeId, string fields = null)
         {
             var req = PrepareRequest($"themes/{themeId}/assets.json");

@@ -4,7 +4,6 @@ using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
-using System;
 
 namespace ShopifySharp
 {
@@ -48,7 +47,6 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="filter">Options for filtering the list.</param>
         /// <returns>The list of webhooks matching the filter.</returns>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<Webhook>> ListAsync(WebhookFilter filter = null)
         {
             var req = PrepareRequest("webhooks.json");

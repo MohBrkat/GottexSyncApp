@@ -1,5 +1,4 @@
-﻿using System;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
@@ -52,7 +51,6 @@ namespace ShopifySharp
         /// <remarks>
         /// Unlike most list commands, this one only accepts the since_id and fields filters.
         /// </remarks>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<ProductImage>> ListAsync(long productId, long? sinceId = null, string fields = null)
         {
             var req = PrepareRequest($"products/{productId}/images.json");

@@ -1,5 +1,4 @@
-﻿using System;
-using ShopifySharp.Infrastructure;
+﻿using ShopifySharp.Infrastructure;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -22,7 +21,6 @@ namespace ShopifySharp
         /// Gets a list of all past and present application credits.
         /// </summary>
         /// <param name="fields">A comma-separated list of fields to include in the response.</param>
-        [Obsolete("This ListAsync method targets a version of Shopify's API which will be deprecated and cease to function in April of 2020. ShopifySharp version 5.0 will be published soon with support for the newer list API. Make sure you update before April of 2020.")]
         public virtual async Task<IEnumerable<ApplicationCredit>> ListAsync(string fields = null)
         {
             var req = PrepareRequest($"application_credits.json");

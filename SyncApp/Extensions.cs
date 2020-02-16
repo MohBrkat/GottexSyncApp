@@ -54,11 +54,6 @@ namespace ShopifyApp2
             return value.GetValueOrDefault() / ((taxPercentage / 100) + 1);
         }
 
-        public static decimal ValueWithoutTax(this decimal value, decimal taxPercentage = 17)
-        {
-            return value / ((taxPercentage / 100) + 1);
-        }
-
     }
     public static class ConfigurationManager
     {
