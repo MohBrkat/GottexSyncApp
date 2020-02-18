@@ -1478,7 +1478,7 @@ namespace ShopifyApp2.Controllers
 
                         }
 
-                        if (order.LineItems.Count() == 0)
+                        if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund")
                         {
                             var mQuant = "-1";
 
