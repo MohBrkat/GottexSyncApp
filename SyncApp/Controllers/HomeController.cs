@@ -19,6 +19,7 @@ using SyncApp.Filters;
 using System.Text;
 using SyncApp.ViewModel;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace ShopifyApp2.Controllers
 {
@@ -387,9 +388,9 @@ namespace ShopifyApp2.Controllers
 
             var minutes = InventoryImportEveryMinute == 0 ? 30 : InventoryImportEveryMinute;
             RecurringJob.AddOrUpdate(() => DoImoportAsync(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportSales(false, default(DateTime), default(DateTime)), SalesCron, TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportReceipts(false, default(DateTime), default(DateTime)), RecieptsCron, TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportReport(false, default(DateTime), default(DateTime), string.Empty), ReportsCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportSalesAsync(false, default(DateTime), default(DateTime)), SalesCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportReceiptsAsync(false, default(DateTime), default(DateTime)), RecieptsCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportReportAsync(false, default(DateTime), default(DateTime), string.Empty), ReportsCron, TimeZoneInfo.Local);
 
 
 
@@ -401,171 +402,6 @@ namespace ShopifyApp2.Controllers
 
         }
 
-        //#region using HangFire
-        //public void iniateImport()
-        //{
-        //    var schedule = importSchedule;
-        //    DateTime dateNow = DateTime.Now;
-        //    DateTime date = new DateTime(dateNow.Year, dateNow.Month, dateNow.Day, importHour, importMinute, 0);
-        //    switch (schedule)
-        //    {
-        //        case "hourly":
-        //            BackgroundJob.Schedule(() => this.DoImoportAsync(), date.AddHours(1));
-        //            DoImoportAsync();
-        //            break;
-        //        case "daily":
-        //            BackgroundJob.Schedule(() => this.DoImoportAsync(), date.AddDays(1));
-        //            DoImoportAsync();
-        //            break;
-        //        case "minutly":
-        //            BackgroundJob.Schedule(() => this.DoImoportAsync(), date.AddMinutes(1));
-        //            DoImoportAsync();
-        //            break;
-        //        default:
-        //            BackgroundJob.Schedule(() => this.DoImoportAsync(), date.AddDays(1));
-        //            DoImoportAsync();
-        //            break;
-        //    }
-        //}
-
-        //public void iniateExportRecipt()
-        //{
-        //    var schedule = exportReciptSchedule;
-        //    DateTime dateNow = DateTime.Now;
-        //    DateTime date = new DateTime(dateNow.Year, dateNow.Month, dateNow.Day, exportReciptHour, exportReciptMinute, 0);
-        //    switch (schedule)
-        //    {
-        //        case "hourly":
-        //            BackgroundJob.Schedule(() => this.ExportReceipts(), date.AddHours(1));
-        //            ExportReceipts();
-        //            break;
-        //        case "daily":
-        //            BackgroundJob.Schedule(() => this.ExportReceipts(), date.AddDays(1));
-        //            ExportReceipts();
-        //            break;
-        //        case "minutly":
-        //            BackgroundJob.Schedule(() => this.ExportReceipts(), date.AddMinutes(1));
-        //            ExportReceipts();
-        //            break;
-        //        default:
-        //            BackgroundJob.Schedule(() => this.ExportReceipts(), date.AddDays(1));
-        //            ExportReceipts();
-        //            break;
-        //    }
-        //}
-
-        //public void iniateExportSales()
-        //{
-        //    var schedule = exportSalesSchedule;
-        //    DateTime dateNow = DateTime.Now;
-        //    DateTime date = new DateTime(dateNow.Year, dateNow.Month, dateNow.Day, exportSalesHour, exportSalesMinute, 0);
-        //    switch (schedule)
-        //    {
-        //        case "hourly":
-        //            BackgroundJob.Schedule(() => this.ExportSales(), date.AddHours(1));
-        //            ExportSales();
-        //            break;
-        //        case "daily":
-        //            BackgroundJob.Schedule(() => this.ExportSales(), date.AddDays(1));
-        //            ExportSales();
-        //            break;
-        //        case "minutly":
-        //            BackgroundJob.Schedule(() => this.ExportSales(), date.AddMinutes(1));
-        //            ExportSales();
-        //            break;
-        //        default:
-        //            BackgroundJob.Schedule(() => this.ExportSales(), date.AddDays(1));
-        //            ExportSales();
-        //            break;
-        //    }
-        //}
-        //#endregion
-
-        //#region using Task
-        //public void startProcess(string operation)
-        //{
-        //    //retrieve hour and minute from the form
-        //    //create next date which we need in order to run the code
-        //    var dateNow = DateTime.Now;
-        //    int hour = dateNow.Hour;
-        //    int minutes = dateNow.Minute;
-
-        //    string operationName = string.Empty;
-        //    string schedule = string.Empty;
-        //    switch (operation)
-        //    {
-        //        case "Import":
-        //            hour = importHour;
-        //            minutes = importMinute;
-        //            operationName = "DoImoportAsync";
-        //            schedule = importSchedule.Trim().ToLower();
-        //            break;
-        //        case "Recipt":
-        //            hour = exportReciptHour;
-        //            minutes = exportReciptMinute;
-        //            operationName = "ExportReceipts";
-        //            schedule = exportReciptSchedule.Trim().ToLower();
-        //            break;
-        //        case "Sales":
-        //            hour = exportSalesHour;
-        //            minutes = exportSalesMinute;
-        //            operationName = "ExportSales";
-        //            schedule = exportSalesSchedule.Trim().ToLower();
-        //            break;
-        //        default:
-        //            hour = DateTime.Now.Hour;
-        //            minutes = DateTime.Now.Minute;
-        //            schedule = "daily";
-        //            break;                   
-        //    }
-
-        //    var date = new DateTime(dateNow.Year, dateNow.Month, dateNow.Day, hour, minutes, 0);
-
-        //    runCodeAt(GetNextDate(date,schedule),operationName,schedule);
-
-        //}
-
-        //public DateTime GetNextDate(DateTime date,string schedule)
-        //{
-        //    switch (schedule)
-        //    {
-        //        case "hourly":
-        //            return DateTime.Now.AddHours(1);
-        //        case "daily":
-        //            return date.AddDays(1);
-        //        default:
-        //            return date.AddDays(1);
-        //    }
-        //}
-
-        //private void runCodeAt(DateTime date,string operation,string schedule)
-        //{
-        //    CancellationTokenSource m_ctSource = new CancellationTokenSource();
-
-        //    var dateNow = DateTime.Now;
-        //    TimeSpan ts;
-        //    if (date >= dateNow)
-        //        ts = date - dateNow;
-        //    else
-        //    {
-        //        date = GetNextDate(date,schedule);
-        //        ts = date - dateNow;
-        //    }
-        //    MethodInfo operationMethod = this.GetType().GetMethod(operation);
-        //    //waits certan time and run the code, in meantime you can cancel the task at anty time
-        //    Task.Delay(ts.Duration()).ContinueWith((x) =>
-        //    {
-        //        //run the code at the time
-        //        operationMethod.Invoke(this, null);
-        //        //setup call next day
-        //        runCodeAt(GetNextDate(date,schedule),operation,schedule);
-
-        //    }, m_ctSource.Token);
-        //}
-        //#endregion
-
-
-
         #region Import Inventory CSV
         public ActionResult ImportInventoryUpdatesFromCSV()
         {
@@ -575,17 +411,12 @@ namespace ShopifyApp2.Controllers
         #region Import from FTP
         [DisableConcurrentExecution(120)]
 
-        public void DoImoportAsync()
+        public async Task DoImoportAsync()
         {
 
             bool importSuccess = false;
 
-            List<string> filerows = new List<string>();
-            List<string> lsOfErrors = new List<string>();
-
-
-            FileInformation info = ValidateInventoryUpdatesFromCSV(out filerows, out lsOfErrors);
-
+            FileInformation info = await ValidateInventoryUpdatesFromCSVAsync();
 
             if (info != null && !string.IsNullOrEmpty(info.fileName))
             {
@@ -598,7 +429,7 @@ namespace ShopifyApp2.Controllers
                 {
                     Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
-                    var sucess = ImportValidInvenotryUpdatesFromCSV(filerows);
+                    var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info.fileRows);
                     // _log.Logger.Repository.Shutdown();
                     if (!sucess)
                     {
@@ -626,7 +457,7 @@ namespace ShopifyApp2.Controllers
                 }
                 else
                 {
-                    var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, lsOfErrors.ToArray()));
+                    var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
                     //  FtpHandler.UploadFile(info.fileName + ".log", logFile, host, "shopify/out", userName, password);
                     FtpHandler.DeleteFile(info.fileName, host, "/out", userName, password);
 
@@ -649,14 +480,185 @@ namespace ShopifyApp2.Controllers
         }
 
 
-        public FileInformation ValidateInventoryUpdatesFromCSV(out List<string> fileRows, out List<string> lsOfErrorsToReturn)
+        // public FileInformation ValidateInventoryUpdatesFromCSV(out List<string> fileRows, out List<string> lsOfErrorsToReturn)
+        // {
+
+        //     List<string> LsOfSuccess = new List<string>();
+        //     List<string> LsOfErrors = new List<string>();
+
+        //     fileRows = new List<string>();
+
+
+        //     FileInformation info = new FileInformation();
+        //     bool validFile = false;
+
+        //     info.fileName = "";
+
+        //     try
+        //     {
+        //         //LsOfSuccess.Add("Start validating the file");
+        //         //LsOfErrors.Add("Start validating the file");
+
+        //         //To DO get from ftp
+
+
+        //         // var expectedFileName = "inventory-update-" + DateTime.Now.ToString("yyMMdd") + ".dat";
+
+        //         var fileName = "";
+        //         var fileContent = FtpHandler.ReadLatestFileFromFtp(host, userName, password, "/Out", out fileName);
+
+        //         // var fileContent = FtpHandler.DwonloadFile(expectedFileName, host, "shopify/Out", userName, password);
+
+        //         //string fileContent = Utility.GetFileContentIfExists(host, userName, password, "", out reallFileName);
+
+        //         info.fileName = fileName;
+
+        //         if (!string.IsNullOrEmpty(fileContent))
+        //         {
+
+        //             var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
+
+        //             var ProductServices = new ProductService(StoreUrl, api_secret);
+        //             var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
+
+        //             var Headers = Rows[0];
+        //             if (IsValidHeaders(Headers))
+        //             {
+        //                 Rows = Rows.Last().Equals("") ? Rows.SkipLast(1).ToArray() : Rows;
+        //                 Rows = Rows.Last().Contains("\0") ? Rows.SkipLast(1).ToArray() : Rows;
+
+        //                 Rows = Rows.Skip(1).ToArray();// skip headers
+
+        //                 fileRows = Rows.ToList();
+
+        //                 int rowIndex = 1;
+
+        //                 foreach (var row in Rows)
+        //                 {
+
+        //                     try
+        //                     {
+        //                         if (row.IsNotNullOrEmpty() && IsValidRow(row))
+        //                         {
+        //                             var splittedRow = row.Split(',');
+        //                             string Handle = splittedRow[0];
+        //                             string Sku = splittedRow[1];
+        //                             string Method = splittedRow[2];
+        //                             string Quantity = splittedRow[3];
+
+        //                             //string webRootPath = _hostingEnvironment.WebRootPath;
+        //                             //var api_secret = System.IO.File.ReadAllText(webRootPath + "/token.txt");
+        //                             var Products = ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle }).Result;
+        //                             var ProductObj = Products.FirstOrDefault();
+
+        //                             if (ProductObj == null)
+        //                             {
+        //                                 throw new Exception(string.Format("Product {0} not exists.", Handle, rowIndex));
+        //                             }
+        //                             var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
+        //                             if (VariantObj == null)
+        //                             {
+        //                                 throw new Exception(string.Format("Variant {0} not exists.", Sku, rowIndex));
+        //                             }
+        //                             if (Method.ToLower().Trim() == "set")
+        //                             {
+        //                                 LsOfSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "will be updated"));
+        //                             }
+        //                             else
+        //                             if (Method.ToLower().Trim() == "in")
+        //                             {
+        //                                 LsOfSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "will be updated"));
+        //                             }
+        //                             else
+        //                             if (Method.ToLower().Trim() == "out")
+        //                             {
+        //                                 LsOfSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "will be updated"));
+        //                             }
+        //                             else
+        //                             {
+        //                                 throw new Exception(string.Format("Method {0} not defined.", Method, rowIndex));
+        //                             }
+        //                             Thread.Sleep(500);
+        //                         }
+        //                         else
+        //                         {
+        //                             throw new Exception(string.Format("Empty or invalid row.", rowIndex));
+        //                         }
+        //                     }
+        //                     catch (Exception ex)
+        //                     {
+
+        //                         LsOfErrors.Add("error occured in the row# " + rowIndex + " : " + ex.Message);
+        //                     }
+        //                     rowIndex++;
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 LsOfErrors.Add("Invalid csv file! ");
+        //             }
+
+        //             if (LsOfErrors != null && LsOfErrors.Count == 0)
+        //             {
+        //                 LsOfSuccess.Add("Validating Success");
+        //                 validFile = true;
+        //             }
+        //             else
+        //             {
+        //                 LsOfErrors.Add("Validating completed with errors");
+        //                 validFile = false;
+        //             }
+        //         }
+
+
+        //         else
+        //         {
+        //             throw new Exception(string.Format("File was empty or not found"));
+        //         }
+
+        //     }
+        //     catch (System.Net.WebException ex)
+        //     {
+
+        //         //LsOfErrors.Add("File or ftp server not found " + ex.Message);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         LsOfErrors.Clear();
+        //         LsOfSuccess.Clear();
+
+        //         LsOfErrors.Add("Error While Validating The File : " + ex.Message);
+
+        //         //return Ok(new { valid = false, Error = ex.Message });
+        //     }
+
+        //     //foreach (var ls in LsOfSuccess)
+        //     //{
+        //     // _log.Info("Success : " + ls);
+        //     //}
+        //     if (LsOfErrors.Count > 0)
+        //     {
+        //         LsOfErrors.Insert(0, info.fileName);
+        //     }
+
+        //     foreach (var ls in LsOfErrors)
+        //     {
+        //         _log.Error(ls);
+        //     }
+
+        //     info.lsErrorCount = LsOfErrors.Count();
+        //     info.isValid = validFile;
+        //     lsOfErrorsToReturn = LsOfErrors;
+        //     return info;
+        // }
+
+        public async Task<FileInformation> ValidateInventoryUpdatesFromCSVAsync()
         {
 
             List<string> LsOfSuccess = new List<string>();
             List<string> LsOfErrors = new List<string>();
 
-            fileRows = new List<string>();
-
+            List<string> fileRows = new List<string>();
 
             FileInformation info = new FileInformation();
             bool validFile = false;
@@ -717,7 +719,7 @@ namespace ShopifyApp2.Controllers
 
                                     //string webRootPath = _hostingEnvironment.WebRootPath;
                                     //var api_secret = System.IO.File.ReadAllText(webRootPath + "/token.txt");
-                                    var Products = ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle }).Result;
+                                    var Products = await ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle });
                                     var ProductObj = Products.FirstOrDefault();
 
                                     if (ProductObj == null)
@@ -815,12 +817,12 @@ namespace ShopifyApp2.Controllers
                 _log.Error(ls);
             }
 
+            info.fileRows = fileRows;
             info.lsErrorCount = LsOfErrors.Count();
             info.isValid = validFile;
-            lsOfErrorsToReturn = LsOfErrors;
+            info.LsOfErrors = LsOfErrors;
             return info;
         }
-
 
         private int ImportValidInvenotryUpdatesFromCSV(string FileName)
         {
@@ -908,7 +910,7 @@ namespace ShopifyApp2.Controllers
             return LsOfErrors.Count;
         }
 
-        private bool ImportValidInvenotryUpdatesFromCSV(List<string> RowsWithoutHeader)
+        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(List<string> RowsWithoutHeader)
         {
             try
             {
@@ -930,7 +932,7 @@ namespace ShopifyApp2.Controllers
                     string Quantity = splittedRow[3];
 
 
-                    var Products = ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle }).Result;
+                    var Products = await ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle });
 
                     var ProductObj = Products.FirstOrDefault();
 
@@ -941,7 +943,7 @@ namespace ShopifyApp2.Controllers
                     var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
 
-                    var LocationQuery = InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelFilter { InventoryItemIds = InventoryItemIds }).Result;
+                    var LocationQuery = await InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelFilter { InventoryItemIds = InventoryItemIds });
 
                     var LocationId = LocationQuery.FirstOrDefault().LocationId;
 
@@ -949,19 +951,19 @@ namespace ShopifyApp2.Controllers
 
                     if (Method.ToLower().Trim() == "set")
                     {
-                        var Result = InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) }).Result;
+                        var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
 
                     }
 
                     else if (Method.ToLower().Trim() == "in")
                     {
-                        var Result = InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) }).Result;
+                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
 
                     }
 
                     else if (Method.ToLower().Trim() == "out")
                     {
-                        var Result = InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 }).Result;
+                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
                     }
                     _log.Info("the handle : " + Handle + "--" + "processed");
 
@@ -983,11 +985,11 @@ namespace ShopifyApp2.Controllers
         #region Import using the website
 
         [HttpPost]
-        public IActionResult ImportInventoryUpdatesFromCSV(IFormFile File)
+        public async Task<IActionResult> ImportInventoryUpdatesFromCSVAsync(IFormFile File)
         {
             bool importSuccess = false;
             //Utility.removeManualLogs("inventory-update-" + DateTime.Today.ToString("yyMMdd"), "Logs/");
-            FileInformation info = ValidateInventoryUpdatesFromCSV(File);
+            FileInformation info = await ValidateInventoryUpdatesFromCSVAsync(File);
             var fileName = Path.GetFileNameWithoutExtension(File.FileName);
             string subject = fileName + " Import Status";
 
@@ -995,7 +997,7 @@ namespace ShopifyApp2.Controllers
             {
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    var errorCount = ImportValidInvenotryUpdatesFromCSV(File);
+                    var errorCount = await ImportValidInvenotryUpdatesFromCSVAsync(File);
                     {
                         if (errorCount > 0)
                         {
@@ -1067,7 +1069,7 @@ namespace ShopifyApp2.Controllers
 
         }
 
-        public FileInformation ValidateInventoryUpdatesFromCSV(IFormFile File)
+        public async Task<FileInformation> ValidateInventoryUpdatesFromCSVAsync(IFormFile File)
         {
             FileInformation info = new FileInformation();
             bool validFile = false;
@@ -1102,7 +1104,7 @@ namespace ShopifyApp2.Controllers
                                     //string webRootPath = _hostingEnvironment.WebRootPath;
                                     //var api_secret = System.IO.File.ReadAllText(webRootPath + "/token.txt");
 
-                                    var Products = ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle }).Result;
+                                    var Products = await ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle });
                                     var ProductObj = Products.FirstOrDefault();
 
                                     if (ProductObj == null)
@@ -1179,7 +1181,7 @@ namespace ShopifyApp2.Controllers
             return info;
         }
 
-        private int ImportValidInvenotryUpdatesFromCSV(IFormFile File)
+        private async Task<int> ImportValidInvenotryUpdatesFromCSVAsync(IFormFile File)
         {
             //List<string> LsOfErrors = new List<string>();
             //List<string> LsOfSuccess = new List<string>();
@@ -1202,7 +1204,7 @@ namespace ShopifyApp2.Controllers
                         string Method = splittedRow[2];
                         string Quantity = splittedRow[3];
 
-                        var Products = ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle }).Result;
+                        var Products = await ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle });
                         var ProductObj = Products.FirstOrDefault();
 
                         var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
@@ -1211,7 +1213,7 @@ namespace ShopifyApp2.Controllers
 
                         var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
-                        var LocationQuery = InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelFilter { InventoryItemIds = InventoryItemIds }).Result;
+                        var LocationQuery = await InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelFilter { InventoryItemIds = InventoryItemIds });
 
                         var LocationId = LocationQuery.FirstOrDefault().LocationId;
 
@@ -1219,21 +1221,21 @@ namespace ShopifyApp2.Controllers
 
                         if (Method.ToLower().Trim() == "set")
                         {
-                            var Result = InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) }).Result;
+                            var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
                             LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
 
                         }
                         else
                         if (Method.ToLower().Trim() == "in")
                         {
-                            var Result = InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) }).Result;
+                            var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
                             LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
 
                         }
                         else
                         if (Method.ToLower().Trim() == "out")
                         {
-                            var Result = InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 }).Result;
+                            var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
                             LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
 
                         }
@@ -1293,7 +1295,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public ActionResult ExportSales(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
+        public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
             , DateTime dateToRetriveTo = default(DateTime))
         {
             List<Order> lsOfOrders = new List<Order>();
@@ -1301,39 +1303,41 @@ namespace ShopifyApp2.Controllers
             //Date period option
             if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
             {
-                lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = await GetNotExportedOrdersAsync("invoices", dateToRetriveFrom, dateToRetriveTo);
             }
             //Single day option
             else if (dateToRetriveFrom != default(DateTime))
             {
-                lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom);
+                lsOfOrders = await GetNotExportedOrdersAsync("invoices", dateToRetriveFrom);
             }
             //Yesterday option (Default)
             else
             {
-                lsOfOrders = GetNotExportedOrders("invoices");
+                lsOfOrders = await GetNotExportedOrdersAsync("invoices");
             }
 
             Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
 
-            var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetriveFrom, dateToRetriveTo);
+            var refunded = await GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
 
-            if (refunded.Count > 0)
+            lsOfTagToBeAdded = refunded?.lslsOfTagsToBeAdded;
+
+            if (refunded?.Orders.Count > 0)
             {
-                lsOfOrders.AddRange(refunded);
+                lsOfOrders.AddRange(refunded?.Orders);
             }
 
             lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
             string path = string.Empty;
             if (lsOfOrders.Count() > 0)
             {
-                if (refunded.Count > 0)
+                if (refunded?.Orders.Count > 0)
                 {
-                    path = GenerateSalesFile(lsOfOrders, fromWeb, lsOfTagToBeAdded);
+                    path = await GenerateSalesFileAsync(lsOfOrders, fromWeb, lsOfTagToBeAdded);
                 }
                 else
                 {
-                    path = GenerateSalesFile(lsOfOrders, fromWeb);
+                    path = await GenerateSalesFileAsync(lsOfOrders, fromWeb);
                 }
                 return View("~/Views/Home/ExportDailySales.cshtml", path);
 
@@ -1346,7 +1350,7 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private string GenerateSalesFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
+        private async Task<string> GenerateSalesFileAsync(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = InvoiceFileName.Clone().ToString();
             var FolderDirectory = "/Data/invoices/";
@@ -1526,7 +1530,7 @@ namespace ShopifyApp2.Controllers
                     _log.Info(FileName + "[sales] Uploaded sucesfully - the time is : " + DateTime.Now);
                 }
 
-                UpdateOrderStatus(orders, FileName, lsOfTagTobeAdded);
+                //await UpdateOrderStatusAsync(orders, FileName, lsOfTagTobeAdded);
             }
             else
             {
@@ -1539,7 +1543,7 @@ namespace ShopifyApp2.Controllers
             return FileName;
         }
 
-        private void UpdateOrderStatus(List<Order> orders, string fileName, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
+        private async Task UpdateOrderStatusAsync(List<Order> orders, string fileName, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             foreach (var order in orders)
             {
@@ -1548,14 +1552,13 @@ namespace ShopifyApp2.Controllers
                 {
                     //order.Tags = order.Tags.IsNotNullOrEmpty() ? string.Format(order.Tags + "," + "{0}-{1}", prefix, fileName) : string.Format("{0}-{1}", prefix, fileName);
                     order.Tags = order.Tags.IsNotNullOrEmpty() ? string.Format(order.Tags + "," + "{0}", fileName) : string.Format("{0}", fileName);
-                    OrderServiceInstance.UpdateAsync(order.Id.GetValueOrDefault(), order);
+                    await OrderServiceInstance.UpdateAsync(order.Id.GetValueOrDefault(), order);
                 }
                 else
                 {
 
                     order.Tags = order.Tags.IsNotNullOrEmpty() ? string.Format(order.Tags + "," + "{0}", lsOfTagTobeAdded[order.Id.ToString()].ToOneString()) : lsOfTagTobeAdded[order.Id.ToString()].ToOneString();
-
-                    OrderServiceInstance.UpdateAsync(order.Id.GetValueOrDefault(), order);
+                    await OrderServiceInstance.UpdateAsync(order.Id.GetValueOrDefault(), order);
                 }
             }
         }
@@ -1582,7 +1585,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public ActionResult ExportReceipts(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
+        public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
             , DateTime dateToRetriveTo = default(DateTime))
         {
             List<Order> lsOfOrders = new List<Order>();
@@ -1590,39 +1593,41 @@ namespace ShopifyApp2.Controllers
             //Date period Option
             if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
             {
-                lsOfOrders = GetNotExportedOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = await GetNotExportedOrdersAsync("receipts", dateToRetriveFrom, dateToRetriveTo);
             }
             //Single day Option
             else if (dateToRetriveFrom != default(DateTime))
             {
-                lsOfOrders = GetNotExportedOrders("receipts", dateToRetriveFrom);
+                lsOfOrders = await GetNotExportedOrdersAsync("receipts", dateToRetriveFrom);
             }
             //Yesterday Option (Default)
             else
             {
-                lsOfOrders = GetNotExportedOrders("receipts");
+                lsOfOrders = await GetNotExportedOrdersAsync("receipts");
             }
 
             Dictionary<string, List<string>> lsOfTagToBeAdded = new Dictionary<string, List<string>>();
 
-            var refunded = GetRefundedOrders(out lsOfTagToBeAdded, dateToRetriveFrom, dateToRetriveTo);
+            var refunded = await GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
 
-            if (refunded.Count > 0)
+            lsOfTagToBeAdded = refunded?.lslsOfTagsToBeAdded;
+
+            if (refunded?.Orders.Count > 0)
             {
-                lsOfOrders.AddRange(refunded);
+                lsOfOrders.AddRange(refunded?.Orders);
             }
 
             lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
             string path = string.Empty;
             if (lsOfOrders.Count() > 0)
             {
-                if (refunded.Count > 0)
+                if (refunded?.Orders.Count > 0)
                 {
-                    path = GenerateReceiptFile(lsOfOrders, fromWeb, lsOfTagToBeAdded);
+                    path = await GenerateReceiptFileAsync(lsOfOrders, fromWeb, lsOfTagToBeAdded);
                 }
                 else
                 {
-                    path = GenerateReceiptFile(lsOfOrders, fromWeb);
+                    path = await GenerateReceiptFileAsync(lsOfOrders, fromWeb);
                 }
 
                 return View("~/Views/Home/ExportDailyReceipts.cshtml", path);
@@ -1636,7 +1641,7 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private string GenerateReceiptFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
+        private async Task<string> GenerateReceiptFileAsync(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = ReceiptsFileName.Clone().ToString();
             var FolderDirectory = "/Data/receipts/";
@@ -1649,9 +1654,9 @@ namespace ShopifyApp2.Controllers
                 {
                     //Transactions
 
-                    var transaction = GetTransactionByOrder(order);
+                    var transaction = await GetTransactionByOrderAsync(order);
 
-
+                    await Task.Delay(2000);
 
 
                     //if (transaction != null)
@@ -1743,7 +1748,7 @@ namespace ShopifyApp2.Controllers
                 {
                     _log.Info(FileName + "[receipts] Uploaded sucesfully - the time is : " + DateTime.Now);
                 }
-                UpdateOrderStatus(orders, FileName, lsOfTagTobeAdded);
+                //await UpdateOrderStatusAsync(orders, FileName, lsOfTagTobeAdded);
             }
             else
             {
@@ -1764,13 +1769,13 @@ namespace ShopifyApp2.Controllers
         //    return transactions.FirstOrDefault();
         //}
 
-        private Receipt GetTransactionByOrder(Order order)
+        private async Task<Receipt> GetTransactionByOrderAsync(Order order)
         {
             Receipt r = null;
             if (order.RefundKind == "no_refund" || !order.Transactions.Any())
             {
                 var service = new TransactionService(StoreUrl, api_secret);
-                var transactions = service.ListAsync((long)order.Id).Result;
+                var transactions = await service.ListAsync((long)order.Id);
                 if (transactions.FirstOrDefault() != null)
                 {
 
@@ -1836,7 +1841,7 @@ namespace ShopifyApp2.Controllers
             return View();
         }
 
-        public ActionResult ExportReport(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, string reportType = "")
+        public async Task<ActionResult> ExportReportAsync(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, string reportType = "")
         {
             List<Order> lsOfOrders = new List<Order>();
             FileModel file = new FileModel();
@@ -1877,10 +1882,10 @@ namespace ShopifyApp2.Controllers
                     var contentType = "application/octet-stream";
                     string extension = "xlsx";
 
-                    byte[] detailedFile = GenerateDetailedReportFile(lsOfOrders);
+                    byte[] detailedFile = await GenerateDetailedReportFileAsync(lsOfOrders);
                     string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
-                    byte[] summarizedFile = GenerateSummarizedReportFile(lsOfOrders);
+                    byte[] summarizedFile = await GenerateSummarizedReportFileAsync(lsOfOrders);
                     string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
                     //Get Products with Invalid Barcode
@@ -1974,9 +1979,9 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private byte[] GenerateSummarizedReportFile(List<Order> orders)
+        private async Task<byte[]> GenerateSummarizedReportFileAsync(List<Order> orders)
         {
-            var productsList = GetProducts();
+            var productsList = await GetProductsAsync();
             List<LineItem> lineItems = new List<LineItem>();
             List<SummarizedAutomaticReportModel> summarizedAutomaticReport = new List<SummarizedAutomaticReportModel>();
 
@@ -2045,9 +2050,9 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private byte[] GenerateDetailedReportFile(List<Order> orders)
+        private async Task<byte[]> GenerateDetailedReportFileAsync(List<Order> orders)
         {
-            var productsList = GetProducts();
+            var productsList = await GetProductsAsync();
 
             List<DetailedAutomaticReportModel> detailedAutomaticReport = new List<DetailedAutomaticReportModel>();
             foreach (var order in orders)
@@ -2109,9 +2114,9 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private byte[] GenerateProductsReportFile(List<Order> orders)
+        private async Task<byte[]> GenerateProductsReportFileAsync(List<Order> orders)
         {
-            var productsList = GetProducts();
+            var productsList = await GetProductsAsync();
             List<InvalidProducts> productVariants = new List<InvalidProducts>();
 
             foreach (var prod in productsList)
@@ -2162,7 +2167,7 @@ namespace ShopifyApp2.Controllers
             return File(System.Convert.FromBase64String(fileData), contentType, fileName);
         }
 
-        public List<Product> GetProducts()
+        public async Task<List<Product>> GetProductsAsync()
         {
             var productServices = new ProductService(StoreUrl, api_secret);
 
@@ -2172,7 +2177,7 @@ namespace ShopifyApp2.Controllers
                 Fields = "id,handle,vendor,Variants"
             };
 
-            var productsCount = productServices.CountAsync().Result;
+            var productsCount = await productServices.CountAsync();
 
             List<Product> products = new List<Product>();
             var loops = Math.Ceiling((double)(productsCount) / 250);
@@ -2182,7 +2187,7 @@ namespace ShopifyApp2.Controllers
                 try
                 {
                     filter.Page = i;
-                    var productsResult = productServices.ListAsync(filter).Result;
+                    var productsResult = await productServices.ListAsync(filter);
 
                     products.AddRange(productsResult);
                 }
@@ -2300,7 +2305,7 @@ namespace ShopifyApp2.Controllers
             return orders;
         }
 
-        private List<Order> GetNotExportedOrders(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
+        private async Task<List<Order>> GetNotExportedOrdersAsync(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
             if (dateFrom == default(DateTime)) //Yesterday option (Default)
             {
@@ -2329,7 +2334,7 @@ namespace ShopifyApp2.Controllers
                 //Order="asc"
             };
 
-            var ordersCount = OrderService.CountAsync(filter).Result;
+            var ordersCount = await OrderService.CountAsync(filter);
 
             List<Order> orders = new List<Order>();
             var loops = Math.Ceiling((double)(ordersCount) / 250);
@@ -2340,7 +2345,7 @@ namespace ShopifyApp2.Controllers
                 try
                 {
                     filter.Page = i;
-                    var ordersResult = OrderService.ListAsync(filter).Result;
+                    var ordersResult = await OrderService.ListAsync(filter);
                     // orders.AddRange(ordersResult.Select(a => a).Where(a => !a.Tags.Contains(prefix)));
 
                     orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
@@ -2369,9 +2374,11 @@ namespace ShopifyApp2.Controllers
             return orders;
         }
 
-        private List<Order> GetRefundedOrders(out Dictionary<string, List<string>> lslsOfTagsToBeAdded, DateTime dateFrom = default(DateTime)
+        private async Task<RefundedOrders> GetRefundedOrdersAsync(DateTime dateFrom = default(DateTime)
             , DateTime dateTo = default(DateTime))
         {
+            var refundedOrders = new RefundedOrders();
+
             Dictionary<string, List<string>> lsOfTagsToBeAddedTemp = new Dictionary<string, List<string>>();
 
             if (dateFrom == default(DateTime)) //Yesterday option (Default)
@@ -2400,7 +2407,7 @@ namespace ShopifyApp2.Controllers
                 //CreatedAtMax = dateTo.AddDays(1)
             };
 
-            var ordersCount = OrderService.CountAsync(filter).Result;
+            var ordersCount = await OrderService.CountAsync(filter);
 
             List<Order> orders = new List<Order>();
             var loops = Math.Ceiling((double)ordersCount / 250);
@@ -2411,7 +2418,7 @@ namespace ShopifyApp2.Controllers
                 try
                 {
                     filter.Page = i;
-                    var ordersResult = OrderService.ListAsync(filter).Result;
+                    var ordersResult = await OrderService.ListAsync(filter);
                     orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
                 }
                 catch (ShopifySharp.ShopifyRateLimitException ex)
@@ -2522,15 +2529,16 @@ namespace ShopifyApp2.Controllers
                 lsOfTagsToBeAddedTemp.Add(order.Id.ToString(), lsOfTag);
             }
 
+            refundedOrders.lslsOfTagsToBeAdded = lsOfTagsToBeAddedTemp;
+            refundedOrders.Orders = ordersToReturn.ToList();
+            //var lslsOfTagsToBeAdded = lsOfTagsToBeAddedTemp;
 
-            lslsOfTagsToBeAdded = lsOfTagsToBeAddedTemp;
-
-            return ordersToReturn.ToList();
+            return refundedOrders;
         }
 
-        private Order GetSpecificOrder(long id)
+        private async Task<Order> GetSpecificOrderAsync(long id)
         {
-            return OrderServiceInstance.GetAsync((long)id).Result;
+            return await OrderServiceInstance.GetAsync((long)id);
         }
 
         //private List<Order> GetTodayFulfill(List<Order> orders)

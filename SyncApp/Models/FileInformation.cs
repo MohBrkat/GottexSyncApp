@@ -14,6 +14,7 @@ namespace SyncApp.Models
         public int lsSuccessCount { get; set; }
         public List<string> LsOfErrors { set; get; }
         public List<string> LsOfSucess { set; get; }
+        public List<string> fileRows { set; get; }
         public IFormFile File { set; get; }
 
     }

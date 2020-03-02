@@ -173,11 +173,16 @@ namespace ShopifySharp
         /// </remarks>
         protected async Task<T> ExecuteRequestAsync<T>(RequestUri uri, HttpMethod method, HttpContent content = null, string rootElement = null) where T : new()
         {
+            object lockObj = new object();
             using (var baseRequestMessage = PrepareRequestMessage(uri, method, content))
             {
                 var policyResult = await _ExecutionPolicy.Run<T>(baseRequestMessage, async (requestMessage) =>
                 {
-                    var request = _Client.SendAsync(requestMessage);
+                    Task<HttpResponseMessage> request; 
+                    lock(lockObj)
+                    {
+                        request = _Client.SendAsync(requestMessage);
+                    }
 
                     using (var response = await request)
                     {
