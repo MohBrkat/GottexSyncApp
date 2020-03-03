@@ -28,6 +28,8 @@ namespace ShopifyApp2.Controllers
     {
         private readonly ShopifyAppContext _context;
         private readonly IHostingEnvironment _hostingEnvironment;
+        private static readonly object reciptsFileLock = new object();
+        private static readonly object salesFileLock = new object();
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
             _context = context;
@@ -479,178 +481,6 @@ namespace ShopifyApp2.Controllers
 
         }
 
-
-        // public FileInformation ValidateInventoryUpdatesFromCSV(out List<string> fileRows, out List<string> lsOfErrorsToReturn)
-        // {
-
-        //     List<string> LsOfSuccess = new List<string>();
-        //     List<string> LsOfErrors = new List<string>();
-
-        //     fileRows = new List<string>();
-
-
-        //     FileInformation info = new FileInformation();
-        //     bool validFile = false;
-
-        //     info.fileName = "";
-
-        //     try
-        //     {
-        //         //LsOfSuccess.Add("Start validating the file");
-        //         //LsOfErrors.Add("Start validating the file");
-
-        //         //To DO get from ftp
-
-
-        //         // var expectedFileName = "inventory-update-" + DateTime.Now.ToString("yyMMdd") + ".dat";
-
-        //         var fileName = "";
-        //         var fileContent = FtpHandler.ReadLatestFileFromFtp(host, userName, password, "/Out", out fileName);
-
-        //         // var fileContent = FtpHandler.DwonloadFile(expectedFileName, host, "shopify/Out", userName, password);
-
-        //         //string fileContent = Utility.GetFileContentIfExists(host, userName, password, "", out reallFileName);
-
-        //         info.fileName = fileName;
-
-        //         if (!string.IsNullOrEmpty(fileContent))
-        //         {
-
-        //             var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
-
-        //             var ProductServices = new ProductService(StoreUrl, api_secret);
-        //             var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
-
-        //             var Headers = Rows[0];
-        //             if (IsValidHeaders(Headers))
-        //             {
-        //                 Rows = Rows.Last().Equals("") ? Rows.SkipLast(1).ToArray() : Rows;
-        //                 Rows = Rows.Last().Contains("\0") ? Rows.SkipLast(1).ToArray() : Rows;
-
-        //                 Rows = Rows.Skip(1).ToArray();// skip headers
-
-        //                 fileRows = Rows.ToList();
-
-        //                 int rowIndex = 1;
-
-        //                 foreach (var row in Rows)
-        //                 {
-
-        //                     try
-        //                     {
-        //                         if (row.IsNotNullOrEmpty() && IsValidRow(row))
-        //                         {
-        //                             var splittedRow = row.Split(',');
-        //                             string Handle = splittedRow[0];
-        //                             string Sku = splittedRow[1];
-        //                             string Method = splittedRow[2];
-        //                             string Quantity = splittedRow[3];
-
-        //                             //string webRootPath = _hostingEnvironment.WebRootPath;
-        //                             //var api_secret = System.IO.File.ReadAllText(webRootPath + "/token.txt");
-        //                             var Products = ProductServices.ListAsync(new ShopifySharp.Filters.ProductFilter { Handle = Handle }).Result;
-        //                             var ProductObj = Products.FirstOrDefault();
-
-        //                             if (ProductObj == null)
-        //                             {
-        //                                 throw new Exception(string.Format("Product {0} not exists.", Handle, rowIndex));
-        //                             }
-        //                             var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
-        //                             if (VariantObj == null)
-        //                             {
-        //                                 throw new Exception(string.Format("Variant {0} not exists.", Sku, rowIndex));
-        //                             }
-        //                             if (Method.ToLower().Trim() == "set")
-        //                             {
-        //                                 LsOfSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "will be updated"));
-        //                             }
-        //                             else
-        //                             if (Method.ToLower().Trim() == "in")
-        //                             {
-        //                                 LsOfSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "will be updated"));
-        //                             }
-        //                             else
-        //                             if (Method.ToLower().Trim() == "out")
-        //                             {
-        //                                 LsOfSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "will be updated"));
-        //                             }
-        //                             else
-        //                             {
-        //                                 throw new Exception(string.Format("Method {0} not defined.", Method, rowIndex));
-        //                             }
-        //                             Thread.Sleep(500);
-        //                         }
-        //                         else
-        //                         {
-        //                             throw new Exception(string.Format("Empty or invalid row.", rowIndex));
-        //                         }
-        //                     }
-        //                     catch (Exception ex)
-        //                     {
-
-        //                         LsOfErrors.Add("error occured in the row# " + rowIndex + " : " + ex.Message);
-        //                     }
-        //                     rowIndex++;
-        //                 }
-        //             }
-        //             else
-        //             {
-        //                 LsOfErrors.Add("Invalid csv file! ");
-        //             }
-
-        //             if (LsOfErrors != null && LsOfErrors.Count == 0)
-        //             {
-        //                 LsOfSuccess.Add("Validating Success");
-        //                 validFile = true;
-        //             }
-        //             else
-        //             {
-        //                 LsOfErrors.Add("Validating completed with errors");
-        //                 validFile = false;
-        //             }
-        //         }
-
-
-        //         else
-        //         {
-        //             throw new Exception(string.Format("File was empty or not found"));
-        //         }
-
-        //     }
-        //     catch (System.Net.WebException ex)
-        //     {
-
-        //         //LsOfErrors.Add("File or ftp server not found " + ex.Message);
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         LsOfErrors.Clear();
-        //         LsOfSuccess.Clear();
-
-        //         LsOfErrors.Add("Error While Validating The File : " + ex.Message);
-
-        //         //return Ok(new { valid = false, Error = ex.Message });
-        //     }
-
-        //     //foreach (var ls in LsOfSuccess)
-        //     //{
-        //     // _log.Info("Success : " + ls);
-        //     //}
-        //     if (LsOfErrors.Count > 0)
-        //     {
-        //         LsOfErrors.Insert(0, info.fileName);
-        //     }
-
-        //     foreach (var ls in LsOfErrors)
-        //     {
-        //         _log.Error(ls);
-        //     }
-
-        //     info.lsErrorCount = LsOfErrors.Count();
-        //     info.isValid = validFile;
-        //     lsOfErrorsToReturn = LsOfErrors;
-        //     return info;
-        // }
 
         public async Task<FileInformation> ValidateInventoryUpdatesFromCSVAsync()
         {
@@ -1361,18 +1191,19 @@ namespace ShopifyApp2.Controllers
         .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
         .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
 
-
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+            foreach (var DayOrders in ordersGroupedByDate)
             {
+                decimal taxPercentage = (decimal)_config.TaxPercentage;
+                var InvoiceDate = DayOrders.OrdersDate;
 
-                foreach (var DayOrders in ordersGroupedByDate)
+                var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
+
+                lock (salesFileLock)
                 {
-                    decimal taxPercentage = (decimal)_config.TaxPercentage;
-                    var InvoiceDate = DayOrders.OrdersDate;
+                    using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+                    {
 
-                    var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
-
-                    file.WriteLine(
+                        file.WriteLine(
                        "0" +
                        "\t" + _customerCodeWithLeadingSpaces +
                        "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
@@ -1381,136 +1212,153 @@ namespace ShopifyApp2.Controllers
                        "\t" + ShortBranchCodeSales
                        );
 
-                    //var shippingAmount = order.ShippingLines.Sum(a => a.Price);
-                    //var TotalWithoutShipping = (order.TotalPrice - shippingAmount);
-                    //var TotalWithoutShippingAndTax = TotalWithoutShipping - order.TaxLines.Sum(a => a.Price);
-
-                    foreach (var order in DayOrders.Data)
-                    {
-                        //var shipRefOrder = GetSpecificOrder((long)order.Id);
-                        var shipRefOrder = order;
-                        foreach (var orderItem in order.LineItems)
-                        {
-
-                            var discountPercentage = 0;//(orderItem.TotalDiscount / orderItem.Price).GetValueOrDefault();
-
-
-                            //var xyz = orderItem.TaxLines.Sum(a => a.Price).GetValueOrDefault();
-                            //var taxes = orderItem.TaxLines;
-
-                            //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
-
-                            decimal? price;
-                            decimal totalDiscount = 0;
-
-                            //Calculate Discount on single lineItem
-                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
-                            {
-                                totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
-                            }
-
-                            decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
-                            decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
-                            //Discounted Price without TAX and Discount
-                            price = orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
-
-                            if (orderItem.Taxable == false || order.TaxesIncluded == true)
-                                price /= totalWithVatPercentage;
-                            //if (order.FinancialStatus != "paid")
-
-
-
-                            //var transactions = new TransactionService(StoreUrl, api_secret).ListAsync((long)order.Id).Result.Where(a => a.Kind == "refund").Sum(a => a.Amount);
-
-                            //decimal refundMoney = (decimal)transactions;
-                            //if (shipRefOrder.Transactions != null)
-
-                            //if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
-                            //    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
-
-                            file.WriteLine(
-                             "1" + "\t" +
-                             orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
-                             orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
-                             price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                             "".InsertLeadingSpaces(4) + "\t" + // agent code
-
-                             /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
-
-
-                             discountPercentage.ToString("F") +
-                             "\t" + "\t" + "\t" +
-                             order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                             + "\t" +
-                             order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                        }
-
-
-                        var discountZero = 0;
-                        var shipOrder = order;
-
-                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
-                        //bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
-
-                        //If the order (e.g partially/refunded or paid) 
-                        //has shipping cost and this cost is not refunded,
-                        //then write shipping data
-                        if (shippingAmount > 0 && shipOrder.RefundKind != "refund_discrepancy")
-                        {
-                            var mQuant = "1";
-                            if (shipOrder.RefundKind == "shipping_refund")
-                            {
-                                mQuant = "-1";
-                                //Calculate refunded shipping
-                                shippingAmount = Math.Abs(shipOrder.RefundAmount / ((taxPercentage / 100.0m) + 1.0m));
-                            }
-                            file.WriteLine(
-                                    "1" + "\t" +
-                                    "921".InsertLeadingSpaces(15) + "\t" +
-                                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                    shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                    "".InsertLeadingSpaces(4) + "\t" + // agent code
-
-                                    /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
-
-
-                                    discountZero.ToString("F") +
-                                    "\t" + "\t" + "\t" +
-                                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                    + "\t" +
-                                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-
-                        }
-
-                        if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund")
-                        {
-                            var mQuant = "-1";
-
-                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax());
-                            file.WriteLine(
-                                    "1" + "\t" +
-                                    "925".InsertLeadingSpaces(15) + "\t" +
-                                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                    refundedAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                    "".InsertLeadingSpaces(4) + "\t" + // agent code
-
-                                    /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
-
-
-                                    discountZero.ToString("F") +
-                                    "\t" + "\t" + "\t" +
-                                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                    + "\t" +
-                                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                        }
-
-                        // line item discount cannot be percent, percent on overall order by shopify design
-                        //"".InsertLeadingSpaces(10) + "\t" + // warehouse code always empty
-                        //"".InsertLeadingSpaces(10)); // location code always empty 
+                        file.Close();
                     }
                 }
 
-                file.Close();
+                //var shippingAmount = order.ShippingLines.Sum(a => a.Price);
+                //var TotalWithoutShipping = (order.TotalPrice - shippingAmount);
+                //var TotalWithoutShippingAndTax = TotalWithoutShipping - order.TaxLines.Sum(a => a.Price);
+
+                foreach (var order in DayOrders.Data)
+                {
+                    //var shipRefOrder = GetSpecificOrder((long)order.Id);
+                    var shipRefOrder = order;
+                    foreach (var orderItem in order.LineItems)
+                    {
+
+                        var discountPercentage = 0;//(orderItem.TotalDiscount / orderItem.Price).GetValueOrDefault();
+
+
+                        //var xyz = orderItem.TaxLines.Sum(a => a.Price).GetValueOrDefault();
+                        //var taxes = orderItem.TaxLines;
+
+                        //decimal  taxLineAmount =(orderItem.TaxLines?.Sum(a => a.Price).GetValueOrDefault()).GetValueOrDefault();
+
+                        decimal? price;
+                        decimal totalDiscount = 0;
+
+                        //Calculate Discount on single lineItem
+                        if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
+                        {
+                            totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
+                        }
+
+                        decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
+                        decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
+                        //Discounted Price without TAX and Discount
+                        price = orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
+
+                        if (orderItem.Taxable == false || order.TaxesIncluded == true)
+                            price /= totalWithVatPercentage;
+                        //if (order.FinancialStatus != "paid")
+
+
+
+                        //var transactions = new TransactionService(StoreUrl, api_secret).ListAsync((long)order.Id).Result.Where(a => a.Kind == "refund").Sum(a => a.Amount);
+
+                        //decimal refundMoney = (decimal)transactions;
+                        //if (shipRefOrder.Transactions != null)
+
+                        //if (shipRefOrder.ShippingLines != null && shipRefOrder.FinancialStatus == "refunded" )
+                        //    price = (orderItem.Price - shipRefOrder.ShippingLines?.Sum(a => a.Price)) / ((taxPercentage / 100.0m) + 1.0m);
+                        lock (salesFileLock)
+                        {
+                            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+                            {
+                                file.WriteLine(
+                                "1" + "\t" +
+                                orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                                orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                "".InsertLeadingSpaces(4) + "\t" + // agent code
+                                /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
+                                discountPercentage.ToString("F") +
+                                "\t" + "\t" + "\t" +
+                                order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                                + "\t" +
+                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+
+                                file.Close();
+                            }
+                        }
+                    }
+
+
+                    var discountZero = 0;
+                    var shipOrder = order;
+
+                    var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
+                    //bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
+
+                    //If the order (e.g partially/refunded or paid) 
+                    //has shipping cost and this cost is not refunded,
+                    //then write shipping data
+                    if (shippingAmount > 0 && shipOrder.RefundKind != "refund_discrepancy")
+                    {
+                        var mQuant = "1";
+                        if (shipOrder.RefundKind == "shipping_refund")
+                        {
+                            mQuant = "-1";
+                            //Calculate refunded shipping
+                            shippingAmount = Math.Abs(shipOrder.RefundAmount / ((taxPercentage / 100.0m) + 1.0m));
+                        }
+                        lock (salesFileLock)
+                        {
+                            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+                            {
+                                file.WriteLine(
+                                "1" + "\t" +
+                                "921".InsertLeadingSpaces(15) + "\t" +
+                                mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                "".InsertLeadingSpaces(4) + "\t" + // agent code
+                                /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
+                                discountZero.ToString("F") +
+                                "\t" + "\t" + "\t" +
+                                order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                                + "\t" +
+                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+
+                                file.Close();
+
+                            }
+                        }
+
+                    }
+
+                    if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund")
+                    {
+                        var mQuant = "-1";
+
+                        var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax());
+
+                        lock (salesFileLock)
+                        {
+                            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+                            {
+                                file.WriteLine(
+                                "1" + "\t" +
+                                "925".InsertLeadingSpaces(15) + "\t" +
+                                mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                refundedAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                "".InsertLeadingSpaces(4) + "\t" + // agent code
+                                /*orderItem.TotalDiscount.ToString().InsertLeadingZeros(10)*/
+                                discountZero.ToString("F") +
+                                "\t" + "\t" + "\t" +
+                                order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                                + "\t" +
+                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+
+                                file.Close();
+                            }
+                        }
+                    }
+
+                    // line item discount cannot be percent, percent on overall order by shopify design
+                    //"".InsertLeadingSpaces(10) + "\t" + // warehouse code always empty
+                    //"".InsertLeadingSpaces(10)); // location code always empty 
+                }
             }
 
             var FtpSuccesfully = true; // if web always true
@@ -1647,69 +1495,70 @@ namespace ShopifyApp2.Controllers
             var FolderDirectory = "/Data/receipts/";
             string path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + "/" + FileName;
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+            foreach (var order in orders)
             {
+                //Transactions
 
-                foreach (var order in orders)
+                var transaction = await GetTransactionByOrderAsync(order);
+
+                await Task.Delay(2000);
+
+
+                //if (transaction != null)
+                //{
+                //    transactionDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
+                //}
+                //else
+                //{
+                //    continue;
+                //}
+
+                var InvoiceNumber = GetInvoiceNumber(order);
+                var priceWithoutTaxes = order.TotalPrice - order.TotalTax;
+                var priceWithTaxes = order.TotalPrice;
+
+                var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
+
+
+                var PaymentMeanCode = 0;
+                if (transaction != null)
                 {
-                    //Transactions
-
-                    var transaction = await GetTransactionByOrderAsync(order);
-
-                    await Task.Delay(2000);
-
-
-                    //if (transaction != null)
-                    //{
-                    //    transactionDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
-                    //}
-                    //else
-                    //{
-                    //    continue;
-                    //}
-
-                    var InvoiceNumber = GetInvoiceNumber(order);
-                    var priceWithoutTaxes = order.TotalPrice - order.TotalTax;
-                    var priceWithTaxes = order.TotalPrice;
-
-                    var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
-
-
-                    var PaymentMeanCode = 0;
-                    if (transaction != null)
+                    //var InvoiceDate = GetInvoiceDate(order);
+                    //var InvoiceTotalWithoutTax = GetInvoiceTotalWithoutTax(order);
+                    PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
+                    if (transaction.x_timestamp.IsNotNullOrEmpty())
                     {
-                        //var InvoiceDate = GetInvoiceDate(order);
-                        //var InvoiceTotalWithoutTax = GetInvoiceTotalWithoutTax(order);
-                        PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
-                        if (transaction.x_timestamp.IsNotNullOrEmpty())
-                        {
 
-                            //var timestamp = DateTime.ParseExact(transaction.x_timestamp, "yyyy-MM-ddThh:mm:ss+00:00", System.Globalization.CultureInfo.InvariantCulture);
-                            invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
+                        //var timestamp = DateTime.ParseExact(transaction.x_timestamp, "yyyy-MM-ddThh:mm:ss+00:00", System.Globalization.CultureInfo.InvariantCulture);
+                        invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
 
-                        }
                     }
-                    else
+                }
+                else
+                {
+                    PaymentMeanCode = 0;
+                }
+                //var paymentMeansQuery = PaymentMeans.FirstOrDefault(a => a.Value.Contains(paymentDetails.CreditCardCompany)); // we msut read from transactions
+                //PaymentMeanCode = !paymentMeansQuery.Equals(default(KeyValuePair<int, string>)) ? PaymentMeanCode : paymentMeansQuery.Key;
+                //}
+                //else
+                //{
+                //    var paymentMean = _context.PaymentMeans.FirstOrDefault(a => a.Name == "Other");
+                //    PaymentMeanCode = paymentMean == null ? 0 : paymentMean.Id;
+                //}
+
+                //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
+                if (order.RefundKind != "no_refund")
+                {
+                    priceWithTaxes *= -1;
+                    priceWithoutTaxes = priceWithTaxes;
+                }
+
+                lock (reciptsFileLock)
+                {
+                    using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
                     {
-                        PaymentMeanCode = 0;
-                    }
-                    //var paymentMeansQuery = PaymentMeans.FirstOrDefault(a => a.Value.Contains(paymentDetails.CreditCardCompany)); // we msut read from transactions
-                    //PaymentMeanCode = !paymentMeansQuery.Equals(default(KeyValuePair<int, string>)) ? PaymentMeanCode : paymentMeansQuery.Key;
-                    //}
-                    //else
-                    //{
-                    //    var paymentMean = _context.PaymentMeans.FirstOrDefault(a => a.Name == "Other");
-                    //    PaymentMeanCode = paymentMean == null ? 0 : paymentMean.Id;
-                    //}
-
-                    //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
-                    if (order.RefundKind != "no_refund")
-                    {
-                        priceWithTaxes *= -1;
-                        priceWithoutTaxes = priceWithTaxes;
-                    }
-
-                    file.WriteLine(
+                        file.WriteLine(
                         "0" +  // spaces to fit indexes
                         " " + _customerCodeWithLeadingSpaces +
                         " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
@@ -1717,18 +1566,20 @@ namespace ShopifyApp2.Controllers
                         " " + _shortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
                         " " + priceWithoutTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
 
-                    file.WriteLine(
-                   "2" +
-                   " " + PaymentMeanCode.ToString().InsertLeadingZeros(2) +
-                   " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
-                   " " + "00" + //term code
-                   " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
-                   " " + invoiceDate +
-                   " " + "".InsertLeadingSpaces(8) +//card number
-                   " " + "".InsertLeadingZeros(16));//Payment account
-                }
-                file.Close();
+                        file.WriteLine(
+                        "2" +
+                        " " + PaymentMeanCode.ToString().InsertLeadingZeros(2) +
+                        " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                        " " + "00" + //term code
+                        " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                        " " + invoiceDate +
+                        " " + "".InsertLeadingSpaces(8) +//card number
+                        " " + "".InsertLeadingZeros(16));//Payment account
 
+                        file.Close();
+                    }
+
+                }
             }
 
             var FtpSuccesfully = true;

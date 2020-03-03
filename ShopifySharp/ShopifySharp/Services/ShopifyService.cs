@@ -14,6 +14,8 @@ namespace ShopifySharp
 {
     public abstract class ShopifyService
     {
+        private static readonly object lockObj = new object();
+
         public virtual string APIVersion => "2019-04";
 
         private static IRequestExecutionPolicy _GlobalExecutionPolicy = new DefaultRequestExecutionPolicy();
@@ -173,7 +175,6 @@ namespace ShopifySharp
         /// </remarks>
         protected async Task<T> ExecuteRequestAsync<T>(RequestUri uri, HttpMethod method, HttpContent content = null, string rootElement = null) where T : new()
         {
-            object lockObj = new object();
             using (var baseRequestMessage = PrepareRequestMessage(uri, method, content))
             {
                 var policyResult = await _ExecutionPolicy.Run<T>(baseRequestMessage, async (requestMessage) =>
