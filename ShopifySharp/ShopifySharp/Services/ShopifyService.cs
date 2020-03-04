@@ -179,11 +179,8 @@ namespace ShopifySharp
             {
                 var policyResult = await _ExecutionPolicy.Run<T>(baseRequestMessage, async (requestMessage) =>
                 {
-                    Task<HttpResponseMessage> request; 
-                    lock(lockObj)
-                    {
-                        request = _Client.SendAsync(requestMessage);
-                    }
+
+                    var request = _Client.SendAsync(requestMessage);
 
                     using (var response = await request)
                     {
