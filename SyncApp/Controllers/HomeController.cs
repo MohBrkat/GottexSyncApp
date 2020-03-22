@@ -1134,6 +1134,7 @@ namespace ShopifyApp2.Controllers
             RefundedOrders refunded = new RefundedOrders();
             try
             {
+                await Task.Delay(1000);
                 //Date period option
                 if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                 {
@@ -1153,17 +1154,16 @@ namespace ShopifyApp2.Controllers
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
-                // await Retry.Do(() => ExportSalesAsync(fromWeb, dateToRetriveFrom, dateToRetriveTo), TimeSpan.FromSeconds(1));
             }
 
             try
             {
+                await Task.Delay(1000);
                 refunded = await GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
-                // refunded = await Retry.Do(() => GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo), TimeSpan.FromSeconds(1));
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -1434,6 +1434,7 @@ namespace ShopifyApp2.Controllers
             RefundedOrders refunded = new RefundedOrders();
             try
             {
+                await Task.Delay(1000);
                 //Date period Option
                 if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                 {
@@ -1458,6 +1459,7 @@ namespace ShopifyApp2.Controllers
 
             try
             {
+                await Task.Delay(1000);
                 refunded = await GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
@@ -1504,7 +1506,7 @@ namespace ShopifyApp2.Controllers
                     // If this order is not the first, wait for .5 seconds (an average of 2 calls per second).
                     if (index > 0)
                     {
-                        await Task.Delay(500);
+                        await Task.Delay(1000);
                     }
 
                     try
@@ -1687,7 +1689,9 @@ namespace ShopifyApp2.Controllers
         public async Task<ActionResult> ExportReportAsync(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, string reportType = "")
         {
             List<Order> lsOfOrders = new List<Order>();
+            RefundedOrders refunded = new RefundedOrders();
             FileModel file = new FileModel();
+
             try
             {
                 bool isWorkingDay = CheckWorkingDays();
@@ -1695,9 +1699,9 @@ namespace ShopifyApp2.Controllers
                 {
                     return View("~/Views/Home/ExportDailyReport.cshtml");
                 }
-
                 try
                 {
+                    await Task.Delay(1000);
                     //Date period Option
                     if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                     {
@@ -1719,12 +1723,27 @@ namespace ShopifyApp2.Controllers
                     {
                         lsOfOrders = GetReportOrders("receipts");
                     }
+
                 }
                 catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
                 {
                     await Task.Delay(10000);
                 }
 
+                try
+                {
+                    await Task.Delay(1000);
+                    refunded = await GetReportRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
+                }
+                catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
+                {
+                    await Task.Delay(10000);
+                }
+
+                if (refunded?.Orders?.Count > 0)
+                {
+                    lsOfOrders.AddRange(refunded?.Orders);
+                }
 
                 lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
 
@@ -1733,9 +1752,11 @@ namespace ShopifyApp2.Controllers
                     var contentType = "application/octet-stream";
                     string extension = "xlsx";
 
+                    await Task.Delay(1000);
                     byte[] detailedFile = await GenerateDetailedReportFileAsync(lsOfOrders);
                     string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
+                    await Task.Delay(1000);
                     byte[] summarizedFile = await GenerateSummarizedReportFileAsync(lsOfOrders);
                     string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
@@ -1743,7 +1764,7 @@ namespace ShopifyApp2.Controllers
                     //byte[] invalidProducts = GenerateProductsReportFile(lsOfOrders);
                     //string invalidProductsName = $"invalidProductsName{DateTime.Now.ToShortDateString()}.{extension}";
 
-                    string subject = "Detailed And Summarized Report Files";
+                    string subject = $"Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                     string body = ReportEmailMessageBody();
 
                     if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
@@ -1797,9 +1818,9 @@ namespace ShopifyApp2.Controllers
             }
             catch (Exception e)
             {
+                await Task.Delay(10000);
                 _log.Error(e.Message);
             }
-
             return View("~/Views/Home/ExportDailyReport.cshtml", file);
         }
 
@@ -1903,6 +1924,7 @@ namespace ShopifyApp2.Controllers
 
         private async Task<byte[]> GenerateDetailedReportFileAsync(List<Order> orders)
         {
+            await Task.Delay(1000);
             var productsList = await GetProductsAsync();
 
             List<DetailedAutomaticReportModel> detailedAutomaticReport = new List<DetailedAutomaticReportModel>();
@@ -2379,6 +2401,110 @@ namespace ShopifyApp2.Controllers
 
             return refundedOrders;
         }
+
+        private async Task<RefundedOrders> GetReportRefundedOrdersAsync(DateTime dateFrom = default(DateTime)
+    , DateTime dateTo = default(DateTime))
+        {
+            var refundedOrders = new RefundedOrders();
+
+            dateFrom = dateFrom.Date;
+            dateTo = dateTo.Date;
+
+            ShopifySharp.Filters.OrderFilter filter = new ShopifySharp.Filters.OrderFilter();
+
+            if (dateFrom != default(DateTime) && dateTo == default(DateTime))
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "any",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    CreatedAtMin = dateFrom.AbsoluteStart(),
+                    //CreatedAtMax = dateTo
+                };
+            }
+            else if (dateFrom == default(DateTime) && dateTo != default(DateTime))
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "any",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    //CreatedAtMin = dateFrom,
+                    CreatedAtMax = dateTo.AbsoluteEnd()
+                };
+            }
+            else if (dateFrom == default(DateTime) && dateTo == default(DateTime))
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "any",
+                    Status = "open",
+                    FulfillmentStatus = "any"
+                    //CreatedAtMin = dateFrom,
+                    //CreatedAtMax = dateTo.AddDays(1)
+                };
+            }
+            else
+            {
+                filter = new ShopifySharp.Filters.OrderFilter
+                {
+                    FinancialStatus = "any",
+                    Status = "open",
+                    FulfillmentStatus = "any",
+                    CreatedAtMin = dateFrom.AbsoluteStart(),
+                    CreatedAtMax = dateTo.AbsoluteEnd()
+                };
+
+            }
+
+            // looop , need new logic , [aging , sice id
+            var OrderService = new OrderService(StoreUrl, api_secret);
+
+            var ordersCount = await OrderService.CountAsync(filter);
+
+            List<Order> orders = new List<Order>();
+            var loops = Math.Ceiling((double)ordersCount / 250);
+
+            filter.Limit = 250;
+            for (int i = 1; i <= loops; i++)
+            {
+                try
+                {
+                    filter.Page = i;
+                    var ordersResult = await OrderService.ListAsync(filter);
+                    orders.AddRange(ordersResult.Select(a => a).Where(a => (a.FinancialStatus == "partially_refunded")
+                    && (a.FulfillmentStatus == null || a.FulfillmentStatus == "partial")));
+                }
+                catch (ShopifySharp.ShopifyRateLimitException ex)
+                {
+                    i--;
+                }
+
+            }
+            //.Where(a => !a.Tags.Contains("refund-exported"))
+            //  orders = orders.Where(a => a.UpdatedAt.GetValueOrDefault().Date == date.Date).ToList();
+
+            var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
+            foreach (var order in OrdersHasRefunds)
+            {
+                List<long> lineItemsIds = new List<long>();
+                foreach (var refund in order.Refunds)
+                {
+                    var refundLineItems = refund.RefundLineItems;
+                    foreach (var r in refundLineItems)
+                    {
+                        lineItemsIds.Add(r.LineItem.Id.GetValueOrDefault());
+                    }
+                }
+                order.LineItems = order.LineItems.Where(l => !lineItemsIds.Contains(l.Id.GetValueOrDefault())).ToList();
+            }
+
+            var returnOrders = OrdersHasRefunds.Where(o => o.LineItems.Any()).ToList();
+            refundedOrders.Orders = returnOrders;
+            return refundedOrders;
+        }
+
 
         private async Task<Order> GetSpecificOrderAsync(long id)
         {

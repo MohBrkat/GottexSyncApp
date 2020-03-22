@@ -409,6 +409,7 @@ namespace SyncApp
                 worksheet.PrinterSettings.FitToPage = true;
                 worksheet.PrinterSettings.PaperSize = ePaperSize.A4;
                 worksheet.PrinterSettings.ShowGridLines = true;
+                worksheet.Protection.IsProtected = false;
 
                 //worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
@@ -448,7 +449,7 @@ namespace SyncApp
                         var type = properties[j - 1].Name;
                         if (type.Trim().ToLower() == "productbarcode")
                         {
-                            worksheet.Cells[row, j].Formula = "=\"" + worksheet.Cells[row, j].Value.ToString() + "\"";
+                            worksheet.Cells[row, j].Formula = "\"" + worksheet.Cells[row, j].Value.ToString() + "\"";
                         }
 
                         //if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
@@ -465,6 +466,7 @@ namespace SyncApp
                     i++;
                 }
 
+                package.Workbook.Calculate();
                 return package.GetAsByteArray();
             }
         }
