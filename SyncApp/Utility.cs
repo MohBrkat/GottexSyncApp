@@ -421,6 +421,8 @@ namespace SyncApp
                 worksheet.Row(1).Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
                 worksheet.Row(1).Style.Border.Top.Style = ExcelBorderStyle.Thin;
 
+                worksheet.Column(properties.Count).Style.WrapText = true;
+
                 for (int j = 1; j <= properties.Count; j++)
                 {
                     worksheet.Cells[1, j].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
@@ -429,6 +431,7 @@ namespace SyncApp
                     worksheet.Cells[1, j].Style.Fill.BackgroundColor.SetColor(Color.LightYellow);
                     worksheet.Column(j).Style.Border.Right.Style = ExcelBorderStyle.Thin;
                     worksheet.Column(j).Width = 30;
+                    worksheet.Column(j).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                     worksheet.Cells[1, j].Value = Regex.Replace(Regex.Replace(properties[j - 1].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2"); ;
                 }
 

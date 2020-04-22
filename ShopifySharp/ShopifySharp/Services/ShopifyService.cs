@@ -18,7 +18,7 @@ namespace ShopifySharp
 
         public virtual string APIVersion => "2019-04";
 
-        private static IRequestExecutionPolicy _GlobalExecutionPolicy = new DefaultRequestExecutionPolicy();
+        private static IRequestExecutionPolicy _GlobalExecutionPolicy = new SmartRetryExecutionPolicy();
 
         private IRequestExecutionPolicy _ExecutionPolicy;
 

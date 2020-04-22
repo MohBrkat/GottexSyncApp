@@ -14,5 +14,6 @@ namespace SyncApp.Models
         public string VariantSKU { get; set; }
         public string ProductBarcode { get; set; }
         public int OrderedQuantity { get; set; }
+        public string CustomerNotes { get; set; }
     }
 }

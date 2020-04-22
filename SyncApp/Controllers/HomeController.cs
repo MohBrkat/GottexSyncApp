@@ -1930,6 +1930,7 @@ namespace ShopifyApp2.Controllers
             List<DetailedAutomaticReportModel> detailedAutomaticReport = new List<DetailedAutomaticReportModel>();
             foreach (var order in orders)
             {
+                var localDetailReportList = new List<DetailedAutomaticReportModel>();
                 string customerName = $"{order.Customer?.FirstName} {order.Customer?.LastName}";
 
                 foreach (var lineItem in order.LineItems)
@@ -1949,7 +1950,7 @@ namespace ShopifyApp2.Controllers
                         }
                     }
 
-                    detailedAutomaticReport.Add(new DetailedAutomaticReportModel()
+                    var detailedReportModel = new DetailedAutomaticReportModel()
                     {
                         OrderName = order.Name,
                         CustomerName = !string.IsNullOrWhiteSpace(customerName) ? customerName : "N/A",
@@ -1958,8 +1959,14 @@ namespace ShopifyApp2.Controllers
                         VariantSKU = !string.IsNullOrWhiteSpace(variantSKU) ? variantSKU : !string.IsNullOrWhiteSpace(lineItem.SKU) ? lineItem.SKU : "N/A",
                         OrderedQuantity = lineItem.Quantity.Value,
                         ProductBarcode = !string.IsNullOrWhiteSpace(productBarcode) ? productBarcode : "N/A"
-                    });
+                    };
+
+                    localDetailReportList.Add(detailedReportModel);
                 }
+
+                localDetailReportList = localDetailReportList.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
+                localDetailReportList.FirstOrDefault().CustomerNotes = order.Note;
+                detailedAutomaticReport.AddRange(localDetailReportList);
             }
 
             detailedAutomaticReport = detailedAutomaticReport.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
@@ -2482,8 +2489,6 @@ namespace ShopifyApp2.Controllers
                 }
 
             }
-            //.Where(a => !a.Tags.Contains("refund-exported"))
-            //  orders = orders.Where(a => a.UpdatedAt.GetValueOrDefault().Date == date.Date).ToList();
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             foreach (var order in OrdersHasRefunds)
