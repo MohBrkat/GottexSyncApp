@@ -1692,135 +1692,128 @@ namespace ShopifyApp2.Controllers
             RefundedOrders refunded = new RefundedOrders();
             FileModel file = new FileModel();
 
+            bool isWorkingDay = CheckWorkingDays();
+            if (!isWorkingDay && !fromWeb)
+            {
+                return View("~/Views/Home/ExportDailyReport.cshtml");
+            }
             try
             {
-                bool isWorkingDay = CheckWorkingDays();
-                if (!isWorkingDay && !fromWeb)
+                await Task.Delay(1000);
+                //Date period Option
+                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                 {
-                    return View("~/Views/Home/ExportDailyReport.cshtml");
+                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
                 }
-                try
+                //Single day Option
+                else if (dateToRetriveFrom != default(DateTime))
                 {
-                    await Task.Delay(1000);
-                    //Date period Option
-                    if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
-                    {
-                        lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
-                    }
-                    //Single day Option
-                    else if (dateToRetriveFrom != default(DateTime))
-                    {
-                        lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
-
-                    }
-                    else if (dateToRetriveTo != default(DateTime))
-                    {
-                        lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
-
-                    }
-                    //Yesterday Option (Default)
-                    else
-                    {
-                        lsOfOrders = GetReportOrders("receipts");
-                    }
+                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
 
                 }
-                catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
+                else if (dateToRetriveTo != default(DateTime))
                 {
-                    await Task.Delay(10000);
+                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
+
+                }
+                //Yesterday Option (Default)
+                else
+                {
+                    lsOfOrders = GetReportOrders("receipts");
                 }
 
-                try
+            }
+            catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
+            {
+                await Task.Delay(10000);
+            }
+
+            try
+            {
+                await Task.Delay(1000);
+                refunded = await GetReportRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
+            }
+            catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
+            {
+                await Task.Delay(10000);
+            }
+
+            if (refunded?.Orders?.Count > 0)
+            {
+                lsOfOrders.AddRange(refunded?.Orders);
+            }
+
+            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+
+            if (lsOfOrders.Count > 0)
+            {
+                var contentType = "application/octet-stream";
+                string extension = "xlsx";
+
+                await Task.Delay(1000);
+                byte[] detailedFile = await GenerateDetailedReportFileAsync(lsOfOrders);
+                string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}.{extension}";
+
+                await Task.Delay(1000);
+                byte[] summarizedFile = await GenerateSummarizedReportFileAsync(lsOfOrders);
+                string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
+
+                //Get Products with Invalid Barcode
+                //byte[] invalidProducts = GenerateProductsReportFile(lsOfOrders);
+                //string invalidProductsName = $"invalidProductsName{DateTime.Now.ToShortDateString()}.{extension}";
+
+                file.DetailedFile = new FileContent()
                 {
-                    await Task.Delay(1000);
-                    refunded = await GetReportRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
-                }
-                catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
+                    FileName = detailedFileName,
+                    FileContentType = contentType,
+                    FileData = detailedFile
+                };
+
+                file.SummarizedFile = new FileContent()
                 {
-                    await Task.Delay(10000);
-                }
+                    FileName = summarizedFileName,
+                    FileContentType = contentType,
+                    FileData = summarizedFile
+                };
 
-                if (refunded?.Orders?.Count > 0)
+                string subject = $"Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
+                string body = ReportEmailMessageBody();
+
+                if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
                 {
-                    lsOfOrders.AddRange(refunded?.Orders);
-                }
-
-                lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-
-                if (lsOfOrders.Count > 0)
-                {
-                    var contentType = "application/octet-stream";
-                    string extension = "xlsx";
-
-                    await Task.Delay(1000);
-                    byte[] detailedFile = await GenerateDetailedReportFileAsync(lsOfOrders);
-                    string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}.{extension}";
-
-                    await Task.Delay(1000);
-                    byte[] summarizedFile = await GenerateSummarizedReportFileAsync(lsOfOrders);
-                    string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
-
-                    //Get Products with Invalid Barcode
-                    //byte[] invalidProducts = GenerateProductsReportFile(lsOfOrders);
-                    //string invalidProductsName = $"invalidProductsName{DateTime.Now.ToShortDateString()}.{extension}";
-
-                    string subject = $"Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
-                    string body = ReportEmailMessageBody();
-
-                    if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
-                    {
-                        Utility.SendReportEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
-                    }
-                    else
-                    {
-                        _log.Error("Email Addresses are Empty");
-                    }
-
-                    _log.Info($"[Daily Report] Generated and sent to : {ReportEmailAddress1} , {ReportEmailAddress2} sucesfully. File Names : {detailedFileName} , {summarizedFileName} - the time is : {DateTime.Now}");
-
-                    file.DetailedFile = new FileContent()
-                    {
-                        FileName = detailedFileName,
-                        FileContentType = contentType,
-                        FileData = detailedFile
-                    };
-
-                    file.SummarizedFile = new FileContent()
-                    {
-                        FileName = summarizedFileName,
-                        FileContentType = contentType,
-                        FileData = summarizedFile
-                    };
-
-                    //file.InvalidProducts = new FileContent()
-                    //{
-                    //    FileName = invalidProductsName,
-                    //    FileContentType = contentType,
-                    //    FileData = invalidProducts
-                    //};
+                    Utility.SendReportEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
-                    {
-                        string subject = "Detailed And Summarized Report Files";
-                        string body = NoOrdersEmailMessageBody();
-                        Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject);
-                    }
-                    else
-                    {
-                        _log.Error("Email Addresses are Empty");
-                    }
-
-                    _log.Info($"No such orders");
-
+                    _log.Error("Email Addresses are Empty");
                 }
+
+                _log.Info($"[Daily Report] Generated and sent to : {ReportEmailAddress1} , {ReportEmailAddress2} sucesfully. File Names : {detailedFileName} , {summarizedFileName} - the time is : {DateTime.Now}");
+
+                //file.InvalidProducts = new FileContent()
+                //{
+                //    FileName = invalidProductsName,
+                //    FileContentType = contentType,
+                //    FileData = invalidProducts
+                //};
             }
-            catch (Exception e)
+            else
             {
-                await Task.Delay(10000);
-                _log.Error(e.Message);
+                if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
+                {
+                    string subject = "Detailed And Summarized Report Files";
+                    string body = NoOrdersEmailMessageBody();
+                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject);
+                }
+                else
+                {
+                    _log.Error("Email Addresses are Empty");
+                }
+
+                _log.Info($"No such orders");
+
             }
+
             return View("~/Views/Home/ExportDailyReport.cshtml", file);
         }
 
@@ -1964,12 +1957,12 @@ namespace ShopifyApp2.Controllers
                     localDetailReportList.Add(detailedReportModel);
                 }
 
-                localDetailReportList = localDetailReportList.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
+                localDetailReportList = localDetailReportList.OrderBy(r => GetOrderId(r.OrderName)).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
                 localDetailReportList.FirstOrDefault().CustomerNotes = order.Note;
                 detailedAutomaticReport.AddRange(localDetailReportList);
             }
 
-            detailedAutomaticReport = detailedAutomaticReport.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
+            detailedAutomaticReport = detailedAutomaticReport.OrderBy(r => GetOrderId(r.OrderName)).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
 
             string extension = "xlsx";
 
@@ -1992,6 +1985,13 @@ namespace ShopifyApp2.Controllers
                 _log.Error(e.Message);
                 throw e;
             }
+        }
+
+        private int GetOrderId(string orderName)
+        {
+            var orderSplitted = orderName.Split('#');
+            var order = int.Parse(orderSplitted[1]);
+            return order;
         }
 
         private async Task<byte[]> GenerateProductsReportFileAsync(List<Order> orders)

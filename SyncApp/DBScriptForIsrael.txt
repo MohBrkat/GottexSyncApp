@@ -1,0 +1,201 @@
+USE [master]
+GO
+/****** Object:  Database [ShopifyAppIsrael]    Script Date: 8/24/2020 8:59:35 AM ******/
+CREATE DATABASE [ShopifyAppIsrael]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'ShopifyAppIsrael', FILENAME = N'C:\Users\mohbrkat\ShopifyAppIsrael.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
+ LOG ON 
+( NAME = N'ShopifyAppIsrael_log', FILENAME = N'C:\Users\mohbrkat\ShopifyAppIsrael_log.ldf' , SIZE = 8192KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET COMPATIBILITY_LEVEL = 130
+GO
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [ShopifyAppIsrael].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET ANSI_NULL_DEFAULT OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET ANSI_NULLS OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET ANSI_PADDING OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET ANSI_WARNINGS OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET ARITHABORT OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET AUTO_CLOSE OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET AUTO_SHRINK OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET AUTO_UPDATE_STATISTICS ON 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET CURSOR_DEFAULT  GLOBAL 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET  DISABLE_BROKER 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET TRUSTWORTHY OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET HONOR_BROKER_PRIORITY OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET RECOVERY SIMPLE 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET  MULTI_USER 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET PAGE_VERIFY CHECKSUM  
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET DB_CHAINING OFF 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET TARGET_RECOVERY_TIME = 60 SECONDS 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET DELAYED_DURABILITY = DISABLED 
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET QUERY_STORE = OFF
+GO
+USE [ShopifyAppIsrael]
+GO
+ALTER DATABASE SCOPED CONFIGURATION SET LEGACY_CARDINALITY_ESTIMATION = OFF;
+GO
+ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 0;
+GO
+ALTER DATABASE SCOPED CONFIGURATION SET PARAMETER_SNIFFING = ON;
+GO
+ALTER DATABASE SCOPED CONFIGURATION SET QUERY_OPTIMIZER_HOTFIXES = OFF;
+GO
+USE [ShopifyAppIsrael]
+GO
+/****** Object:  User [SyncApp]    Script Date: 8/24/2020 8:59:35 AM ******/
+CREATE USER [SyncApp] WITHOUT LOGIN WITH DEFAULT_SCHEMA=[dbo]
+GO
+ALTER ROLE [db_owner] ADD MEMBER [SyncApp]
+GO
+/****** Object:  Table [dbo].[Configrations]    Script Date: 8/24/2020 8:59:35 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Configrations](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[FtpHost] [nvarchar](50) NULL,
+	[FtpUserName] [nvarchar](50) NULL,
+	[FtpPassword] [nvarchar](50) NULL,
+	[FtpPort] [int] NULL,
+	[StoreUrl] [nvarchar](max) NULL,
+	[ApiKey] [nvarchar](max) NULL,
+	[ApiSecret] [nvarchar](max) NULL,
+	[InventoryUpdateHour] [int] NULL,
+	[InventoryUpdateMinute] [int] NULL,
+	[SmtpHost] [nvarchar](max) NULL,
+	[SmtpPort] [int] NULL,
+	[SenderEmail] [nvarchar](max) NULL,
+	[SenderemailPassword] [nvarchar](max) NULL,
+	[DisplayName] [nvarchar](max) NULL,
+	[NotificationEmail] [nvarchar](max) NULL,
+	[WareHouseCode] [nvarchar](50) NULL,
+	[CustoemrCode] [nvarchar](50) NULL,
+	[BranchCodeReceipt] [nvarchar](50) NULL,
+	[BranchcodeSalesInvoices] [nvarchar](50) NULL,
+	[DailySalesHour] [int] NULL,
+	[DailySalesMinute] [int] NULL,
+	[DailyRecieptsHour] [int] NULL,
+	[DailyRecieptsMinute] [int] NULL,
+	[UseRecurringJob] [bit] NULL,
+	[InventoryUpdateEveryMinute] [int] NULL,
+	[TaxPercentage] [int] NULL,
+	[DailyReportHour] [int] NULL,
+	[DailyReportMinute] [int] NULL,
+	[ReportEmailAddress1] [nvarchar](max) NULL,
+	[ReportEmailAddress2] [nvarchar](max) NULL,
+	[Saturday] [bit] NULL,
+	[Sunday] [bit] NULL,
+	[Monday] [bit] NULL,
+	[Tuesday] [bit] NULL,
+	[Wednesday] [bit] NULL,
+	[Thursday] [bit] NULL,
+	[Friday] [bit] NULL,
+ CONSTRAINT [PK_Configrations] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[PaymentMeans]    Script Date: 8/24/2020 8:59:35 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PaymentMeans](
+	[Id] [int] NOT NULL,
+	[Name] [nvarchar](500) NULL,
+	[Code] [int] NULL,
+ CONSTRAINT [PK_PaymentMeans] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Users]    Script Date: 8/24/2020 8:59:35 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Users](
+	[UserName] [nvarchar](50) NOT NULL,
+	[Password] [nvarchar](50) NULL,
+ CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED 
+(
+	[UserName] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+SET IDENTITY_INSERT [dbo].[Configrations] ON 
+GO
+INSERT [dbo].[Configrations] ([Id], [FtpHost], [FtpUserName], [FtpPassword], [FtpPort], [StoreUrl], [ApiKey], [ApiSecret], [InventoryUpdateHour], [InventoryUpdateMinute], [SmtpHost], [SmtpPort], [SenderEmail], [SenderemailPassword], [DisplayName], [NotificationEmail], [WareHouseCode], [CustoemrCode], [BranchCodeReceipt], [BranchcodeSalesInvoices], [DailySalesHour], [DailySalesMinute], [DailyRecieptsHour], [DailyRecieptsMinute], [UseRecurringJob], [InventoryUpdateEveryMinute], [TaxPercentage], [DailyReportHour], [DailyReportMinute], [ReportEmailAddress1], [ReportEmailAddress2], [Saturday], [Sunday], [Monday], [Tuesday], [Wednesday], [Thursday], [Friday]) VALUES (1, N'ftp://ftp.mutagim.com', N'shopify', N'shosho@12Ss', 21, N'gottex-swimwear2019.myshopify.com', N'f39d759d8d11d63a6b40775755b3b3d5', N'aceb980f0c1748f7058839f1f15fe530', NULL, NULL, N'smtp.gmail.com', 587, N'gottexnoreply@gmail.com', N'Password@123', N'Gottex Sync App', N'mbarakat@itgsoftware.com', N'ON01', N'C6300005', N'32', N'032', 2, 0, 2, 30, 1, 2, 17, 14, 30, N'mbarakat@itgsoftware.com', N'mbarakat@itgsoftware.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL)
+GO
+SET IDENTITY_INSERT [dbo].[Configrations] OFF
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (0, N'Other', 0)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (11, N'Visa', 11)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (12, N'Leumi Card', 12)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (14, N'Isracard', 14)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (16, N'American Express', 16)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (18, N'Diners', 18)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (24, N'PayPal', 24)
+GO
+INSERT [dbo].[PaymentMeans] ([Id], [Name], [Code]) VALUES (25, N'MASTERCARD', 14)
+GO
+INSERT [dbo].[Users] ([UserName], [Password]) VALUES (N'admin', N'admin')
+GO
+USE [master]
+GO
+ALTER DATABASE [ShopifyAppIsrael] SET  READ_WRITE 
+GO

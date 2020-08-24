@@ -604,23 +604,31 @@ namespace SyncApp
 
         internal static void SendEmail(string smtpHost, int smtpPort, string emailUserName, string emailPassword, string displayName, string reportEmailAddress1, string reportEmailAddress2, string body, string subject)
         {
-            SmtpClient smtpClient = new SmtpClient(smtpHost, smtpPort);
-            smtpClient.UseDefaultCredentials = false;
-            smtpClient.Credentials = new System.Net.NetworkCredential(emailUserName, emailPassword);
-            smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-            smtpClient.EnableSsl = true;
+            try
+            {
+                SmtpClient smtpClient = new SmtpClient(smtpHost, smtpPort);
+                smtpClient.UseDefaultCredentials = false;
+                smtpClient.Credentials = new System.Net.NetworkCredential(emailUserName, emailPassword);
+                smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+                smtpClient.EnableSsl = true;
 
-            MailMessage mail = new MailMessage();
+                MailMessage mail = new MailMessage();
 
-            //Setting From , To and CC
-            mail.From = new MailAddress(emailUserName, displayName);
-            mail.To.Add(new MailAddress(reportEmailAddress1));
-            mail.To.Add(new MailAddress(reportEmailAddress2));
-            mail.Subject = subject;
-            mail.Body = body;
-            mail.IsBodyHtml = true;
+                //Setting From , To and CC
+                mail.From = new MailAddress(emailUserName, displayName);
+                mail.To.Add(new MailAddress(reportEmailAddress1));
+                mail.To.Add(new MailAddress(reportEmailAddress2));
+                mail.Subject = subject;
+                mail.Body = body;
+                mail.IsBodyHtml = true;
 
-            smtpClient.Send(mail);
+                smtpClient.Send(mail);
+
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+            }
         }
     }
 
