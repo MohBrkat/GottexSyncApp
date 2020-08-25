@@ -1776,7 +1776,7 @@ namespace ShopifyApp2.Controllers
                     FileData = summarizedFile
                 };
 
-                string subject = $"Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
+                string subject = $"{ _config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                 string body = ReportEmailMessageBody();
 
                 if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
