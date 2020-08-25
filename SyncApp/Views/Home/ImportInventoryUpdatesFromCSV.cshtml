@@ -1,5 +1,9 @@
 ﻿@model ShopifyApp2.ViewModel.ImportCSVViewModel
 
+@{
+    ViewData["Title"] = "Inventory Update";
+}
+
 <style>
     #pageloader {
         background: rgba( 255, 255, 255, 0.8 );
@@ -29,7 +33,7 @@
     <img src="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif" alt="processing..." />
 </div>
 
-<form asp-antiforgery="false" method="post" enctype="multipart/form-data" action="ImportInventoryUpdatesFromCSV" style="text-align:center" id="frmMain" >
+<form asp-antiforgery="false" method="post" enctype="multipart/form-data" action="ImportInventoryUpdatesFromCSV" style="text-align:center" id="frmMain">
     <input type="hidden" value="false" id="hdnIsValidate" name="IsValidate" />
     <div class="input-group">
 
@@ -37,7 +41,7 @@
             <input Id="fileUploadCSV" accept=".dat" type="file" name="file" class="custom-file-input" aria-describedby="inputGroupFileAddon01" required>
             <label class="custom-file-label" for="inputGroupFile01">Choose file</label>
         </div>
- 
+
         <div class="input-group-prepend">
             @*<button id="btnValidate" class="btn btn-info" style="margin-right:3px" type="button">Validate</button>*@
             <button id="btnSubmit" class="btn btn-success" style=" " type="submit">Import</button>
@@ -51,8 +55,8 @@
 @{
     if (Model != null && Model.SucessCount.HasValue && Model.ErrorCount.HasValue)
     {
-<span class="badge badge-success">Success : @Model.SucessCount</span>
-<span class="badge badge-danger">Failed : @Model.ErrorCount</span>
+        <span class="badge badge-success">Success : @Model.SucessCount</span>
+        <span class="badge badge-danger">Failed : @Model.ErrorCount</span>
 
     }
 }
@@ -60,47 +64,47 @@
 @{
     if (Model != null && Model.LsOfErrors != null && Model.LsOfErrors.Count > 0)
     {
-<div class="">
+        <div class="">
 
-    @{
-        if (Model.Validate)
-        {
-    <div class="alert alert-danger" style="margin-top:30px">
-        <strong>Errors</strong> Please fix the below errors.
-    </div>
-        }
-        else
-        {
-            <div class="alert alert-danger" style="margin-top:30px">
-                <strong>Errors</strong> occured during the inventory update please check below report.
-            </div>
-        }
-    }
-
-
-    <table class="table table-responsive">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Error Message</th>
-            </tr>
-        </thead>
-        <tbody>
             @{
-                int counter = 1;
-                foreach (var item in Model.LsOfErrors)
+                if (Model.Validate)
                 {
-                    <tr>
-                        <td>@counter</td>
-                        <td>@item</td>
-                    </tr>
-                    counter++;
+                    <div class="alert alert-danger" style="margin-top:30px">
+                        <strong>Errors</strong> Please fix the below errors.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-danger" style="margin-top:30px">
+                        <strong>Errors</strong> occured during the inventory update please check below report.
+                    </div>
                 }
             }
-        </tbody>
-    </table>
 
-</div>
+
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Error Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int counter = 1;
+                        foreach (var item in Model.LsOfErrors)
+                        {
+                            <tr>
+                                <td>@counter</td>
+                                <td>@item</td>
+                            </tr>
+                            counter++;
+                        }
+                    }
+                </tbody>
+            </table>
+
+        </div>
     }
 
 }
@@ -109,50 +113,50 @@
 @{
     if (Model != null && Model.LsOfSucess != null && Model.LsOfSucess.Count > 0)
     {
-<div class="">
-    @if (Model.Validate)
-    {
-        <div class="alert alert-info" style="margin-top:30px">
-          The below will be updated successfully, to import and affect Inventory please choose the file and click import.
-        </div>
+        <div class="">
+            @if (Model.Validate)
+            {
+                <div class="alert alert-info" style="margin-top:30px">
+                    The below will be updated successfully, to import and affect Inventory please choose the file and click import.
+                </div>
 
-    }
-    else
-    {
-        <div class="alert alert-success" style="margin-top:30px">
-            <strong>Success transactions:</strong> The below updated successfully.
-        </div>
-    }
-    <table class="table table-responsive">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Message</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                int counter = 1;
-                foreach (var item in Model.LsOfSucess)
-                {
-                    <tr>
-                        <td>@counter</td>
-                        <td>@item</td>
-                    </tr>
-                    counter++;
-                }
             }
-        </tbody>
-    </table>
+            else
+            {
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong>Success transactions:</strong> The below updated successfully.
+                </div>
+            }
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int counter = 1;
+                        foreach (var item in Model.LsOfSucess)
+                        {
+                            <tr>
+                                <td>@counter</td>
+                                <td>@item</td>
+                            </tr>
+                            counter++;
+                        }
+                    }
+                </tbody>
+            </table>
 
-</div>
+        </div>
     }
 
 }
 <script src="~/lib/jquery/dist/jquery.js"></script>
 
 <script>
-   
+
 
     $(document).ready(function () {
 

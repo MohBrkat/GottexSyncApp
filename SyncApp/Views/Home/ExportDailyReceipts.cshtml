@@ -1,5 +1,9 @@
 ﻿@model string
 
+@{
+    ViewData["Title"] = "Daily Receipt";
+}
+
 <style>
     #pageloader {
         background: rgba( 255, 255, 255, 0.8 );
@@ -66,10 +70,10 @@
 </div>
 <script src="~/lib/jquery/dist/jquery.js"></script>
 <script>
-        $("#errorLabel").hide();
+    $("#errorLabel").hide();
     $(document).ready(function () {
-    
-        $("#btnSubmit").click( function () {
+
+        $("#btnSubmit").click(function () {
             var dt1 = $("#msg").val();
             var dt2 = $("#msg2").val();
 
@@ -77,15 +81,15 @@
             var dateTo = new Date(dt2);
             if (dateFrom > dateTo) {
                 $("#errorLabel").show();
-                }
+            }
             else {
-                
-                $("#frmMain").submit(); 
+
+                $("#frmMain").submit();
             }
         });//submit
         $("#frmMain").on("submit", function () {
             $("#pageloader").fadeIn();
-                $('#btnSubmit').prop("disabled", true);
+            $('#btnSubmit').prop("disabled", true);
         });
     });
 
