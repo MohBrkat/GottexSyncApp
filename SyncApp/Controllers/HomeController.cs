@@ -818,7 +818,7 @@ namespace ShopifyApp2.Controllers
         #region Import using the website
 
         [HttpPost]
-        public async Task<IActionResult> ImportInventoryUpdatesFromCSVAsync(IFormFile File)
+        public async Task<IActionResult> ImportInventoryUpdatesFromCSV(IFormFile File)
         {
             bool importSuccess = false;
             //Utility.removeManualLogs("inventory-update-" + DateTime.Today.ToString("yyMMdd"), "Logs/");
