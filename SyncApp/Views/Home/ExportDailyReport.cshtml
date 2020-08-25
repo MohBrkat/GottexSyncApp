@@ -1,4 +1,9 @@
 ﻿@model SyncApp.ViewModel.FileModel
+
+@{
+    ViewData["Title"] = "Daily Report";
+}
+
 <style>
     #pageloader {
         background: rgba( 255, 255, 255, 0.8 );
@@ -16,10 +21,9 @@
             position: absolute;
             top: 35%;
         }
-    .alert-success
-    {
-        text-align:left!important;
 
+    .alert-success {
+        text-align: left !important;
     }
 </style>
 
@@ -112,7 +116,7 @@
             }
         });//submit
 
-       
+
         $("#btnExportReportSubmit").on("submit", function () {
             $("#pageloader").fadeIn();
             $('#btnExportReportSubmit').prop("disabled", true);

@@ -1,24 +1,27 @@
 ﻿@model string
 
-    <style>
-        #pageloader {
-            background: rgba( 255, 255, 255, 0.8 );
-            display: none;
-            height: 100%;
-            position: fixed;
-            width: 100%;
-            z-index: 9999;
-        }
+@{
+    ViewData["Title"] = "Daily Sales";
+}
 
-            #pageloader img {
-                left: 42%;
-                margin-left: -32px;
-                margin-top: -32px;
-                position: absolute;
-                top: 35%;
-            }
-            
-    </style>
+<style>
+    #pageloader {
+        background: rgba( 255, 255, 255, 0.8 );
+        display: none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        z-index: 9999;
+    }
+
+        #pageloader img {
+            left: 42%;
+            margin-left: -32px;
+            margin-top: -32px;
+            position: absolute;
+            top: 35%;
+        }
+</style>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
@@ -73,8 +76,8 @@
 <script>
     $("#errorLabel").hide();
     $(document).ready(function () {
-    
-        $("#btnSubmit").click( function () {
+
+        $("#btnSubmit").click(function () {
             var dt1 = $("#msg").val();
             var dt2 = $("#msg2").val();
 
@@ -82,15 +85,15 @@
             var dateTo = new Date(dt2);
             if (dateFrom > dateTo) {
                 $("#errorLabel").show();
-                }
+            }
             else {
-                
-                $("#frmMain").submit(); 
+
+                $("#frmMain").submit();
             }
         });//submit
         $("#frmMain").on("submit", function () {
             $("#pageloader").fadeIn();
-                $('#btnSubmit').prop("disabled", true);
+            $('#btnSubmit').prop("disabled", true);
         });
     });
 

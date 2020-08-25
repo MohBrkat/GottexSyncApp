@@ -1,6 +1,8 @@
 ﻿@model SyncApp.Models.EF.Configrations
 
-
+@{
+    ViewData["Title"] = "Edit";
+}
 
 <!DOCTYPE html>
 
@@ -18,13 +20,13 @@
         <input type="hidden" asp-for="Id" />
 
         @*<div class="column">
-            <label asp-for="InventoryUpdateHour" class="control-label">Inventory update Hour</label>
-            <input asp-for="InventoryUpdateHour" class="form-control" />
-        </div>
-        <div class="column">
-            <label asp-for="InventoryUpdateMinute" class="control-label">Inventory update Minute</label>
-            <input asp-for="InventoryUpdateMinute" class="form-control" />
-        </div>*@
+                <label asp-for="InventoryUpdateHour" class="control-label">Inventory update Hour</label>
+                <input asp-for="InventoryUpdateHour" class="form-control" />
+            </div>
+            <div class="column">
+                <label asp-for="InventoryUpdateMinute" class="control-label">Inventory update Minute</label>
+                <input asp-for="InventoryUpdateMinute" class="form-control" />
+            </div>*@
 
         <section id="general-content">
             <h5>General Configurations </h5>
