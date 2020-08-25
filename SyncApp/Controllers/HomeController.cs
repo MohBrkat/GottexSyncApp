@@ -338,7 +338,8 @@ namespace ShopifyApp2.Controllers
         {
             get
             {
-                return "invoices-web-" + DateTime.Now.ToString("yyMMdd") + ".dat";
+                // return "invoices-web-" + DateTime.Now.ToString("yyMMdd") + ".dat";
+                return "Sales-Web-" + ShortBranchCodeSales + "-" + DateTime.Now.ToString("yyMMdd") + ".dat";
             }
         }
         private string ReceiptsFileName
@@ -1205,6 +1206,7 @@ namespace ShopifyApp2.Controllers
                 {
                     decimal taxPercentage = (decimal)_config.TaxPercentage;
                     var InvoiceDate = DayOrders.OrdersDate;
+                    decimal vatTax = taxPercentage + 0.0m;
 
                     var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
 
@@ -1280,7 +1282,9 @@ namespace ShopifyApp2.Controllers
                                 "\t" + "\t" + "\t" +
                                 order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                                 + "\t" +
-                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                                + "\t" +
+                                vatTax);
 
                             }
                         }
@@ -1317,7 +1321,9 @@ namespace ShopifyApp2.Controllers
                                 "\t" + "\t" + "\t" +
                                 order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                                 + "\t" +
-                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                                 + "\t" +
+                                vatTax);
 
                             }
 
@@ -1776,7 +1782,7 @@ namespace ShopifyApp2.Controllers
                     FileData = summarizedFile
                 };
 
-                string subject = $"Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
+                string subject = $"{ _config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                 string body = ReportEmailMessageBody();
 
                 if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))

@@ -43,5 +43,6 @@ namespace SyncApp.Models.EF
         public bool? Wednesday { get; set; }
         public bool? Thursday { get; set; }
         public bool? Friday { get; set; }
+        public string SiteName { get; set; }
     }
 }

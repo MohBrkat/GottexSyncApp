@@ -672,10 +672,10 @@ namespace SyncApp
                         {
                             current = current.Replace(".dat", "");
                             var arr = current.Split("-");
-                            if (arr.Length == 3)
+                            if (arr.Length == 4)
                             {
                                 var date = new DateTime();
-                                var valid = DateTime.TryParseExact(arr[2], "yyMMddHHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
+                                var valid = DateTime.TryParseExact(arr[3], "yyMMddHHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
                                 if (valid)
                                 {
                                     lsOfValid.Add(current);
