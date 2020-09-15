@@ -30,7 +30,7 @@ namespace ShopifyApp2.Controllers
         private readonly IHostingEnvironment _hostingEnvironment;
         private static readonly object reciptsFileLock = new object();
         private static readonly object salesFileLock = new object();
-        private static ReaderWriterLockSlim fileLock = new ReaderWriterLockSlim();
+        private static readonly object importInventoryLock = new object();
 
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
@@ -418,13 +418,30 @@ namespace ShopifyApp2.Controllers
 
         public async Task DoImoportAsync()
         {
-
             bool importSuccess = false;
 
             FileInformation info = await ValidateInventoryUpdatesFromCSVAsync();
 
             if (info != null && !string.IsNullOrEmpty(info.fileName))
             {
+                lock (importInventoryLock)
+                {
+                    var fileImportStatus = _context.FilesImportStatus.FirstOrDefault(s => s.FileName.Trim() == info.fileName.Trim());
+
+                    if (fileImportStatus != null)
+                    {
+                        if (fileImportStatus.IsImportSuccess == true || fileImportStatus.IsCompleted == false)
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        InsertFileImportStatus(false, false, info);
+                    }
+
+                }
+
                 _log.Info("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed.");
 
                 //var fileName = Path.GetFileNameWithoutExtension(info.fileName);
@@ -471,17 +488,51 @@ namespace ShopifyApp2.Controllers
                     Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject, logFile);
 
                 }
+
+                UpdateFileImportStatus(importSuccess, true, info);
             }
-            else
+        }
+
+        private void InsertFileImportStatus(bool importSuccess, bool isCompleted, FileInformation info)
+        {
+            try
             {
-                // commented 1-8-2019 requested by Aviram by email
-                // var body = messageBody("Import inventory File", "failed", "File Not Found!");
-                //  Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, "Inventory File Not found");
+                FilesImportStatus importStatus = new FilesImportStatus()
+                {
+                    FileName = info.fileName,
+                    IsCompleted = isCompleted,
+                    IsImportSuccess = importSuccess,
+                    CreateDate = DateTime.Now,
+                    UpdateDate = DateTime.Now
+                };
 
+                _context.Add(importStatus);
+                _context.SaveChanges();
             }
-            //Utility.UploadSFTPFile(host, userName, password, "Logs/logs.success_" + DateTime.Today.ToString("yyyyMMdd") + ".dat", "Inventory", port);
-            //Utility.UploadSFTPFile(host, userName, password, "Logs/logs.failed_" + DateTime.Today.ToString("yyyyMMdd") + ".dat", "Inventory", port);
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+            }
+        }
 
+        private void UpdateFileImportStatus(bool importSuccess, bool isCompleted, FileInformation info)
+        {
+            try
+            {
+                FilesImportStatus importStatus = _context.FilesImportStatus.FirstOrDefault(f => f.FileName.Trim() == info.fileName.Trim());
+
+                if (importStatus != null)
+                {
+                    importStatus.IsCompleted = isCompleted;
+                    importStatus.IsImportSuccess = importSuccess;
+
+                    _context.SaveChanges();
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+            }
         }
 
 
