@@ -450,7 +450,7 @@ namespace ShopifyApp2.Controllers
                 {
                     Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
-                    var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info.fileRows);
+                    var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                     // _log.Logger.Repository.Shutdown();
                     if (!sucess)
                     {
@@ -520,7 +520,7 @@ namespace ShopifyApp2.Controllers
             {
                 FilesImportStatus importStatus = _context.FilesImportStatus.FirstOrDefault(f => f.FileName.Trim() == info.fileName.Trim());
 
-                if(importStatus != null)
+                if (importStatus != null)
                 {
                     importStatus.IsCompleted = isCompleted;
                     importStatus.IsImportSuccess = importSuccess;
@@ -792,14 +792,20 @@ namespace ShopifyApp2.Controllers
             return LsOfErrors.Count;
         }
 
-        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(List<string> RowsWithoutHeader)
+        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info)
         {
+            List<string> lsOfSuccess = new List<string>();
+            List<string> lsOfErrors = new List<string>();
+
             try
             {
-
+                List<string> RowsWithoutHeader = info.fileRows;
 
                 var ProductServices = new ProductService(StoreUrl, api_secret);
                 var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
+
+                info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+                info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
 
                 foreach (var row in RowsWithoutHeader)
                 {
@@ -849,16 +855,22 @@ namespace ShopifyApp2.Controllers
                     }
                     _log.Info("the handle : " + Handle + "--" + "processed");
 
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, file: " + info.fileName);
+
                     Thread.Sleep(500);
                     // System.IO.File.AppendAllText("C:/1/logs.txt", Handle + Environment.NewLine);
                 }
                 _log.Info("file processed sucesfully");
 
+                info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
 
                 return true;
             }
             catch (Exception ex)
             {
+                _log.Error("Error While Importing The File : " + ex.Message);
+                info.LsOfErrors.Add("file: " + info.fileName + "processed failed,Error Message: " + ex.Message + "Error: " + ex.ToString());
+
                 return false;
             }
         }
