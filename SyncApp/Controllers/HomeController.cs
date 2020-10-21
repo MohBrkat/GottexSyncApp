@@ -794,9 +794,6 @@ namespace ShopifyApp2.Controllers
 
         private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info)
         {
-            List<string> lsOfSuccess = new List<string>();
-            List<string> lsOfErrors = new List<string>();
-
             try
             {
                 List<string> RowsWithoutHeader = info.fileRows;
@@ -855,7 +852,7 @@ namespace ShopifyApp2.Controllers
                     }
                     _log.Info("the handle : " + Handle + "--" + "processed");
 
-                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, file: " + info.fileName);
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
 
                     Thread.Sleep(500);
                     // System.IO.File.AppendAllText("C:/1/logs.txt", Handle + Environment.NewLine);
