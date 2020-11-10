@@ -915,8 +915,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
-            , DateTime dateToRetriveTo = default(DateTime))
+        public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
@@ -924,12 +923,12 @@ namespace ShopifyApp2.Controllers
             {
                 await Task.Delay(1000);
                 //Date period option
-                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
+                if (dateToRetriveFrom != default && dateToRetriveTo != default)
                 {
                     lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom, dateToRetriveTo);
                 }
                 //Single day option
-                else if (dateToRetriveFrom != default(DateTime))
+                else if (dateToRetriveFrom != default)
                 {
                     lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom);
                 }
@@ -1181,8 +1180,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
-            , DateTime dateToRetriveTo = default(DateTime))
+        public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
@@ -1190,12 +1188,12 @@ namespace ShopifyApp2.Controllers
             {
                 await Task.Delay(1000);
                 //Date period Option
-                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
+                if (dateToRetriveFrom != default && dateToRetriveTo != default)
                 {
                     lsOfOrders = GetNotExportedOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
                 }
                 //Single day Option
-                else if (dateToRetriveFrom != default(DateTime))
+                else if (dateToRetriveFrom != default)
                 {
                     lsOfOrders = GetNotExportedOrders("receipts", dateToRetriveFrom);
                 }
@@ -1425,17 +1423,17 @@ namespace ShopifyApp2.Controllers
             {
                 await Task.Delay(1000);
                 //Date period Option
-                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
+                if (dateToRetriveFrom != default && dateToRetriveTo != default)
                 {
                     lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
                 }
                 //Single day Option
-                else if (dateToRetriveFrom != default(DateTime))
+                else if (dateToRetriveFrom != default)
                 {
                     lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
 
                 }
-                else if (dateToRetriveTo != default(DateTime))
+                else if (dateToRetriveTo != default)
                 {
                     lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
 
