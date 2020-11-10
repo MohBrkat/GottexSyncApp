@@ -923,12 +923,12 @@ namespace ShopifyApp2.Controllers
             {
                 await Task.Delay(1000);
                 //Date period option
-                if (dateToRetriveFrom != default && dateToRetriveTo != default)
+                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                 {
                     lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom, dateToRetriveTo);
                 }
                 //Single day option
-                else if (dateToRetriveFrom != default)
+                else if (dateToRetriveFrom != default(DateTime))
                 {
                     lsOfOrders = GetNotExportedOrders("invoices", dateToRetriveFrom);
                 }
