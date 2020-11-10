@@ -2232,6 +2232,17 @@ namespace ShopifyApp2.Controllers
 
             return body;
         }
+
+        public FileResult DownloadFile(string fileToDownload, string subFolder)
+        {
+            string filePath = _hostingEnvironment.WebRootPath + $"/{subFolder}/{fileToDownload}";
+            string fileName = fileToDownload;
+
+            byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+            return File(fileBytes, "application/force-download", fileName);
+
+        }
         #endregion
     }
 }
