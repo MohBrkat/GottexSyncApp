@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
@@ -24,15 +25,20 @@ namespace ShopifySharp
     /// </remarks>
     public partial class SmartRetryExecutionPolicy : IRequestExecutionPolicy
     {
-        private const string RESPONSE_HEADER_API_CALL_LIMIT = "X-Shopify-Shop-Api-Call-Limit";
-
         private const string REQUEST_HEADER_ACCESS_TOKEN = "X-Shopify-Access-Token";
 
         private static readonly TimeSpan THROTTLE_DELAY = TimeSpan.FromMilliseconds(500);
 
         private static ConcurrentDictionary<string, LeakyBucket> _shopAccessTokenToLeakyBucket = new ConcurrentDictionary<string, LeakyBucket>();
 
-        public async Task<T> Run<T>(CloneableRequestMessage baseRequest, ExecuteRequestAsync<T> executeRequestAsync)
+        private readonly bool _retryOnlyIfLeakyBucketFull;
+
+        public SmartRetryExecutionPolicy(bool retryOnlyIfLeakyBucketFull = true)
+        {
+            _retryOnlyIfLeakyBucketFull = retryOnlyIfLeakyBucketFull;
+        }
+
+        public async Task<RequestResult<T>> Run<T>(CloneableRequestMessage baseRequest, ExecuteRequestAsync<T> executeRequestAsync, CancellationToken cancellationToken)
         {
             var accessToken = GetAccessToken(baseRequest);
             LeakyBucket bucket = null;
@@ -54,54 +60,37 @@ namespace ShopifySharp
                 try
                 {
                     var fullResult = await executeRequestAsync(request);
-                    var bucketState = this.GetBucketState(fullResult.Response);
+                    var bucketState = LeakyBucketState.Get(fullResult.Response);
 
                     if (bucketState != null)
                     {
                         bucket?.SetState(bucketState);
                     }
 
-                    return fullResult.Result;
+                    return fullResult;
                 }
-                catch (ShopifyRateLimitException)
+                catch (ShopifyRateLimitException ex) when (ex.Reason == ShopifyRateLimitReason.BucketFull || !_retryOnlyIfLeakyBucketFull)
                 {
+                    //Only retry if breach caused by full bucket
+                    //Other limits will bubble the exception because it's not clear how long the program should wait
+                    //Even if there is a Retry-After header, we probably don't want the thread to sleep for potentially many hours
+                    //
                     //An exception may still occur:
                     //-Shopify may have a slightly different algorithm
                     //-Shopify may change to a different algorithm in the future
                     //-There may be timing and latency delays
                     //-Multiple programs may use the same access token
                     //-Multiple instances of the same program may use the same access token
-                    await Task.Delay(THROTTLE_DELAY);
+                    await Task.Delay(THROTTLE_DELAY, cancellationToken);
                 }
             }
         }
 
         private string GetAccessToken(HttpRequestMessage client)
         {
-            IEnumerable<string> values = new List<string>();
-
-            return client.Headers.TryGetValues(REQUEST_HEADER_ACCESS_TOKEN, out values) ?
+            return client.Headers.TryGetValues(REQUEST_HEADER_ACCESS_TOKEN, out var values) ?
                 values.FirstOrDefault() :
                 null;
-        }
-
-        private LeakyBucketState GetBucketState(HttpResponseMessage response)
-        {
-            var headers = response.Headers.FirstOrDefault(kvp => kvp.Key == RESPONSE_HEADER_API_CALL_LIMIT);
-            var apiCallLimitHeaderValue = headers.Value?.FirstOrDefault();
-
-            if (apiCallLimitHeaderValue != null)
-            {
-                var split = apiCallLimitHeaderValue.Split('/');
-                if (split.Length == 2 &&
-                    int.TryParse(split[0], out int currentFillLevel) &&
-                    int.TryParse(split[1], out int capacity))
-                {
-                    return new LeakyBucketState(capacity, currentFillLevel);
-                }
-            }
-
-            return null;
         }
     }
 }

@@ -398,7 +398,6 @@ namespace ShopifyApp2.Controllers
                     {
                         InsertFileImportStatus(false, false, info);
                     }
-
                 }
 
                 _log.Info("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed.");
@@ -538,7 +537,7 @@ namespace ShopifyApp2.Controllers
                                     string Method = splittedRow[2];
                                     string Quantity = splittedRow[3];
 
-                                    var ProductObj = Products.FirstOrDefault(p => p.Handle.StartsWith(Handle));
+                                    var ProductObj = Products.FirstOrDefault(p => p.Handle.ToLower().StartsWith(Handle.ToLower()));
 
                                     if (ProductObj == null)
                                     {
@@ -662,7 +661,7 @@ namespace ShopifyApp2.Controllers
 
                     string Quantity = splittedRow[3];
 
-                    var ProductObj = Products.FirstOrDefault(p => p.Handle.StartsWith(Handle));
+                    var ProductObj = Products.FirstOrDefault(p => p.Handle.ToLower().StartsWith(Handle.ToLower()));
 
                     var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
@@ -671,9 +670,9 @@ namespace ShopifyApp2.Controllers
                     var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
 
-                    var LocationQuery = await InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelFilter { InventoryItemIds = InventoryItemIds });
+                    var LocationQuery = await InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
 
-                    var LocationId = LocationQuery.FirstOrDefault().LocationId;
+                    var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
 
                     Thread.Sleep(500);
 
@@ -804,7 +803,7 @@ namespace ShopifyApp2.Controllers
                                     string Method = splittedRow[2];
                                     string Quantity = splittedRow[3];
 
-                                    var ProductObj = Products.FirstOrDefault(p => p.Handle.StartsWith(Handle));
+                                    var ProductObj = Products.FirstOrDefault(p => p.Handle.ToLower().StartsWith(Handle.ToLower()));
 
                                     if (ProductObj == null)
                                     {
@@ -890,7 +889,7 @@ namespace ShopifyApp2.Controllers
                         string Method = splittedRow[2];
                         string Quantity = splittedRow[3];
 
-                        var ProductObj = Products.FirstOrDefault(p => p.Handle.StartsWith(Handle));
+                        var ProductObj = Products.FirstOrDefault(p => p.Handle.ToLower().StartsWith(Handle.ToLower()));
 
                         var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
@@ -898,9 +897,9 @@ namespace ShopifyApp2.Controllers
 
                         var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
-                        var LocationQuery = await InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelFilter { InventoryItemIds = InventoryItemIds });
+                        var LocationQuery = await InventoryLevelsServices.ListAsync(new ShopifySharp.Filters.InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
 
-                        var LocationId = LocationQuery.FirstOrDefault().LocationId;
+                        var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
 
                         //  Thread.Sleep(200);
 
@@ -1028,7 +1027,7 @@ namespace ShopifyApp2.Controllers
             string path = string.Empty;
             if (lsOfOrders.Count() > 0)
             {
-                path = await GenerateSalesFileAsync(lsOfOrders, fromWeb);
+                path = GenerateSalesFile(lsOfOrders, fromWeb);
 
                 return View("~/Views/Home/ExportDailySales.cshtml", path);
             }
@@ -1039,7 +1038,7 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private async Task<string> GenerateSalesFileAsync(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
+        private string GenerateSalesFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = InvoiceFileName.Clone().ToString();
             var FolderDirectory = "/Data/invoices/";
@@ -1501,23 +1500,23 @@ namespace ShopifyApp2.Controllers
                 //Date period Option
                 if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
                 {
-                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
+                    lsOfOrders = await GetReportOrdersAsync("receipts", dateToRetriveFrom, dateToRetriveTo);
                 }
                 //Single day Option
                 else if (dateToRetriveFrom != default(DateTime))
                 {
-                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
+                    lsOfOrders = await GetReportOrdersAsync("receipts", dateToRetriveFrom);
 
                 }
                 else if (dateToRetriveTo != default(DateTime))
                 {
-                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
+                    lsOfOrders = await GetReportOrdersAsync("receipts", dateToRetriveFrom, dateToRetriveTo);
 
                 }
                 //Yesterday Option (Default)
                 else
                 {
-                    lsOfOrders = GetReportOrders("receipts");
+                    lsOfOrders = await GetReportOrdersAsync("receipts");
                 }
 
             }
@@ -1855,16 +1854,16 @@ namespace ShopifyApp2.Controllers
             return body;
         }
 
-        private List<Order> GetReportOrders(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
+        private async Task<List<Order>> GetReportOrdersAsync(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
-            ShopifySharp.Filters.OrderFilter filter = new ShopifySharp.Filters.OrderFilter();
+            ShopifySharp.Filters.OrderListFilter filter = new ShopifySharp.Filters.OrderListFilter();
 
             if (dateFrom != default(DateTime) && dateTo == default(DateTime))
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "paid",
                     Status = "open",
@@ -1874,7 +1873,7 @@ namespace ShopifyApp2.Controllers
             }
             else if (dateFrom == default(DateTime) && dateTo != default(DateTime))
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "paid",
                     Status = "open",
@@ -1884,7 +1883,7 @@ namespace ShopifyApp2.Controllers
             }
             else if (dateFrom == default(DateTime) && dateTo == default(DateTime))
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "paid",
                     Status = "open",
@@ -1893,7 +1892,7 @@ namespace ShopifyApp2.Controllers
             }
             else
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "paid",
                     Status = "open",
@@ -1904,32 +1903,10 @@ namespace ShopifyApp2.Controllers
 
             }
 
-
-            // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
 
-            var ordersCount = OrderService.CountAsync(filter).Result;
+            List<Order> orders = await GetOrderByFiltersAsync(filter);
 
-            List<Order> orders = new List<Order>();
-            var loops = Math.Ceiling((double)(ordersCount) / 250);
-
-            filter.Limit = 250;
-            for (int i = 1; i <= loops; i++)
-            {
-                try
-                {
-                    filter.Page = i;
-                    var ordersResult = OrderService.ListAsync(filter).Result;
-
-                    orders.AddRange(ordersResult.Select(a => a).Where(a => a.FulfillmentStatus == null ||
-                    a.FulfillmentStatus == "partial"));
-                }
-                catch (ShopifySharp.ShopifyRateLimitException ex)
-                {
-                    i--;
-                }
-
-            }
             return orders;
         }
 
@@ -1941,11 +1918,11 @@ namespace ShopifyApp2.Controllers
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
-            ShopifySharp.Filters.OrderFilter filter = new ShopifySharp.Filters.OrderFilter();
+            ShopifySharp.Filters.OrderListFilter filter = new ShopifySharp.Filters.OrderListFilter();
 
             if (dateFrom != default(DateTime) && dateTo == default(DateTime))
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "any",
                     Status = "open",
@@ -1955,7 +1932,7 @@ namespace ShopifyApp2.Controllers
             }
             else if (dateFrom == default(DateTime) && dateTo != default(DateTime))
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "any",
                     Status = "open",
@@ -1965,7 +1942,7 @@ namespace ShopifyApp2.Controllers
             }
             else if (dateFrom == default(DateTime) && dateTo == default(DateTime))
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "any",
                     Status = "open",
@@ -1974,7 +1951,7 @@ namespace ShopifyApp2.Controllers
             }
             else
             {
-                filter = new ShopifySharp.Filters.OrderFilter
+                filter = new ShopifySharp.Filters.OrderListFilter
                 {
                     FinancialStatus = "any",
                     Status = "open",
@@ -1985,30 +1962,9 @@ namespace ShopifyApp2.Controllers
 
             }
 
-            // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
 
-            var ordersCount = await OrderService.CountAsync(filter);
-
-            List<Order> orders = new List<Order>();
-            var loops = Math.Ceiling((double)ordersCount / 250);
-
-            filter.Limit = 250;
-            for (int i = 1; i <= loops; i++)
-            {
-                try
-                {
-                    filter.Page = i;
-                    var ordersResult = await OrderService.ListAsync(filter);
-                    orders.AddRange(ordersResult.Select(a => a).Where(a => (a.FinancialStatus == "partially_refunded")
-                    && (a.FulfillmentStatus == null || a.FulfillmentStatus == "partial")));
-                }
-                catch (ShopifySharp.ShopifyRateLimitException ex)
-                {
-                    i--;
-                }
-
-            }
+            List<Order> orders = await GetOrderByFiltersAsync(filter);
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             foreach (var order in OrdersHasRefunds)
@@ -2052,7 +2008,7 @@ namespace ShopifyApp2.Controllers
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
 
-            var filter = new ShopifySharp.Filters.OrderFilter
+            var filter = new ShopifySharp.Filters.OrderListFilter
             {
                 FinancialStatus = "any",
                 Status = "any",
@@ -2061,27 +2017,8 @@ namespace ShopifyApp2.Controllers
                 CreatedAtMax = dateTo.AbsoluteEnd()
             };
 
-            var ordersCount = await OrderService.CountAsync(filter);
+            List<Order> orders = await GetOrderByFiltersAsync(filter);
 
-            List<Order> orders = new List<Order>();
-            var loops = Math.Ceiling((double)(ordersCount) / 250);
-
-            filter.Limit = 250;
-            for (int i = 1; i <= loops; i++)
-            {
-                try
-                {
-                    filter.Page = i;
-                    var ordersResult = await OrderService.ListAsync(filter);
-                    orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "paid" ||
-                    a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
-                }
-                catch (ShopifySharp.ShopifyRateLimitException ex)
-                {
-                    i--;
-                }
-
-            }
             return orders;
         }
 
@@ -2109,33 +2046,14 @@ namespace ShopifyApp2.Controllers
             // looop , need new logic , [aging , sice id
             var OrderService = new OrderService(StoreUrl, api_secret);
 
-            var filter = new ShopifySharp.Filters.OrderFilter
+            var filter = new ShopifySharp.Filters.OrderListFilter
             {
                 FinancialStatus = "any",
                 Status = "any",
                 FulfillmentStatus = "any"
             };
 
-            var ordersCount = await OrderService.CountAsync(filter);
-
-            List<Order> orders = new List<Order>();
-            var loops = Math.Ceiling((double)ordersCount / 250);
-
-            filter.Limit = 250;
-            for (int i = 1; i <= loops; i++)
-            {
-                try
-                {
-                    filter.Page = i;
-                    var ordersResult = await OrderService.ListAsync(filter);
-                    orders.AddRange(ordersResult.Select(a => a).Where(a => a.FinancialStatus == "refunded" || a.FinancialStatus == "partially_refunded"));
-                }
-                catch (ShopifySharp.ShopifyRateLimitException ex)
-                {
-                    i--;
-                }
-
-            }
+            List<Order> orders = await GetOrderByFiltersAsync(filter);
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             var ordersToReturn = new List<Order>();
@@ -2227,33 +2145,53 @@ namespace ShopifyApp2.Controllers
         {
             var productServices = new ProductService(StoreUrl, api_secret);
 
-            var filter = new ShopifySharp.Filters.ProductFilter
+            List<Product> products = new List<Product>();
+            var filter = new ShopifySharp.Filters.ProductListFilter
             {
                 Limit = 250,
                 Fields = "id,handle,vendor,Variants"
             };
 
-            var productsCount = await productServices.CountAsync();
+            var page = await productServices.ListAsync(filter);
 
-            List<Product> products = new List<Product>();
-            var loops = Math.Ceiling((double)(productsCount) / 250);
-
-            for (int i = 1; i <= loops; i++)
+            while (true)
             {
-                try
-                {
-                    filter.Page = i;
-                    var productsResult = await productServices.ListAsync(filter);
+                products.AddRange(page.Items);
 
-                    products.AddRange(productsResult);
-                }
-                catch (ShopifySharp.ShopifyRateLimitException ex)
+                if (!page.HasNextPage)
                 {
-                    i--;
+                    break;
                 }
 
+                page = await productServices.ListAsync(page.GetNextPageFilter());
             }
+
             return products;
+        }
+
+        public async Task<List<Order>> GetOrderByFiltersAsync(ShopifySharp.Filters.OrderListFilter filter)
+        {
+            var orderService = new OrderService(StoreUrl, api_secret);
+
+            List<Order> Orders = new List<Order>();
+
+            filter.Limit = 250;
+
+            var page = await orderService.ListAsync(filter);
+
+            while (true)
+            {
+                Orders.AddRange(page.Items);
+
+                if (!page.HasNextPage)
+                {
+                    break;
+                }
+
+                page = await orderService.ListAsync(page.GetNextPageFilter());
+            }
+
+            return Orders;
         }
 
         private string messageBody(string operationName, string status, string fileName)

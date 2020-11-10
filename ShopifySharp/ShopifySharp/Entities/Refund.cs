@@ -1,9 +1,6 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
@@ -15,6 +12,23 @@ namespace ShopifySharp
         [JsonProperty("created_at")]
         public DateTimeOffset? CreatedAt { get; set; }
 
+        ///<summary>
+        /// Whether to send a refund notification to the customer
+        /// </summary>
+        [JsonProperty("notify")]
+        public bool? Notify { get; set; }
+
+        /// <summary>
+        /// Specify how much shipping to refund.
+        /// </summary>
+        [JsonProperty("shipping")]
+        public Shipping Shipping { get; set; }
+
+        /// <summary>
+        /// The three-letter code (ISO 4217 format) for the currency used for the refund. Note: Required whenever the shipping amount property is provided.
+        /// </summary>
+        [JsonProperty("currency")]
+        public string Currency { get; set; }
 
         /// <summary>
         /// The list of <see cref="RefundOrderAdjustment"/> objects
@@ -44,12 +58,6 @@ namespace ShopifySharp
         public IEnumerable<RefundLineItem> RefundLineItems { get; set; }
 
         /// <summary>
-        /// Whether or not the line items were added back to the store inventory.
-        /// </summary>
-        [JsonProperty("restock")]
-        public bool? Restock { get; set; }
-
-        /// <summary>
         /// The list of <see cref="Transaction"/> objects
         /// </summary>
         [JsonProperty("transactions")]
@@ -60,5 +68,26 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("user_id")]
         public long? UserId { get; set; }
+
+        /// <summary>
+        /// A list of duties that have been returned as part of the refund.
+        /// </summary>
+        [JsonProperty("duties")]
+        public IEnumerable<RefundDuty> Duties { get; set; }
+    }
+
+    public class Shipping
+    {
+        /// <summary>
+        /// Whether to refund all remaining shipping.
+        /// </summary>
+        [JsonProperty("full_refund")]
+        public bool? FullRefund { get; set; }
+
+        /// <summary>
+        /// Set a specific amount to refund for shipping. Takes precedence over full_refund.
+        /// </summary>
+        [JsonProperty("amount")]
+        public decimal? Amount { get; set; }
     }
 }

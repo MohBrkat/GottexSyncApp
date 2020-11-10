@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Threading;
+using ShopifySharp.Filters;
 using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
@@ -23,8 +26,9 @@ namespace ShopifySharp
         /// <param name="themeId">The id of the theme that the asset belongs to. Assets themselves do not have ids.</param>
         /// <param name="key">The key value of the asset, e.g. 'templates/index.liquid' or 'assets/bg-body.gif'.</param>
         /// <param name="fields">A comma-separated list of fields to return.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The <see cref="Asset"/>.</returns>
-        public virtual async Task<Asset> GetAsync(long themeId, string key, string fields = null)
+        public virtual async Task<Asset> GetAsync(long themeId, string key, string fields = null, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"themes/{themeId}/assets.json");
 
@@ -36,7 +40,9 @@ namespace ShopifySharp
                 req.QueryParams.Add("fields", fields);
             }
 
-            return await ExecuteRequestAsync<Asset>(req, HttpMethod.Get, rootElement: "asset");
+            var response = await ExecuteRequestAsync<Asset>(req, HttpMethod.Get, cancellationToken, rootElement: "asset");
+            
+            return response.Result;
         }
 
         /// <summary>
@@ -44,18 +50,11 @@ namespace ShopifySharp
         /// You need to request assets individually in order to get their contents.
         /// </summary>
         /// <param name="themeId">The id of the theme that the asset belongs to.</param>
-        /// <param name="fields">A comma-separated list of fields to return.</param>
-        /// <returns>The list of <see cref="Asset"/> objects.</returns>
-        public virtual async Task<IEnumerable<Asset>> ListAsync(long themeId, string fields = null)
+        /// <param name="filter">Options for filtering the list.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<IEnumerable<Asset>> ListAsync(long themeId, AssetListFilter filter = null, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"themes/{themeId}/assets.json");
-
-            if (string.IsNullOrEmpty(fields) == false)
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-
-            return await ExecuteRequestAsync<List<Asset>>(req, HttpMethod.Get, rootElement: "assets");
+            return await ExecuteGetAsync<IEnumerable<Asset>>($"themes/{themeId}/assets.json", "assets", filter, cancellationToken);
         }
 
         /// <summary>
@@ -68,8 +67,9 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="themeId">The id of the theme that the asset belongs to.</param>
         /// <param name="asset">The asset.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The created or updated asset.</returns>
-        public virtual async Task<Asset> CreateOrUpdateAsync(long themeId, Asset asset)
+        public virtual async Task<Asset> CreateOrUpdateAsync(long themeId, Asset asset, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"themes/{themeId}/assets.json");
             var content = new JsonContent(new
@@ -77,7 +77,8 @@ namespace ShopifySharp
                 asset = asset
             });
 
-            return await ExecuteRequestAsync<Asset>(req, HttpMethod.Put, content, "asset");
+            var response = await ExecuteRequestAsync<Asset>(req, HttpMethod.Put, cancellationToken, content, "asset");
+            return response.Result;
         }
 
         /// <summary>
@@ -85,13 +86,14 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="themeId">The id of the theme that the asset belongs to.</param>
         /// <param name="key">The key value of the asset, e.g. 'templates/index.liquid' or 'assets/bg-body.gif'.</param>
-        public virtual async Task DeleteAsync(long themeId, string key)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task DeleteAsync(long themeId, string key, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"themes/{themeId}/assets.json");
 
             req = SetAssetQuerystring(req, key, themeId);
 
-            await ExecuteRequestAsync(req, HttpMethod.Delete);
+            await ExecuteRequestAsync(req, HttpMethod.Delete, cancellationToken);
         }
 
         /// <summary>
