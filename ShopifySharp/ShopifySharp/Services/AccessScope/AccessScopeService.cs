@@ -1,7 +1,6 @@
-﻿using ShopifySharp.Filters;
-using ShopifySharp.Infrastructure;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ShopifySharp
@@ -24,10 +23,9 @@ namespace ShopifySharp
         /// <summary>
         /// Retrieves a list of access scopes associated to the access token.
         /// </summary>
-        public virtual async Task<IEnumerable<AccessScope>> ListAsync()
+        public virtual async Task<IEnumerable<AccessScope>> ListAsync(CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"oauth/access_scopes.json");
-            return await ExecuteRequestAsync<List<AccessScope>>(req, HttpMethod.Get, rootElement: "access_scopes");
+            return await ExecuteGetAsync<IEnumerable<AccessScope>>("oauth/access_scopes.json", "access_scopes", cancellationToken: cancellationToken);
         }
     }
 }

@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
 using System;
+using System.Threading;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -25,35 +26,33 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="filter">Options for filtering the count.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The count of all fulfillments for the shop.</returns>
-        public virtual async Task<int> CountAsync(long orderId, CountFilter filter = null)
+        public virtual async Task<int> CountAsync(long orderId, FulfillmentCountFilter filter = null, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"orders/{orderId}/fulfillments/count.json");
-
-            if (filter != null)
-            {
-                req.QueryParams.AddRange(filter.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<int>(req, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>($"orders/{orderId}/fulfillments/count.json", "count", filter, cancellationToken);
+        }
+        
+        /// <summary>
+        /// Gets a list of up to 250 of the order's fulfillments.
+        /// </summary>
+        /// <param name="orderId">The order id to which the fulfillments belong.</param>
+        /// <param name="filter">Options for filtering the list.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ListResult<Fulfillment>> ListAsync(long orderId, ListFilter<Fulfillment> filter = null, CancellationToken cancellationToken = default)
+        {
+            return await ExecuteGetListAsync($"orders/{orderId}/fulfillments.json", "fulfillments", filter, cancellationToken);
         }
 
         /// <summary>
         /// Gets a list of up to 250 of the order's fulfillments.
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
-        /// <param name="options">Options for filtering the list.</param>
-        /// <returns>The list of fulfillments matching the filter.</returns>
-        public virtual async Task<IEnumerable<Fulfillment>> ListAsync(long orderId, ListFilter options = null)
+        /// <param name="filter">Options for filtering the list.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ListResult<Fulfillment>> ListAsync(long orderId, FulfillmentListFilter filter, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"orders/{orderId}/fulfillments.json");
-
-            if (options != null)
-            {
-                req.QueryParams.AddRange(options.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<Fulfillment>>(req, HttpMethod.Get, rootElement: "fulfillments");
+            return await ListAsync(orderId, filter?.AsListFilter(), cancellationToken);
         }
 
         /// <summary>
@@ -62,17 +61,11 @@ namespace ShopifySharp
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="fulfillmentId">The id of the Fulfillment to retrieve.</param>
         /// <param name="fields">A comma-separated list of fields to return.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The <see cref="Fulfillment"/>.</returns>
-        public virtual async Task<Fulfillment> GetAsync(long orderId, long fulfillmentId, string fields = null)
+        public virtual async Task<Fulfillment> GetAsync(long orderId, long fulfillmentId, string fields = null, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}.json");
-
-            if (!string.IsNullOrEmpty(fields))
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-
-            return await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Get, rootElement: "fulfillment");
+            return await ExecuteGetAsync<Fulfillment>($"orders/{orderId}/fulfillments/{fulfillmentId}.json", "fulfillment", fields, cancellationToken);
         }
 
         /// <summary>
@@ -80,8 +73,9 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="fulfillment">A new <see cref="Fulfillment"/>. Id should be set to null.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The new <see cref="Fulfillment"/>.</returns>
-        public virtual async Task<Fulfillment> CreateAsync(long orderId, Fulfillment fulfillment)
+        public virtual async Task<Fulfillment> CreateAsync(long orderId, Fulfillment fulfillment, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"orders/{orderId}/fulfillments.json");
             var body = fulfillment.ToDictionary();
@@ -91,24 +85,8 @@ namespace ShopifySharp
                 fulfillment = body
             });
 
-            return await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, content, "fulfillment");
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="Fulfillment"/> on the order.
-        /// </summary>
-        /// <param name="orderId">The order id to which the fulfillments belong.</param>
-        /// <param name="fulfillment">A new <see cref="Fulfillment"/>. Id should be set to null.</param>
-        /// <param name="notifyCustomer">Whether the customer should be notified that the fulfillment
-        /// has been created.</param>
-        /// <returns>The new <see cref="Fulfillment"/>.</returns>
-        [Obsolete("The notifyCustomer parameter can already be found on the Fulfillment object. This extra parameter will be removed from FulfillmentService.UpdateAsync in a future release.", false)]
-        public virtual async Task<Fulfillment> CreateAsync(long orderId, Fulfillment fulfillment, bool notifyCustomer)
-        {
-            // Set the notifyCustomer property on the fulfillment
-            fulfillment.NotifyCustomer = notifyCustomer;
-
-            return await CreateAsync(orderId, fulfillment);
+            var response = await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, cancellationToken, content, "fulfillment");
+            return response.Result;
         }
 
         /// <summary>
@@ -117,8 +95,9 @@ namespace ShopifySharp
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="fulfillmentId">Id of the object being updated.</param>
         /// <param name="fulfillment">The <see cref="Fulfillment"/> to update.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The updated <see cref="Fulfillment"/>.</returns>
-        public virtual async Task<Fulfillment> UpdateAsync(long orderId, long fulfillmentId, Fulfillment fulfillment)
+        public virtual async Task<Fulfillment> UpdateAsync(long orderId, long fulfillmentId, Fulfillment fulfillment, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}.json");
             var body = fulfillment.ToDictionary();
@@ -127,23 +106,8 @@ namespace ShopifySharp
                 fulfillment = body
             });
 
-            return await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Put, content, "fulfillment");
-        }
-
-        /// <summary>
-        /// Updates the given <see cref="Fulfillment"/>.
-        /// </summary>
-        /// <param name="orderId">The order id to which the fulfillments belong.</param>
-        /// <param name="fulfillmentId">Id of the object being updated.</param>
-        /// <param name="fulfillment">The <see cref="Fulfillment"/> to update.</param>
-        /// <returns>The updated <see cref="Fulfillment"/>.</returns>
-        [Obsolete("The notifyCustomer parameter can already be found on the Fulfillment object. This extra parameter will be removed from FulfillmentService.UpdateAsync in a future release.", false)]
-        public virtual async Task<Fulfillment> UpdateAsync(long orderId, long fulfillmentId, Fulfillment fulfillment, bool notifyCustomer = false)
-        {
-            // Set the notifyCustomer property on the fulfillment
-            fulfillment.NotifyCustomer = notifyCustomer;
-
-            return await UpdateAsync(orderId, fulfillmentId, fulfillment);
+            var response = await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Put, cancellationToken, content, "fulfillment");
+            return response.Result;
         }
 
         /// <summary>
@@ -151,11 +115,13 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="fulfillmentId">The fulfillment's id.</param>
-        public virtual async Task<Fulfillment> CompleteAsync(long orderId, long fulfillmentId)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<Fulfillment> CompleteAsync(long orderId, long fulfillmentId, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}/complete.json");
 
-            return await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, rootElement: "fulfillment");
+            var response = await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, cancellationToken, rootElement: "fulfillment");
+            return response.Result;
         }
 
         /// <summary>
@@ -163,25 +129,27 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="fulfillmentId">The fulfillment's id.</param>
-        public virtual async Task<Fulfillment> CancelAsync(long orderId, long fulfillmentId)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<Fulfillment> CancelAsync(long orderId, long fulfillmentId, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}/cancel.json");
 
-            return await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, rootElement: "fulfillment");
+            var response = await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, cancellationToken, rootElement: "fulfillment");
+            return response.Result;
         }
-
 
         /// <summary>
         /// Opens a pending fulfillment with the given id.
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="fulfillmentId">The fulfillment's id.</param>
-        public virtual async Task<Fulfillment> OpenAsync(long orderId, long fulfillmentId)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<Fulfillment> OpenAsync(long orderId, long fulfillmentId, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}/open.json");
 
-            return await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, rootElement: "fulfillment");
+            var response = await ExecuteRequestAsync<Fulfillment>(req, HttpMethod.Post, cancellationToken, rootElement: "fulfillment");
+            return response.Result;
         }
-
     }
 }

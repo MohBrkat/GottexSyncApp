@@ -1,8 +1,11 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -22,39 +25,43 @@ namespace ShopifySharp
         /// Gets a count of all variants belonging to the given product.
         /// </summary>
         /// <param name="productId">The product that the variants belong to.</param>
-        public virtual async Task<int> CountAsync(long productId)
+        /// <param name="filter">Options for filtering the result.</param>
+        /// <remarks>
+        /// According to Shopify's documentation, this endpoint does not currently support any additional filter parameters for counting.
+        /// </remarks>
+        public virtual async Task<int> CountAsync(long productId, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"products/{productId}/variants/count.json");
-
-            return await ExecuteRequestAsync<int>(req, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>($"products/{productId}/variants/count.json", "count", cancellationToken: cancellationToken);
         }
 
         /// <summary>
         /// Gets a list of variants belonging to the given product.
         /// </summary>
         /// <param name="productId">The product that the variants belong to.</param>
-        /// <param name="filterOptions">Options for filtering the result.</param>
-        public virtual async Task<IEnumerable<ProductVariant>> ListAsync(long productId, ListFilter filterOptions = null)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ListResult<ProductVariant>> ListAsync(long productId, ListFilter<ProductVariant> filter, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"products/{productId}/variants.json");
+            return await ExecuteGetListAsync($"products/{productId}/variants.json", "variants", filter, cancellationToken);
+        }
 
-            if (filterOptions != null)
-            {
-                req.QueryParams.AddRange(filterOptions.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<ProductVariant>>(req, HttpMethod.Get, rootElement: "variants");
+        /// <summary>
+        /// Gets a list of variants belonging to the given product.
+        /// </summary>
+        /// <param name="productId">The product that the variants belong to.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ListResult<ProductVariant>> ListAsync(long productId, ProductVariantListFilter filter = null, CancellationToken cancellationToken = default)
+        {
+            return await ListAsync(productId, filter?.AsListFilter(), cancellationToken);
         }
 
         /// <summary>
         /// Retrieves the <see cref="ProductVariant"/> with the given id.
         /// </summary>
         /// <param name="variantId">The id of the product variant to retrieve.</param>
-        public virtual async Task<ProductVariant> GetAsync(long variantId)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ProductVariant> GetAsync(long variantId, CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest($"variants/{variantId}.json");
-
-            return await ExecuteRequestAsync<ProductVariant>(req, HttpMethod.Get, rootElement: "variant");
+            return await ExecuteGetAsync<ProductVariant>($"variants/{variantId}.json", "variant", cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -62,15 +69,17 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="productId">The product that the new variant will belong to.</param>
         /// <param name="variant">A new <see cref="ProductVariant"/>. Id should be set to null.</param>
-        public virtual async Task<ProductVariant> CreateAsync(long productId, ProductVariant variant)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ProductVariant> CreateAsync(long productId, ProductVariant variant, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"products/{productId}/variants.json");
             var content = new JsonContent(new
             {
                 variant = variant
             });
+            var response = await ExecuteRequestAsync<ProductVariant>(req, HttpMethod.Post, cancellationToken, content, "variant");
 
-            return await ExecuteRequestAsync<ProductVariant>(req, HttpMethod.Post, content, "variant");
+            return response.Result;
         }
 
         /// <summary>
@@ -78,15 +87,17 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="productVariantId">Id of the object being updated.</param>
         /// <param name="variant">The variant to update.</param>
-        public virtual async Task<ProductVariant> UpdateAsync(long productVariantId, ProductVariant variant)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task<ProductVariant> UpdateAsync(long productVariantId, ProductVariant variant, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"variants/{productVariantId}.json");
             var content = new JsonContent(new
             {
                 variant = variant
             });
+            var response = await ExecuteRequestAsync<ProductVariant>(req, HttpMethod.Put, cancellationToken, content, "variant");
 
-            return await ExecuteRequestAsync<ProductVariant>(req, HttpMethod.Put, content, "variant");
+            return response.Result;
         }
 
         /// <summary>
@@ -94,11 +105,12 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="productId">The product that the variant belongs to.</param>
         /// <param name="variantId">The product variant's id.</param>
-        public virtual async Task DeleteAsync(long productId, long variantId)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task DeleteAsync(long productId, long variantId, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"products/{productId}/variants/{variantId}.json");
 
-            await ExecuteRequestAsync(req, HttpMethod.Delete);
+            await ExecuteRequestAsync(req, HttpMethod.Delete, cancellationToken);
         }
     }
 }

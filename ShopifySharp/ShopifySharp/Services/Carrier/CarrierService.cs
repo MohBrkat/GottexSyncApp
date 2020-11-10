@@ -1,15 +1,15 @@
-using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
 using System;
+using System.Threading;
 
 namespace ShopifySharp
 {
     /// <summary>
-    /// A service for manipulating Carriers
+    /// A service for working with shipping carriers.
     /// </summary>
     public class CarrierService : ShopifyService
     {
@@ -23,20 +23,18 @@ namespace ShopifySharp
         /// <summary>
         /// Retrieve a list of all carrier services that are associated with the store.
         /// </summary>
-        /// <returns>The list of <see cref="Carrier" that are associated with the store.</returns>
-        public virtual async Task<IEnumerable<Carrier>> ListAsync()
+        public virtual async Task<IEnumerable<Carrier>> ListAsync(CancellationToken cancellationToken = default)
         {
-            var req = PrepareRequest("carrier_services.json");
-
-            return await ExecuteRequestAsync<List<Carrier>>(req, HttpMethod.Get, rootElement: "carrier_services");
+            return await ExecuteGetAsync< IEnumerable < Carrier >>("carrier_services.json", "carrier_services", cancellationToken: cancellationToken);
         }
 
         /// <summary>
         /// Creates a new <see cref="Carrier"/> Carrier
         /// </summary>
         /// <param name="carrier">A new <see cref="Carrier"/>. Id should be set to null.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The new <see cref="Carrier"/>.</returns>
-        public virtual async Task<Carrier> CreateAsync(Carrier carrier)
+        public virtual async Task<Carrier> CreateAsync(Carrier carrier, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest("carrier_services.json");
             var content = new JsonContent(new
@@ -44,30 +42,34 @@ namespace ShopifySharp
                 carrier_service = carrier
             });
 
-            return await ExecuteRequestAsync<Carrier>(req, HttpMethod.Post, content, "carrier_service");
+            var response = await ExecuteRequestAsync<Carrier>(req, HttpMethod.Post, cancellationToken, content, "carrier_service");
+            return response.Result;
         }
 
         /// <summary>
         /// Retrieves the <see cref="Carrier"/> with the given id.
         /// </summary>
         /// <param name="carrierId">The id of the Carrier to retrieve.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The <see cref="Carrier"/>.</returns>
-        public virtual async Task<Carrier> GetAsync(long carrierId)
+        public virtual async Task<Carrier> GetAsync(long carrierId, CancellationToken cancellationToken = default)
         {            
             var req = PrepareRequest($"carrier_services/{carrierId}.json");
 
-            return await ExecuteRequestAsync<Carrier>(req, HttpMethod.Get, rootElement: "carrier_service");           
+            var response = await ExecuteRequestAsync<Carrier>(req, HttpMethod.Get, cancellationToken, rootElement: "carrier_service");
+            return response.Result;
         }
 
         /// <summary>
         /// Deletes a Carruer with the given Id.
         /// </summary>
         /// <param name="carrierId">The Carrier's Id.</param>
-        public virtual async Task DeleteAsync(long carrierId)
+        /// <param name="cancellationToken">Cancellation Token</param>
+        public virtual async Task DeleteAsync(long carrierId, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"carrier_services/{carrierId}.json");
 
-            await ExecuteRequestAsync(req, HttpMethod.Delete);
+            await ExecuteRequestAsync(req, HttpMethod.Delete, cancellationToken);
         }
 
         /// <summary>
@@ -75,8 +77,9 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="carrierId">Id of the Carrier being updated.</param>
         /// <param name="carrier">The <see cref="Carrier"/> to update.</param>
+        /// <param name="cancellationToken">Cancellation Token</param>
         /// <returns>The updated <see cref="Carrier"/>.</returns>
-        public virtual async Task<Carrier> UpdateAsync(long carrierId, Carrier carrier)
+        public virtual async Task<Carrier> UpdateAsync(long carrierId, Carrier carrier, CancellationToken cancellationToken = default)
         {
             var req = PrepareRequest($"carrier_services/{carrierId}.json");
             var content = new JsonContent(new
@@ -84,7 +87,8 @@ namespace ShopifySharp
                 carrier_service = carrier
             });
 
-            return await ExecuteRequestAsync<Carrier>(req, HttpMethod.Put, content, "carrier_service");
+            var response = await ExecuteRequestAsync<Carrier>(req, HttpMethod.Put, cancellationToken, content, "carrier_service");
+            return response.Result;
         }
     }
 }

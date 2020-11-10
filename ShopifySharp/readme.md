@@ -43,28 +43,67 @@ It's difficult to find blog posts or tutorials about building Shopify apps, and 
 ShopifySharp is [available on NuGet](https://www.nuget.org/packages/ShopifySharp/). Use the package manager
 console in Visual Studio to install it:
 
-```
+```pwsh
 Install-Package ShopifySharp
 ```
 
 If you're using .NET Core, you can use the `dotnet` command from your favorite shell:
 
-```
+```sh
 dotnet add package shopifysharp
 ```
 
-# Version 4.0.0
+If you're using Paket with an F# project, use this command:
 
-Version 4.0.0 is a major update to ShopifySharp, it contains breaking changes by removing the `Shopify` prefix from almost every class, interface and object (the exception being `ShopifyException` and `ShopifyRateLimitException`. On top of that, every single entity property has been made nullable to both prevent deserialization errors that have plagued us humble C# developers since 1.0.0.
+```sh
+paket add shopifysharp --project /path/to/project.fsproj
+```
 
-Version 4.0.0 contains a bunch of great enhancements, though. Chiefly, it adds support for .NET Core apps! In addition, the library now supports sending partial classes (thanks to making properties nullable) when creating or updating a Shopify object.
+# API support
+
+Shopify has begun versioning their API, meaning new features are locked behind newer versions of the API, and older versions of the API lose support and are eventually shut off. Due to the differences in ShopifySharp's SemVer versioning, and Shopify's date-based versioning, the following table should be consulted to determine which version of ShopifySharp supports which version of Shopify's API:
+
+| ShopifySharp version | Shopify API version |
+| -------------------- | ------------------- |
+| 4.* and below        | None, unsupported   |
+| 5.0.0 - 5.5.0        | 2019-10             |
+| 5.6.0 and above      | 2020-07             |
+
+# Migrating from version 4.x to version 5.0.0
+
+**A complete migration guide for going from v4.x to v5.x is located here:** [https://nozzlegear.com/shopify/shopifysharp-version-5-migration-guide](https://nozzlegear.com/shopify/shopifysharp-version-5-migration-guide). The biggest change by far is the way you'll list objects in v5. Shopify has implemented a sort of "linked list" pagination, which means you _cannot_ request arbitrary pages any longer (e.g. "give me page 5 of orders").
+
+Instead, you now have to walk through each page, following the link from one page to the next, to get where you need to go. As long as Shopify is caching the results, this should improve the speed with which your application can list large swathes of objects at once (e.g. when importing all of a user's orders into your application). However, this makes things like letting your users navigate to an arbitrary page of orders in your app impossible. At best, you'll only be able to show links to the next page or previous page.
+
+An example for listing all orders on a Shopify shop:
+
+```cs
+var allOrders = new List<Order>();
+var service = new OrderService(domain, accessToken);
+var page = await service.ListAsync(new OrderListFilter
+{
+    Limit = 250,
+});
+
+while (true)
+{
+    allOrders.AddRange(page.Items);
+
+    if (!page.HasNextPage)
+    {
+        break;
+    }
+
+    page = await service.ListAsync(page.GetNextPageFilter());
+}
+```
+
+You can also [check this issue for commonly asked questions about v5.0](https://github.com/nozzlegear/ShopifySharp/issues/462).
 
 # Frequently Asked Questions
 
 - **Question**: How do I look up a Shopify order by its name?
     - **Answer**: [See this article to learn how to look up a Shopify order by its name property.](https://nozzlegear.com/shopify/looking-up-a-shopify-order-by-its-name)
-- **Question**: The `XyzService.ListAsync()` method only returns 50 objects, how do I list all orders/customers/articles/etc?
-    - **Answer**: [See this article to learn how to list all objects using any ShopifySharp service.](https://nozzlegear.com/shopify/listing-all-orders-customers-articles-or-anything-else-with-the-shopify-api)
 - **Question**: How do I use ShopifySharp with a private app?
     - **Answer**: ShopifySharp works with any private Shopify app, no extra configuration needed. All you need to do is pass in your private app's password wherever ShopifySharp asks for an access token. For example: `var service = new ShopifySharp.OrderService("mydomain.myshopify.com", "PRIVATE APP PASSWORD HERE")`. This package's test suite uses a private app for testing API calls, so this method is confirmed working.
 
@@ -114,22 +153,10 @@ ShopifySharp currently supports the following Shopify APIs:
 -   [Draft Orders](#draft-orders)
 -   [Access Scopes](#access-scopes)
 -   [Checkouts](#checkouts)
+-   [Collections](#collections)
+-   [StorefrontAccessTokens](#storefrontaccesstokens)
 
 More functionality will be added each week until it reaches full parity with Shopify's REST API.
-
-### Unimplemented APIs
-
-The following APIs are not yet implemented by ShopifySharp, but I'm slowly working through the list to reach 100% API parity. APIs are implemented in random order (mostly based on how much I need them in my own apps). **Need one of these APIs right now?** Please open an issue or make a pull request! I'm happy to offer guidance or help with writing tests.
-
-| API                                                                             | Notes                                                                                                                                     |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| [CarrierService](https://help.shopify.com/api/reference/carrierservice)         |                                                                                                                                           |
-| [Comments](https://help.shopify.com/api/reference/comment)                      |                                                                                                                                           |
-| [Country](https://help.shopify.com/api/reference/country)                       |                                                                                                                                           |
-| [FulfillmentService](https://help.shopify.com/api/reference/fulfillmentservice) | Not [FulfillmentService](https://github.com/nozzlegear/ShopifySharp/blob/master/ShopifySharp/Services/Fulfillment/FulfillmentService.cs). |
-| [Multipass](https://help.shopify.com/api/reference/multipass)                   | Requires Shopify Plus.                                                                                                                    |
-| [Province](https://help.shopify.com/api/reference/province)                     |                                                                                                                                           |
-| [Refund](https://help.shopify.com/api/reference/refund)                         |                                                                                                                                           |
 
 ### Contributors
 
@@ -235,8 +262,11 @@ var scopes = new List<string>()
     "write_customers"
 }
 
+//You can find your API key over at https://shopify.dev/tutorials/authenticate-a-private-app-with-shopify-admin
+string shopifyApiKey = "";
+
 //All AuthorizationService methods are static.
-string authUrl = AuthorizationService.BuildAuthorizationUrl(scopes, usersMyShopifyUrl, shopifyApiKey, redirectUrl);
+Uri authUrl = AuthorizationService.BuildAuthorizationUrl(scopes, usersMyShopifyUrl, shopifyApiKey, redirectUrl);
 ```
 
 ### Authorize an installation and generate an access token
@@ -1812,6 +1842,40 @@ await service.DeleteAsync(smartCollectionId);
 
 A product variant is a different version of a product, such as differing sizes or differing colors. Without product variants, you would have to treat the small, medium and large versions of a t-shirt as three separate products; product variants let you treat the small, medium and large versions of a t-shirt as variations of the same product.
 
+### Creating a Product with a variant in one go
+
+```cs
+ var product = new Product()
+ {
+     Title = "Test Product Walter",
+     Vendor = "Burton",
+     BodyHtml = "<strong>Good snowboard!</strong>",
+     ProductType = "Snowboard",
+     Images = images,
+     //Make sure to give your product the correct variant option
+     Options = new List<ProductOption>
+     {
+         new ProductOption
+         {
+             Name = "Color"
+         }
+     },
+     //And then create a collection of variants or assign the "Variants" property
+     //to an already defined collection.
+     Variants = new List<ProductVariant>
+     {
+         new ProductVariant
+         {
+             Option1 = "Black",
+         },
+         new ProductVariant
+         {
+             Option1 = "Green",
+         },
+     }
+ };
+```
+
 ### Creating a Product Variant
 
 ```cs
@@ -2170,6 +2234,36 @@ var service =  new GiftCardService(myShopifyUrl, shopAccessToken);
 IEnumerable<GiftCard> giftCards = await Service.SearchAsync("code: abc-bcd-efg");
 ```
 
+## Gift Card Adjustments
+
+Developers can create adjustments on existing gift cards with the `GiftCardAdjustmentService`.
+
+**Gift Cards require a Shopify Plus subscription and also the Gift Card Adjustment endpoint needs to be enabled on your store, contact Shopify plus support for more info.**
+
+### Listing Gift Card Adjustments
+
+```cs
+var service = new GiftCardAdjustmentService(myShopifyUrl, shopAccessToken);
+var giftCardAdjustments = await service.ListAsync(giftCardId);
+```
+
+### Creating a Gift Card Adjustment
+
+```cs
+var service = new GiftCardAdjustmentService(myShopifyUrl, shopAccessToken);
+var giftCard = await service.CreateAsync(giftCardId, new GiftCardAdjustment()
+{
+    Amount = -1.00,
+});
+```
+
+### Getting a Gift Card Adjustment
+
+```cs
+var service = new GiftCardAdjustmentService(myShopifyUrl, shopAccessToken);
+var giftCardAdjustment = await service.GetAsync(giftCardId, adjustmentId):
+```
+
 ## Price Rules
 
 The Price Rules API allows you to dynamically create discounts with multiple conditions that can be applied at checkout to cart items or shipping lines via a discount code. Price rules can be created for a fixed value discount, a percentage discount, or a shipping line discount. You can also specify the dates for which the price rule is valid, the number of times the price rule can be applied, and to which products, collections, variants, customer groups and even shipping countries the price rule can be applied.
@@ -2415,6 +2509,58 @@ var checkout = await service.UpdateAsync(checkoutToken, new Checkout
 var service = new CheckoutService(myShopifyUrl, shopAccessToken);
 var checkoutToken = "token";
 var shippingRates = await service.ListShippingRatesAsync(checkoutToken);
+```
+
+## Collections
+
+API version 2020-01 introduces the new "Collections" endpoint, which can be used to get the base details and list of products associated with either a [Custom Collection](#custom-collections) or [Smart Collection](#smart-collections). 
+
+This endpoint **cannot** be used to manipulate the products, collects, custom collections or smart collections. You must use the entity's respective ShopifySharp service to do that (i.e. `CollectService`, `ProductService`, `CustomCollectionService` and `SmartCollectionService`).
+
+### Getting a Collection
+
+```cs
+var service = new CollectionService(myShopifyUrl, shopAccessToken);
+var collection = await service.GetAsync(collectionId);
+```
+
+### Listing products belonging to a Collection
+
+```cs
+var service = new CollectionService(myShopifyUrl, shopAccessToken);
+var products = await service.ListAsync(collectionId);
+```
+
+## StorefrontAccessTokens
+
+You can use the StorefrontAccessToken resource to generate storefront access tokens. Storefront access tokens are used to delegate unauthenticated access scopes to clients that need to access the unautheticated Storefront API. A sales channel can generate a storefront access token and then pass it to a consuming client, such as JavaScript or a mobile application.
+
+**There is a hard limit of 100 tokens per Shopify store.**
+
+### Creating a StorefrontAccessToken
+
+To create a StorefrontAccessToken, you must pass in a title for the token. There are no constraints on the uniqueness of the title. 
+
+```cs
+var service = new StorefrontAccessTokenService(myShopifyUrl, shopAccessToken);
+var token = await service.CreateAsync("My storefront access token");
+```
+
+### Deleting a StorefrontAccessToken
+
+```cs
+var service = new StorefrontAccessTokenService(myShopifyUrl, shopAccessToken);
+
+await service.DeleteAsync(storefrontAccessTokenId);
+```
+
+### Listing StorefrontAccessTokens
+
+This endpoint is not paginated, because there is a limit of only 100 storefront access tokens per shop.
+
+```cs
+var service = new StorefrontAccessTokenService(myShopifyUrl, shopAccessToken);
+var list = await service.ListAsync();
 ```
 
 # Handling Shopify's API rate limit
