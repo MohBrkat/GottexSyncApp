@@ -1747,7 +1747,6 @@ namespace ShopifyApp2.Controllers
             }
 
             List<Order> orders = await GetOrderByFiltersAsync(filter);
-
             return orders;
         }
 
@@ -1913,31 +1912,6 @@ namespace ShopifyApp2.Controllers
             return products;
         }
 
-        public async Task<List<Order>> GetOrderByFiltersAsync(ShopifySharp.Filters.OrderListFilter filter)
-        {
-            var orderService = new OrderService(StoreUrl, api_secret);
-
-            List<Order> Orders = new List<Order>();
-
-            filter.Limit = 250;
-
-            var page = await orderService.ListAsync(filter);
-
-            while (true)
-            {
-                Orders.AddRange(page.Items);
-
-                if (!page.HasNextPage)
-                {
-                    break;
-                }
-
-                page = await orderService.ListAsync(page.GetNextPageFilter());
-            }
-
-            return Orders;
-        }
-
         private string ReportEmailMessageBody()
         {
             string body = "Hi - <br /><br /> Detailed and Summraized Report Files Generated. <br />";
@@ -1959,7 +1933,6 @@ namespace ShopifyApp2.Controllers
         }
 
         #endregion
-
         #region General Use
         private async Task<List<Order>> GetNotExportedOrdersAsync(string prefix, DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
@@ -2102,6 +2075,29 @@ namespace ShopifyApp2.Controllers
             refundedOrders.Orders = ordersToReturn.ToList();
 
             return refundedOrders;
+        }
+
+        public async Task<List<Order>> GetOrderByFiltersAsync(ShopifySharp.Filters.OrderListFilter filter)
+        {
+            List<Order> Orders = new List<Order>();
+
+            var orderService = new OrderService(StoreUrl, api_secret);
+            filter.Limit = 250;
+
+            var page = await orderService.ListAsync(filter);
+            while (true)
+            {
+                Orders.AddRange(page.Items);
+
+                if (!page.HasNextPage)
+                {
+                    break;
+                }
+
+                page = await orderService.ListAsync(page.GetNextPageFilter());
+            }
+
+            return Orders;
         }
 
         private async Task<Order> GetSpecificOrderAsync(long id)
