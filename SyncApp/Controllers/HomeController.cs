@@ -47,15 +47,11 @@ namespace ShopifyApp2.Controllers
 
         private Configrations _config
         {
-
             get
             {
-
                 return _context.Configrations.First();
-
             }
         }
-
 
         private string WareHouseCode
         {
@@ -78,7 +74,6 @@ namespace ShopifyApp2.Controllers
                 return _config.BranchcodeSalesInvoices;
             }
         }
-
         private string ShortBranchCodeRecipt
         {
             get
@@ -86,7 +81,6 @@ namespace ShopifyApp2.Controllers
                 return _config.BranchCodeReceipt;
             }
         }
-
         private string _customerCodeWithLeadingSpaces
         {
             get
@@ -94,8 +88,6 @@ namespace ShopifyApp2.Controllers
                 return CustomerCode.InsertLeadingSpaces(16);
             }
         }
-
-
         private string _shortBranchCodeSaleswithLeadingzero
         {
             get
@@ -103,7 +95,6 @@ namespace ShopifyApp2.Controllers
                 return ShortBranchCodeSales.ToString().InsertLeadingZeros(4);
             }
         }
-
         private string _shortBranchCodeSalesWithLeadingspaces
         {
             get
@@ -111,7 +102,6 @@ namespace ShopifyApp2.Controllers
                 return ShortBranchCodeSales.ToString().InsertLeadingSpaces(8);
             }
         }
-
         private string _shortBranchCodeReciptswithLeadingzero
         {
             get
@@ -119,7 +109,6 @@ namespace ShopifyApp2.Controllers
                 return ShortBranchCodeRecipt.ToString().InsertLeadingZeros(4);
             }
         }
-
         private string _shortBranchCodeReciptsWithLeadingspaces
         {
             get
@@ -127,9 +116,6 @@ namespace ShopifyApp2.Controllers
                 return ShortBranchCodeRecipt.ToString().InsertLeadingSpaces(8);
             }
         }
-
-
-
         private string StoreUrl
         {
             get
@@ -138,7 +124,6 @@ namespace ShopifyApp2.Controllers
             }
 
         }
-
         private string api_key
         {
             get
@@ -181,7 +166,6 @@ namespace ShopifyApp2.Controllers
                 return _config.FtpPort.GetValueOrDefault();
             }
         }
-
         private int InventoryImportEveryMinute
         {
             get
@@ -217,7 +201,6 @@ namespace ShopifyApp2.Controllers
                 return _config.DailySalesMinute.GetValueOrDefault();
             }
         }
-
         private int DailyReportHour
         {
             get
@@ -225,7 +208,6 @@ namespace ShopifyApp2.Controllers
                 return _config.DailyReportHour.GetValueOrDefault();
             }
         }
-
         private int DailyReportMinute
         {
             get
@@ -233,7 +215,6 @@ namespace ShopifyApp2.Controllers
                 return _config.DailyReportMinute.GetValueOrDefault();
             }
         }
-
         private string ReportEmailAddress1
         {
             get
@@ -241,7 +222,6 @@ namespace ShopifyApp2.Controllers
                 return _config.ReportEmailAddress1;
             }
         }
-
         private string ReportEmailAddress2
         {
             get
@@ -249,7 +229,6 @@ namespace ShopifyApp2.Controllers
                 return _config.ReportEmailAddress2;
             }
         }
-
         private string smtpHost
         {
             get
@@ -278,7 +257,6 @@ namespace ShopifyApp2.Controllers
                 return _config.SenderemailPassword;
             }
         }
-
         private string displayName
         {
             get
@@ -293,7 +271,6 @@ namespace ShopifyApp2.Controllers
                 return _config.NotificationEmail;
             }
         }
-
         private string InvoiceFileName
         {
             get
@@ -484,7 +461,6 @@ namespace ShopifyApp2.Controllers
 
         public async Task<FileInformation> ValidateInventoryUpdatesFromCSVAsync()
         {
-
             List<string> LsOfSuccess = new List<string>();
             List<string> LsOfErrors = new List<string>();
 
@@ -504,7 +480,6 @@ namespace ShopifyApp2.Controllers
 
                 if (!string.IsNullOrEmpty(fileContent))
                 {
-
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
 
                     var ProductServices = new ProductService(StoreUrl, api_secret);
@@ -526,7 +501,6 @@ namespace ShopifyApp2.Controllers
 
                         foreach (var row in Rows)
                         {
-
                             try
                             {
                                 if (row.IsNotNullOrEmpty() && IsValidRow(row))
@@ -597,18 +571,13 @@ namespace ShopifyApp2.Controllers
                         validFile = false;
                     }
                 }
-
-
                 else
                 {
                     throw new Exception(string.Format("File was empty or not found"));
                 }
-
             }
             catch (System.Net.WebException ex)
             {
-
-                //LsOfErrors.Add("File or ftp server not found " + ex.Message);
             }
             catch (Exception ex)
             {
@@ -1903,15 +1872,11 @@ namespace ShopifyApp2.Controllers
 
             }
 
-            var OrderService = new OrderService(StoreUrl, api_secret);
-
             List<Order> orders = await GetOrderByFiltersAsync(filter);
-
             return orders;
         }
 
-        private async Task<RefundedOrders> GetReportRefundedOrdersAsync(DateTime dateFrom = default(DateTime)
-, DateTime dateTo = default(DateTime))
+        private async Task<RefundedOrders> GetReportRefundedOrdersAsync(DateTime dateFrom = default(DateTime), DateTime dateTo = default(DateTime))
         {
             var refundedOrders = new RefundedOrders();
 
@@ -1961,8 +1926,6 @@ namespace ShopifyApp2.Controllers
                 };
 
             }
-
-            var OrderService = new OrderService(StoreUrl, api_secret);
 
             List<Order> orders = await GetOrderByFiltersAsync(filter);
 
@@ -2066,17 +2029,17 @@ namespace ShopifyApp2.Controllers
 
                 foreach (var refund in targetRefunds)
                 {
-                    var orderToReturn = new Order();
+                    var orderToReturn = new Order
+                    {
+                        TotalDiscounts = order.TotalDiscounts,
+                        OrderNumber = order.OrderNumber,
+                        Id = order.Id,
+                        Tags = order.Tags,
 
-                    //  orderToReturn.CreatedAt = order.CreatedAt;
-                    orderToReturn.TotalDiscounts = order.TotalDiscounts;
-                    orderToReturn.OrderNumber = order.OrderNumber;
-                    orderToReturn.Id = order.Id;
-                    orderToReturn.Tags = order.Tags;
-
-                    orderToReturn.SubtotalPrice = order.SubtotalPrice;
-                    orderToReturn.FinancialStatus = order.FinancialStatus;
-                    orderToReturn.ShippingLines = order.ShippingLines;
+                        SubtotalPrice = order.SubtotalPrice,
+                        FinancialStatus = order.FinancialStatus,
+                        ShippingLines = order.ShippingLines
+                    };
 
                     var refundLineItems = refund.RefundLineItems;
 
