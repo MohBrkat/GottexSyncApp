@@ -2039,16 +2039,6 @@ namespace ShopifyApp2.Controllers
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
-            // looop , need new logic , [aging , sice id
-            var OrderService = new OrderService(StoreUrl, api_secret);
-
-            var filter = new OrderListFilter
-            {
-                FinancialStatus = "any",
-                Status = "any",
-                FulfillmentStatus = "any"
-            };
-
             List<Order> orders = await GetRefundedOrdersByFiltersAsync();
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
