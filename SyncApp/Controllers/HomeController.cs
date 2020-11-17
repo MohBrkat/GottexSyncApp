@@ -1472,12 +1472,14 @@ namespace ShopifyApp2.Controllers
                 var contentType = "application/octet-stream";
                 string extension = "xlsx";
 
+                var products = await GetProductsAsync();
+
                 await Task.Delay(1000);
-                byte[] detailedFile = await GenerateDetailedReportFileAsync(lsOfOrders);
+                byte[] detailedFile = GenerateDetailedReportFile(lsOfOrders, products);
                 string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
                 await Task.Delay(1000);
-                byte[] summarizedFile = await GenerateSummarizedReportFileAsync(lsOfOrders);
+                byte[] summarizedFile = GenerateSummarizedReportFile(lsOfOrders, products);
                 string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
                 file.DetailedFile = new FileContent()
@@ -1554,9 +1556,9 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private async Task<byte[]> GenerateSummarizedReportFileAsync(List<Order> orders)
+        private byte[] GenerateSummarizedReportFile(List<Order> orders, List<Product> products)
         {
-            var productsList = await GetProductsAsync();
+            var productsList = products;
             List<LineItem> lineItems = new List<LineItem>();
             List<SummarizedAutomaticReportModel> summarizedAutomaticReport = new List<SummarizedAutomaticReportModel>();
 
@@ -1624,10 +1626,9 @@ namespace ShopifyApp2.Controllers
             }
         }
 
-        private async Task<byte[]> GenerateDetailedReportFileAsync(List<Order> orders)
+        private byte[] GenerateDetailedReportFile(List<Order> orders, List<Product> products)
         {
-            await Task.Delay(1000);
-            var productsList = await GetProductsAsync();
+            var productsList = products;
 
             List<DetailedAutomaticReportModel> detailedAutomaticReport = new List<DetailedAutomaticReportModel>();
             foreach (var order in orders)
