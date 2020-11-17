@@ -281,7 +281,7 @@ namespace ShopifyApp2.Controllers
         {
             get
             {
-                return "receipts-web-" + DateTime.Now.ToString("yyMMdd") + ".dat";
+                return "Receipts-Web-" + DateTime.Now.ToString("yyMMdd") + ".dat";
             }
         }
         private OrderService OrderServiceInstance
