@@ -947,8 +947,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default(DateTime)
-            , DateTime dateToRetriveTo = default(DateTime))
+        public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
@@ -956,12 +955,12 @@ namespace ShopifyApp2.Controllers
             {
                 await Task.Delay(1000);
                 //Date period option
-                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
+                if (dateToRetriveFrom != default && dateToRetriveTo != default)
                 {
                     lsOfOrders = await GetNotExportedOrdersAsync("invoices", dateToRetriveFrom, dateToRetriveTo);
                 }
                 //Single day option
-                else if (dateToRetriveFrom != default(DateTime))
+                else if (dateToRetriveFrom != default)
                 {
                     lsOfOrders = await GetNotExportedOrdersAsync("invoices", dateToRetriveFrom);
                 }
