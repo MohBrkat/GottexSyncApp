@@ -2173,7 +2173,16 @@ namespace ShopifyApp2.Controllers
                     break;
                 }
 
-                page = await productServices.ListAsync(page.GetNextPageFilter());
+                try
+                {
+                    page = await productServices.ListAsync(page.GetNextPageFilter());
+                }
+                catch (ShopifyRateLimitException e)
+                {
+                    await Task.Delay(10000);
+
+                    page = await productServices.ListAsync(page.GetNextPageFilter());
+                }
             }
 
             return products;
