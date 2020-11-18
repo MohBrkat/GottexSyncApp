@@ -76,7 +76,8 @@ namespace ShopifyApp2
                 options => options.UseSqlServer(connectionString)
             );
 
-            services.AddSession(options => {
+            services.AddSession(options =>
+            {
                 options.IdleTimeout = TimeSpan.FromMinutes(30);//You can set Time   
             });
 
