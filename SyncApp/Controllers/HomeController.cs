@@ -391,7 +391,6 @@ namespace ShopifyApp2.Controllers
 
                 if (importSuccess)
                 {
-                    string msg = "Importing Success";
                     FtpHandler.DeleteFile(info.fileName, host, "/out", userName, password);
                     var body = messageBody("Import inventory File", "success", info.fileName + ".log");
                     Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
