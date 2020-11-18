@@ -1,26 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using Hangfire;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopifyApp2.ViewModel;
 using ShopifySharp;
-using SyncApp;
-using SyncApp.Models;
-using Log4NetLibrary;
 using SyncApp.Models.EF;
-using Microsoft.Extensions.Caching.Memory;
-using SyncApp.Controllers;
 using SyncApp.Filters;
-using System.Text;
 using SyncApp.ViewModel;
-using Newtonsoft.Json;
 using System.Threading.Tasks;
-using ShopifySharp.Filters;
 using SyncApp.Logic;
 
 namespace ShopifyApp2.Controllers
@@ -31,15 +21,11 @@ namespace ShopifyApp2.Controllers
         private readonly ShopifyAppContext _context;
         private readonly IHostingEnvironment _hostingEnvironment;
 
-        private static readonly log4net.ILog _log = Logger.GetLogger();
         private ImportInventoryFTPLogic _importInventoryFTPLogic;
         private ImportInventoryWebLogic _importInventoryWebLogic;
         private ExportDailySalesLogic _exportDailySalesLogic;
         private ExportDailyReceiptsLogic _exportDailyReceiptsLogic;
         private ExportDailyReportsLogic _exportDailyReportsLogic;
-
-        List<string> LsOfManualSuccess = new List<string>();
-        List<string> LsOfManualErrors = new List<string>();
 
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
@@ -139,6 +125,7 @@ namespace ShopifyApp2.Controllers
         }
 
         #region Import Inventory CSV
+
         public ActionResult ImportInventoryUpdatesFromCSV()
         {
             return View();
@@ -189,6 +176,7 @@ namespace ShopifyApp2.Controllers
                 return View("~/Views/Home/ExportDailySales.cshtml", "N/A");
             }
         }
+
         #endregion
         #region Export Daily Receipts
 
@@ -215,6 +203,7 @@ namespace ShopifyApp2.Controllers
 
         #endregion
         #region Export Daily Report
+
         public ActionResult ExportDailyReport()
         {
             return View();
@@ -236,6 +225,7 @@ namespace ShopifyApp2.Controllers
 
             return View("~/Views/Home/ExportDailyReport.cshtml", file);
         }
+
         #endregion
 
         [HttpPost]
