@@ -984,7 +984,6 @@ namespace ShopifyApp2.Controllers
             if (lsOfOrders.Count() > 0)
             {
                 path = GenerateSalesFile(lsOfOrders, fromWeb);
-
                 return View("~/Views/Home/ExportDailySales.cshtml", path);
             }
             else
@@ -1166,38 +1165,6 @@ namespace ShopifyApp2.Controllers
             return FileName;
         }
 
-        private async Task UpdateOrderStatusAsync(List<Order> orders, string fileName, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
-        {
-            foreach (var order in orders)
-            {
-                bool isRefund = CheckIsRefund(order);
-                if (!isRefund)
-                {
-                    order.Tags = order.Tags.IsNotNullOrEmpty() ? string.Format(order.Tags + "," + "{0}", fileName) : string.Format("{0}", fileName);
-                    await OrderServiceInstance.UpdateAsync(order.Id.GetValueOrDefault(), order);
-                }
-                else
-                {
-
-                    order.Tags = order.Tags.IsNotNullOrEmpty() ? string.Format(order.Tags + "," + "{0}", lsOfTagTobeAdded[order.Id.ToString()].ToOneString()) : lsOfTagTobeAdded[order.Id.ToString()].ToOneString();
-                    await OrderServiceInstance.UpdateAsync(order.Id.GetValueOrDefault(), order);
-                }
-            }
-        }
-
-        private bool CheckIsRefund(Order order)
-        {
-            foreach (var item in order.LineItems)
-            {
-                if (item.Quantity < 0)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-
         #endregion
         #region Export Daily Receipts
 
@@ -1360,7 +1327,6 @@ namespace ShopifyApp2.Controllers
                 {
                     _log.Info(FileName + "[receipts] Uploaded sucesfully - the time is : " + DateTime.Now);
                 }
-                //await UpdateOrderStatusAsync(orders, FileName, lsOfTagTobeAdded);
             }
             else
             {
@@ -1739,53 +1705,6 @@ namespace ShopifyApp2.Controllers
             var orderSplitted = orderName.Split('#');
             var order = int.Parse(orderSplitted[1]);
             return order;
-        }
-
-        private async Task<byte[]> GenerateProductsReportFileAsync(List<Order> orders)
-        {
-            var productsList = await GetProductsAsync();
-            List<InvalidProducts> productVariants = new List<InvalidProducts>();
-
-            foreach (var prod in productsList)
-            {
-                foreach (var vari in prod.Variants)
-                {
-                    if (Utility.IsExponentialFormat(vari.Barcode))
-                    {
-                        productVariants.Add(new InvalidProducts()
-                        {
-                            ProductHandle = prod.Handle,
-                            SKU = vari.SKU,
-                            Barcode = vari.Barcode,
-                            Title = vari.Title
-                        });
-                    }
-                }
-            }
-
-            productVariants.OrderBy(r => r.ProductHandle).ThenBy(r => r.Title).ThenBy(r => r.SKU);
-
-            string extension = "xlsx";
-
-            try
-            {
-                List<List<InvalidProducts>> splittedData = Utility.Split(productVariants, 1000000);
-                List<byte> data = new List<byte>();
-                foreach (var productReportModel in splittedData)
-                {
-                    var result = Utility.ExportToExcel(productReportModel, extension).ToList();
-                    data.AddRange(result);
-                }
-
-                var fileResult = data.ToArray();
-
-                return fileResult;
-            }
-            catch (Exception e)
-            {
-                _log.Error(e.Message);
-                throw e;
-            }
         }
 
         [HttpPost]
