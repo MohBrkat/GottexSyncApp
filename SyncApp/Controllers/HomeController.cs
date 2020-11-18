@@ -907,20 +907,6 @@ namespace ShopifyApp2.Controllers
         #endregion
 
         #region General Functions
-        private static string[] RemoveEmptyLastRow(string[] Rows)
-        {
-            var LastRow = Rows.LastOrDefault();
-            if (LastRow.IsNotNullOrEmpty())
-            {
-                if (!LastRow.Split(",")[0].IsNotNullOrEmpty() && !LastRow.Split(",")[1].IsNotNullOrEmpty() && !LastRow.Split(",")[2].IsNotNullOrEmpty() && !LastRow.Split(",")[3].IsNotNullOrEmpty())
-                {
-                    Rows.ToList().RemoveAt(Rows.Count() - 1);
-                    Rows = Rows.ToArray();
-                }
-            }
-
-            return Rows;
-        }
         private bool IsValidHeaders(string Headers)
         {//product handle,
             var arr = Headers.Trim().ToLower().Split(",");
