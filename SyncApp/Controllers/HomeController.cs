@@ -953,26 +953,13 @@ namespace ShopifyApp2.Controllers
             RefundedOrders refunded = new RefundedOrders();
             try
             {
-                await Task.Delay(1000);
-                //Date period option
-                if (dateToRetriveFrom != default && dateToRetriveTo != default)
-                {
-                    lsOfOrders = await GetNotExportedOrdersAsync("invoices", dateToRetriveFrom, dateToRetriveTo);
-                }
-                //Single day option
-                else if (dateToRetriveFrom != default)
-                {
-                    lsOfOrders = await GetNotExportedOrdersAsync("invoices", dateToRetriveFrom);
-                }
-                //Yesterday option (Default)
-                else
-                {
-                    lsOfOrders = await GetNotExportedOrdersAsync("invoices");
-                }
+                lsOfOrders = await GetNotExportedOrderByPrefix("invoices", dateToRetriveFrom, dateToRetriveTo, lsOfOrders);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
+
+                lsOfOrders = await GetNotExportedOrderByPrefix("invoices", dateToRetriveFrom, dateToRetriveTo, lsOfOrders);
             }
 
             try
@@ -983,6 +970,8 @@ namespace ShopifyApp2.Controllers
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
+
+                refunded = await GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -1225,26 +1214,13 @@ namespace ShopifyApp2.Controllers
             RefundedOrders refunded = new RefundedOrders();
             try
             {
-                await Task.Delay(1000);
-                //Date period Option
-                if (dateToRetriveFrom != default(DateTime) && dateToRetriveTo != default(DateTime))
-                {
-                    lsOfOrders = await GetNotExportedOrdersAsync("receipts", dateToRetriveFrom, dateToRetriveTo);
-                }
-                //Single day Option
-                else if (dateToRetriveFrom != default(DateTime))
-                {
-                    lsOfOrders = await GetNotExportedOrdersAsync("receipts", dateToRetriveFrom);
-                }
-                //Yesterday Option (Default)
-                else
-                {
-                    lsOfOrders = await GetNotExportedOrdersAsync("receipts");
-                }
+                lsOfOrders = await GetNotExportedOrderByPrefix("receipts", dateToRetriveFrom, dateToRetriveTo, lsOfOrders);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
+
+                lsOfOrders = await GetNotExportedOrderByPrefix("receipts", dateToRetriveFrom, dateToRetriveTo, lsOfOrders);
             }
 
             try
@@ -1255,6 +1231,8 @@ namespace ShopifyApp2.Controllers
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
+
+                refunded = await GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -1289,6 +1267,8 @@ namespace ShopifyApp2.Controllers
             {
                 foreach (var order in orders)
                 {
+                    Receipt transaction = null;
+
                     //Transactions
                     var index = orders.IndexOf(order);
 
@@ -1300,59 +1280,62 @@ namespace ShopifyApp2.Controllers
 
                     try
                     {
-                        var transaction = await GetTransactionByOrderAsync(order);
-                        var InvoiceNumber = GetInvoiceNumber(order);
-                        var priceWithoutTaxes = order.TotalPrice - order.TotalTax;
-                        var priceWithTaxes = order.TotalPrice;
-
-                        var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
-
-
-                        var PaymentMeanCode = 0;
-                        if (transaction != null)
-                        {
-                            PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
-                            if (transaction.x_timestamp.IsNotNullOrEmpty())
-                            {
-                                invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
-                            }
-                        }
-                        else
-                        {
-                            PaymentMeanCode = 0;
-                        }
-
-                        //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
-                        if (order.RefundKind != "no_refund")
-                        {
-                            priceWithTaxes *= -1;
-                            priceWithoutTaxes = priceWithTaxes;
-                        }
-
-                        lock (reciptsFileLock)
-                        {
-                            file.WriteLine(
-                            "0" +  // spaces to fit indexes
-                            " " + _customerCodeWithLeadingSpaces +
-                            " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                            " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                            " " + _shortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
-                            " " + priceWithoutTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
-
-                            file.WriteLine(
-                            "2" +
-                            " " + PaymentMeanCode.ToString().InsertLeadingZeros(2) +
-                            " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
-                            " " + "00" + //term code
-                            " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
-                            " " + invoiceDate +
-                            " " + "".InsertLeadingSpaces(8) +//card number
-                            " " + "".InsertLeadingZeros(16));//Payment account
-                        }
+                        transaction = await GetTransactionByOrderAsync(order);
                     }
                     catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
                     {
                         await Task.Delay(10000);
+
+                        transaction = await GetTransactionByOrderAsync(order);
+                    }
+
+                    var InvoiceNumber = GetInvoiceNumber(order);
+                    var priceWithoutTaxes = order.TotalPrice - order.TotalTax;
+                    var priceWithTaxes = order.TotalPrice;
+
+                    var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
+
+
+                    var PaymentMeanCode = 0;
+                    if (transaction != null)
+                    {
+                        PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
+                        if (transaction.x_timestamp.IsNotNullOrEmpty())
+                        {
+                            invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
+                        }
+                    }
+                    else
+                    {
+                        PaymentMeanCode = 0;
+                    }
+
+                    //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
+                    if (order.RefundKind != "no_refund")
+                    {
+                        priceWithTaxes *= -1;
+                        priceWithoutTaxes = priceWithTaxes;
+                    }
+
+                    lock (reciptsFileLock)
+                    {
+                        file.WriteLine(
+                        "0" +  // spaces to fit indexes
+                        " " + _customerCodeWithLeadingSpaces +
+                        " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                        " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
+                        " " + _shortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                        " " + priceWithoutTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+
+                        file.WriteLine(
+                        "2" +
+                        " " + PaymentMeanCode.ToString().InsertLeadingZeros(2) +
+                        " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                        " " + "00" + //term code
+                        " " + priceWithTaxes.GetValueOrDefault().GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                        " " + invoiceDate +
+                        " " + "".InsertLeadingSpaces(8) +//card number
+                        " " + "".InsertLeadingZeros(16));//Payment account
                     }
                 }
 
@@ -1462,33 +1445,14 @@ namespace ShopifyApp2.Controllers
             }
             try
             {
-                await Task.Delay(1000);
-                //Date period Option
-                if (dateToRetriveFrom != default && dateToRetriveTo != default)
-                {
-                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
-                }
-                //Single day Option
-                else if (dateToRetriveFrom != default)
-                {
-                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom);
-
-                }
-                else if (dateToRetriveTo != default)
-                {
-                    lsOfOrders = GetReportOrders("receipts", dateToRetriveFrom, dateToRetriveTo);
-
-                }
-                //Yesterday Option (Default)
-                else
-                {
-                    lsOfOrders = GetReportOrders("receipts");
-                }
+                lsOfOrders = await GetReportOrderByPrefix("receipts", dateToRetriveFrom, dateToRetriveTo, lsOfOrders);
 
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
+
+                lsOfOrders = await GetReportOrderByPrefix("receipts", dateToRetriveFrom, dateToRetriveTo, lsOfOrders);
             }
 
             try
@@ -1499,6 +1463,8 @@ namespace ShopifyApp2.Controllers
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
+
+                refunded = GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -1570,6 +1536,33 @@ namespace ShopifyApp2.Controllers
             }
 
             return View("~/Views/Home/ExportDailyReport.cshtml", file);
+        }
+
+        private async Task<List<Order>> GetReportOrderByPrefix(string prefix, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, List<Order> lsOfOrders)
+        {
+            await Task.Delay(1000);
+            //Date period Option
+            if (dateToRetriveFrom != default && dateToRetriveTo != default)
+            {
+                lsOfOrders = GetReportOrders(prefix, dateToRetriveFrom, dateToRetriveTo);
+            }
+            //Single day Option
+            else if (dateToRetriveFrom != default)
+            {
+                lsOfOrders = GetReportOrders(prefix, dateToRetriveFrom);
+
+            }
+            else if (dateToRetriveTo != default)
+            {
+                lsOfOrders = GetReportOrders(prefix, dateToRetriveFrom, dateToRetriveTo);
+            }
+            //Yesterday Option (Default)
+            else
+            {
+                lsOfOrders = GetReportOrders(prefix);
+            }
+
+            return lsOfOrders;
         }
 
         private bool CheckWorkingDays()
@@ -1950,6 +1943,38 @@ namespace ShopifyApp2.Controllers
 
         #endregion
         #region General Use
+
+        private async Task<List<Order>> GetNotExportedOrderByPrefix(string prefix, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, List<Order> lsOfOrders)
+        {
+            if (lsOfOrders is null)
+            {
+                _ = new List<Order>();
+            }
+
+            await Task.Delay(1000);
+            //Date period Option
+            if (dateToRetriveFrom != default && dateToRetriveTo != default)
+            {
+                lsOfOrders = await GetNotExportedOrdersAsync(prefix, dateToRetriveFrom, dateToRetriveTo);
+            }
+            //Single day Option
+            else if (dateToRetriveFrom != default)
+            {
+                lsOfOrders = await GetNotExportedOrdersAsync(prefix, dateToRetriveFrom);
+            }
+            else if (dateToRetriveTo != default)
+            {
+                lsOfOrders = await GetNotExportedOrdersAsync(prefix, dateToRetriveFrom, dateToRetriveTo);
+            }
+            //Yesterday Option (Default)
+            else
+            {
+                lsOfOrders = await GetNotExportedOrdersAsync(prefix);
+            }
+
+            return lsOfOrders;
+        }
+
         private async Task<List<Order>> GetNotExportedOrdersAsync(string prefix, DateTime dateFrom = default, DateTime dateTo = default)
         {
             if (dateFrom == default) //Yesterday option (Default)
@@ -1979,7 +2004,6 @@ namespace ShopifyApp2.Controllers
 
             return orders;
         }
-
 
         private async Task<List<Order>> GetNotExportedOrderByFiltersAsync(OrderListFilter filter)
         {
@@ -2164,25 +2188,26 @@ namespace ShopifyApp2.Controllers
             filter.Limit = 250;
 
             var page = await orderService.ListAsync(filter);
-            try
-            {
-                while (true)
-                {
-                    Orders.AddRange(page.Items);
 
-                    if (!page.HasNextPage)
-                    {
-                        break;
-                    }
+            while (true)
+            {
+                Orders.AddRange(page.Items);
+
+                if (!page.HasNextPage)
+                {
+                    break;
+                }
+
+                try
+                {
+                    page = await orderService.ListAsync(page.GetNextPageFilter());
+                }
+                catch (ShopifyRateLimitException e)
+                {
+                    await Task.Delay(10000);
 
                     page = await orderService.ListAsync(page.GetNextPageFilter());
                 }
-            }
-            catch (ShopifyRateLimitException e)
-            {
-                await Task.Delay(10000);
-
-                page = await orderService.ListAsync(page.GetNextPageFilter());
             }
 
             return Orders;
