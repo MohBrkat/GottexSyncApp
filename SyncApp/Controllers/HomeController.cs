@@ -154,24 +154,6 @@ namespace ShopifyApp2.Controllers
 
         #endregion
 
-        #region General Functions
-        private bool IsValidHeaders(string Headers)
-        {//product handle,
-            var arr = Headers.Trim().ToLower().Split(",");
-
-            return
-                (arr[0].ToLower().Trim()).Contains("Product Handle".Trim().ToLower()) &&
-                arr[1].ToLower().Trim().Contains("Variant SKU".Trim().ToLower()) &&
-                arr[2].ToLower().Trim().Contains("Method".Trim().ToLower()) &&
-                arr[3].ToLower().Trim().Contains("Quantity".Trim().ToLower());
-        }
-        private bool IsValidRow(string Row)
-        {
-            var arr = Row.Trim().ToLower().Split(",");
-            return arr[0].IsNotNullOrEmpty() && arr[1].IsNotNullOrEmpty() && arr[2].IsNotNullOrEmpty() && arr[3].IsNotNullOrEmpty();
-        }
-        #endregion
-
         #endregion
         #region Export Daily Sales
 
@@ -203,7 +185,6 @@ namespace ShopifyApp2.Controllers
             return View();
         }
 
-        [HttpPost]
         public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default
             , DateTime dateToRetriveTo = default)
         {
