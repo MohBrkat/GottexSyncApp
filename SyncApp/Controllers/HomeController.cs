@@ -21,11 +21,11 @@ namespace ShopifyApp2.Controllers
         private readonly ShopifyAppContext _context;
         private readonly IHostingEnvironment _hostingEnvironment;
 
-        private readonly ImportInventoryFTPLogic _importInventoryFTPLogic;
-        private readonly ImportInventoryWebLogic _importInventoryWebLogic;
-        private readonly ExportDailySalesLogic _exportDailySalesLogic;
-        private readonly ExportDailyReceiptsLogic _exportDailyReceiptsLogic;
-        private readonly ExportDailyReportsLogic _exportDailyReportsLogic;
+        private ImportInventoryFTPLogic _importInventoryFTPLogic;
+        private ImportInventoryWebLogic _importInventoryWebLogic;
+        private ExportDailySalesLogic _exportDailySalesLogic;
+        private ExportDailyReceiptsLogic _exportDailyReceiptsLogic;
+        private ExportDailyReportsLogic _exportDailyReportsLogic;
 
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
@@ -186,8 +186,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default
-            , DateTime dateToRetriveTo = default)
+        public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
             List<Order> lsOfOrders = await _exportDailyReceiptsLogic.ExportDailyReceiptsAsync(dateToRetriveFrom, dateToRetriveTo);
             if (lsOfOrders.Count() > 0)
