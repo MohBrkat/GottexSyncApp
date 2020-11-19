@@ -208,6 +208,7 @@ namespace ShopifyApp2.Controllers
             return View();
         }
 
+        [HttpPost]
         public async Task<ActionResult> ExportReportAsync(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, string reportType = "")
         {
             FileModel file = new FileModel();
