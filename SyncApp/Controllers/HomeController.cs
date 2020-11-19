@@ -185,6 +185,7 @@ namespace ShopifyApp2.Controllers
             return View();
         }
 
+        [HttpPost]
         public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default
             , DateTime dateToRetriveTo = default)
         {
