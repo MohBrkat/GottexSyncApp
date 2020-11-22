@@ -27,7 +27,7 @@ namespace SyncApp.Logic
             _hostingEnvironment = hostingEnvironment;
         }
 
-        private Configrations _config
+        private Configrations Config
         {
             get
             {
@@ -36,25 +36,25 @@ namespace SyncApp.Logic
         }
 
         #region prop
-        private string host
+        private string Host
         {
             get
             {
-                return _config.FtpHost;
+                return Config.FtpHost ?? string.Empty;
             }
         }
-        private string userName
+        private string UserName
         {
             get
             {
-                return _config.FtpUserName;
+                return Config.FtpUserName ?? string.Empty;
             }
         }
-        private string password
+        private string Password
         {
             get
             {
-                return _config.FtpPassword;
+                return Config.FtpPassword ?? string.Empty;
             }
         }
         private string InvoiceFileName
@@ -68,17 +68,17 @@ namespace SyncApp.Logic
         {
             get
             {
-                return _config.BranchcodeSalesInvoices;
+                return Config.BranchcodeSalesInvoices ?? string.Empty;
             }
         }
         private string CustomerCode
         {
             get
             {
-                return _config.CustoemrCode;
+                return Config.CustoemrCode ?? string.Empty;
             }
         }
-        private string _customerCodeWithLeadingSpaces
+        private string CustomerCodeWithLeadingSpaces
         {
             get
             {
@@ -89,70 +89,70 @@ namespace SyncApp.Logic
         {
             get
             {
-                return _config.WareHouseCode;
+                return Config.WareHouseCode ?? string.Empty;
             }
         }
-        private string smtpHost
+        private string SmtpHost
         {
             get
             {
-                return _config.SmtpHost;
+                return Config.SmtpHost ?? string.Empty;
             }
         }
-        private int smtpPort
+        private int SmtpPort
         {
             get
             {
-                return _config.SmtpPort.GetValueOrDefault();
+                return Config.SmtpPort.GetValueOrDefault();
             }
         }
-        private string emailUserName
+        private string EmailUserName
         {
             get
             {
-                return _config.SenderEmail;
+                return Config.SenderEmail ?? string.Empty;
             }
         }
-        private string emailPassword
+        private string EmailPassword
         {
             get
             {
-                return _config.SenderemailPassword;
+                return Config.SenderemailPassword ?? string.Empty;
             }
         }
-        private string displayName
+        private string DisplayName
         {
             get
             {
-                return _config.DisplayName;
+                return Config.DisplayName ?? string.Empty;
             }
         }
-        private string toEmail
+        private string ToEmail
         {
             get
             {
-                return _config.NotificationEmail;
+                return Config.NotificationEmail ?? string.Empty;
             }
         }
         private string StoreUrl
         {
             get
             {
-                return _config.StoreUrl;
+                return Config.StoreUrl ?? string.Empty;
             }
         }
-        private string api_secret
+        private string ApiSecret
         {
             get
             {
-                return _config.ApiSecret;
+                return Config.ApiSecret ?? string.Empty;
             }
         }
-        private int taxPercentage
+        private int TaxPercentage
         {
             get
             {
-                return _config.TaxPercentage ?? 0;
+                return Config.TaxPercentage.GetValueOrDefault();
             }
         }
         #endregion
@@ -163,25 +163,25 @@ namespace SyncApp.Logic
             RefundedOrders refunded = new RefundedOrders();
             try
             {
-                lsOfOrders = await new GetShopifyOrders(StoreUrl, api_secret).GetNotExportedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = await new GetShopifyOrders(StoreUrl, ApiSecret).GetNotExportedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                lsOfOrders = await new GetShopifyOrders(StoreUrl, api_secret).GetNotExportedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = await new GetShopifyOrders(StoreUrl, ApiSecret).GetNotExportedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
             }
 
             try
             {
                 await Task.Delay(1000);
-                refunded = await new GetShopifyOrders(StoreUrl, api_secret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, taxPercentage);
+                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                refunded = await new GetShopifyOrders(StoreUrl, api_secret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, taxPercentage);
+                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -209,7 +209,7 @@ namespace SyncApp.Logic
             {
                 foreach (var DayOrders in ordersGroupedByDate)
                 {
-                    decimal taxPercentage = (decimal)_config.TaxPercentage;
+                    decimal taxPercentage = TaxPercentage;
                     var InvoiceDate = DayOrders.OrdersDate;
                     decimal vatTax = taxPercentage + 0.0m;
 
@@ -219,7 +219,7 @@ namespace SyncApp.Logic
                     {
                         file.WriteLine(
                        "0" +
-                       "\t" + _customerCodeWithLeadingSpaces +
+                       "\t" + CustomerCodeWithLeadingSpaces +
                        "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
                        "\t" + BookNum +
                        "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
@@ -339,10 +339,10 @@ namespace SyncApp.Logic
 
             if (!fromWeb)
             {
-                FtpSuccesfully = FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), host, "/In", userName, password);
+                FtpSuccesfully = FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), Host, "/In", UserName, Password);
                 string subject = "Generate Sales File Status";
                 var body = EmailMessages.messageBody("Generate Sales File", "Success", "Invoices and Receipts/" + FileName);
-                Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
+                Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
             }
 
             if (FtpSuccesfully)
@@ -357,7 +357,7 @@ namespace SyncApp.Logic
                 _log.Error($"[sales] : Error during upload {FileName} to ftp");
                 string subject = "Generate Sales File Status";
                 var body = EmailMessages.messageBody("Generate Sales File", "Failed", "Invoices and Receipts/" + FileName);
-                Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
+                Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
             }
 
             return FileName;

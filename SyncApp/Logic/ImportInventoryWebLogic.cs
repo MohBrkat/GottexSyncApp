@@ -30,7 +30,7 @@ namespace SyncApp.Logic
             _context = context;
         }
 
-        private Configrations _config
+        private Configrations Config
         {
             get
             {
@@ -39,60 +39,60 @@ namespace SyncApp.Logic
         }
 
         #region prop
-        private string smtpHost
+        private string SmtpHost
         {
             get
             {
-                return _config.SmtpHost;
+                return Config.SmtpHost ?? string.Empty;
             }
         }
-        private int smtpPort
+        private int SmtpPort
         {
             get
             {
-                return _config.SmtpPort.GetValueOrDefault();
+                return Config.SmtpPort.GetValueOrDefault();
             }
         }
-        private string emailUserName
+        private string EmailUserName
         {
             get
             {
-                return _config.SenderEmail;
+                return Config.SenderEmail ?? string.Empty;
             }
         }
-        private string emailPassword
+        private string EmailPassword
         {
             get
             {
-                return _config.SenderemailPassword;
+                return Config.SenderemailPassword ?? string.Empty;
             }
         }
-        private string displayName
+        private string DisplayName
         {
             get
             {
-                return _config.DisplayName;
+                return Config.DisplayName ?? string.Empty;
             }
         }
-        private string toEmail
+        private string ToEmail
         {
             get
             {
-                return _config.NotificationEmail;
+                return Config.NotificationEmail ?? string.Empty;
             }
         }
         private string StoreUrl
         {
             get
             {
-                return _config.StoreUrl;
+                return Config.StoreUrl ?? string.Empty;
             }
         }
-        private string api_secret
+        private string ApiSecret
         {
             get
             {
-                return _config.ApiSecret;
+                return Config.ApiSecret ?? string.Empty;
             }
         }
         #endregion
@@ -128,12 +128,12 @@ namespace SyncApp.Logic
                 if (importSuccess)
                 {
                     var body = EmailMessages.messageBody("Import inventory File", "Success", File.FileName);
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
                 }
                 else
                 {
                     var body = EmailMessages.messageBody("Import inventory File", "Failed", File.FileName);
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
                 }
             }
 
@@ -157,7 +157,7 @@ namespace SyncApp.Logic
 
                     var Rows = FileContent.Split(Environment.NewLine).SkipLast(1).ToArray(); // skip the header
 
-                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
+                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
                     var Headers = Rows[0];
                     if (ValidateCSV.IsValidHeaders(Headers))
@@ -249,7 +249,7 @@ namespace SyncApp.Logic
                     var FileContent = reader.ReadToEnd();
                     var Rows = FileContent.Split(Environment.NewLine).SkipLast(1).ToArray(); // skip the header
 
-                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
+                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
                     Rows = Rows.Skip(1).ToArray();// skip headers
                     int rowIndex = 2; // first row in csv sheet is 2 (after header)
 
@@ -304,7 +304,7 @@ namespace SyncApp.Logic
         }
         public async Task<List<Product>> GetProductsAsync()
         {
-            return await new GetShopifyProducts(StoreUrl, api_secret).GetProductsAsync();
+            return await new GetShopifyProducts(StoreUrl, ApiSecret).GetProductsAsync();
         }
     }
 }
