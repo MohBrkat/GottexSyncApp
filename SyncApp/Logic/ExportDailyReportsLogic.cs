@@ -23,7 +23,7 @@ namespace SyncApp.Logic
             _context = context;
         }
 
-        private Configrations _config
+        private Configrations Config
         {
             get
             {
@@ -32,67 +32,67 @@ namespace SyncApp.Logic
         }
 
         #region prop
-        private string smtpHost
+        private string SmtpHost
         {
             get
             {
-                return _config.SmtpHost;
+                return Config.SmtpHost ?? string.Empty;
             }
         }
-        private int smtpPort
+        private int SmtpPort
         {
             get
             {
-                return _config.SmtpPort.GetValueOrDefault();
+                return Config.SmtpPort.GetValueOrDefault();
             }
         }
-        private string emailUserName
+        private string EmailUserName
         {
             get
             {
-                return _config.SenderEmail;
+                return Config.SenderEmail ?? string.Empty;
             }
         }
-        private string emailPassword
+        private string EmailPassword
         {
             get
             {
-                return _config.SenderemailPassword;
+                return Config.SenderemailPassword ?? string.Empty;
             }
         }
-        private string displayName
+        private string DisplayName
         {
             get
             {
-                return _config.DisplayName;
+                return Config.DisplayName ?? string.Empty;
             }
         }
         private string StoreUrl
         {
             get
             {
-                return _config.StoreUrl;
+                return Config.StoreUrl ?? string.Empty;
             }
         }
-        private string api_secret
+        private string ApiSecret
         {
             get
             {
-                return _config.ApiSecret;
+                return Config.ApiSecret ?? string.Empty;
             }
         }
         private string ReportEmailAddress1
         {
             get
             {
-                return _config.ReportEmailAddress1;
+                return Config.ReportEmailAddress1 ?? string.Empty;
             }
         }
         private string ReportEmailAddress2
         {
             get
             {
-                return _config.ReportEmailAddress2;
+                return Config.ReportEmailAddress2 ?? string.Empty;
             }
         }
         #endregion
@@ -103,25 +103,25 @@ namespace SyncApp.Logic
             RefundedOrders refunded = new RefundedOrders();
             try
             {
-                lsOfOrders = new GetShopifyOrders(StoreUrl, api_secret).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                lsOfOrders = new GetShopifyOrders(StoreUrl, api_secret).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
             }
 
             try
             {
                 await Task.Delay(1000);
-                refunded = new GetShopifyOrders(StoreUrl, api_secret).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
+                refunded = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                refunded = new GetShopifyOrders(StoreUrl, api_secret).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
+                refunded = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -164,12 +164,12 @@ namespace SyncApp.Logic
                     FileData = summarizedFile
                 };
 
-                string subject = $"{ _config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
+                string subject = $"{ Config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                 string body = EmailMessages.ReportEmailMessageBody();
 
                 if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
                 {
-                    Utility.SendReportEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
+                    Utility.SendReportEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
                 }
                 else
                 {
@@ -184,7 +184,7 @@ namespace SyncApp.Logic
                 {
                     string subject = "Detailed And Summarized Report Files";
                     string body = EmailMessages.NoOrdersEmailMessageBody();
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, ReportEmailAddress1, ReportEmailAddress2, body, subject);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ReportEmailAddress1, ReportEmailAddress2, body, subject);
                 }
                 else
                 {
@@ -345,7 +345,7 @@ namespace SyncApp.Logic
 
         public async Task<List<Product>> GetProductsAsync()
         {
-            return await new GetShopifyProducts(StoreUrl, api_secret).GetProductsAsync();
+            return await new GetShopifyProducts(StoreUrl, ApiSecret).GetProductsAsync();
         }
 
         public bool CheckWorkingDays()
@@ -356,19 +356,19 @@ namespace SyncApp.Logic
             switch (currentDay)
             {
                 case "Saturday":
-                    return _config.Saturday ?? false;
+                    return Config.Saturday ?? false;
                 case "Sunday":
-                    return _config.Sunday ?? false;
+                    return Config.Sunday ?? false;
                 case "Monday":
-                    return _config.Monday ?? false;
+                    return Config.Monday ?? false;
                 case "Tuesday":
-                    return _config.Tuesday ?? false;
+                    return Config.Tuesday ?? false;
                 case "Wednesday":
-                    return _config.Wednesday ?? false;
+                    return Config.Wednesday ?? false;
                 case "Thursday":
-                    return _config.Thursday ?? false;
+                    return Config.Thursday ?? false;
                 case "Friday":
-                    return _config.Friday ?? false;
+                    return Config.Friday ?? false;
                 default:
                     return false;
 

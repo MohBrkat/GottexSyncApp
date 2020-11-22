@@ -12,6 +12,8 @@ using SyncApp.Filters;
 using SyncApp.ViewModel;
 using System.Threading.Tasks;
 using SyncApp.Logic;
+using Log4NetLibrary;
+using Newtonsoft.Json;
 
 namespace ShopifyApp2.Controllers
 {
@@ -20,6 +22,7 @@ namespace ShopifyApp2.Controllers
     {
         private readonly ShopifyAppContext _context;
         private readonly IHostingEnvironment _hostingEnvironment;
+        private static readonly log4net.ILog _log = Logger.GetLogger();
 
         private ImportInventoryFTPLogic _importInventoryFTPLogic;
         private ImportInventoryWebLogic _importInventoryWebLogic;
@@ -136,7 +139,14 @@ namespace ShopifyApp2.Controllers
 
         public async Task DoImoportAsync()
         {
-            await _importInventoryFTPLogic.ImportInventoryFileAsync();
+            try
+            {
+                await _importInventoryFTPLogic.ImportInventoryFileAsync();
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Exception While Import From FTP: {JsonConvert.SerializeObject(ex)}");
+            }
         }
 
         #endregion
@@ -146,7 +156,15 @@ namespace ShopifyApp2.Controllers
         [HttpPost]
         public async Task<IActionResult> ImportInventoryUpdatesFromCSV(IFormFile File)
         {
-            ImportCSVViewModel model = await _importInventoryWebLogic.ImportInventoryFileAsync(File);
+            ImportCSVViewModel model = new ImportCSVViewModel();
+            try
+            {
+                model = await _importInventoryWebLogic.ImportInventoryFileAsync(File);
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Exception While Import From Website: {JsonConvert.SerializeObject(ex)}");
+            }
 
             return View(model);
         }
@@ -164,17 +182,21 @@ namespace ShopifyApp2.Controllers
         [HttpPost]
         public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
-            List<Order> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
-            if (lsOfOrders.Count() > 0)
+            try
             {
-                string path = _exportDailySalesLogic.GenerateSalesFile(lsOfOrders, fromWeb);
+                List<Order> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
+                if (lsOfOrders.Count() > 0)
+                {
+                    string path = _exportDailySalesLogic.GenerateSalesFile(lsOfOrders, fromWeb);
+                    return View("~/Views/Home/ExportDailySales.cshtml", path);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Exception While Exporting Sales Report: {JsonConvert.SerializeObject(ex)}");
+            }
 
-                return View("~/Views/Home/ExportDailySales.cshtml", path);
-            }
-            else
-            {
-                return View("~/Views/Home/ExportDailySales.cshtml", "N/A");
-            }
+            return View("~/Views/Home/ExportDailySales.cshtml", "N/A");
         }
 
         #endregion
@@ -188,17 +210,22 @@ namespace ShopifyApp2.Controllers
         [HttpPost]
         public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
-            List<Order> lsOfOrders = await _exportDailyReceiptsLogic.ExportDailyReceiptsAsync(dateToRetriveFrom, dateToRetriveTo);
-            string path = string.Empty;
-            if (lsOfOrders.Count() > 0)
+            try
             {
-                path = await _exportDailyReceiptsLogic.GenerateReceiptFileAsync(lsOfOrders, fromWeb);
-                return View("~/Views/Home/ExportDailyReceipts.cshtml", path);
+                List<Order> lsOfOrders = await _exportDailyReceiptsLogic.ExportDailyReceiptsAsync(dateToRetriveFrom, dateToRetriveTo);
+                string path = string.Empty;
+                if (lsOfOrders.Count() > 0)
+                {
+                    path = await _exportDailyReceiptsLogic.GenerateReceiptFileAsync(lsOfOrders, fromWeb);
+                    return View("~/Views/Home/ExportDailyReceipts.cshtml", path);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return View("~/Views/Home/ExportDailyReceipts.cshtml", "N/A");
+                _log.Error($"Exception While Exporting Receipts Report: {JsonConvert.SerializeObject(ex)}");
             }
+
+            return View("~/Views/Home/ExportDailyReceipts.cshtml", "N/A");
         }
 
         #endregion
@@ -214,15 +241,22 @@ namespace ShopifyApp2.Controllers
         {
             FileModel file = new FileModel();
 
-            bool isWorkingDay = _exportDailyReportsLogic.CheckWorkingDays();
-            if (!isWorkingDay && !fromWeb)
+            try
             {
-                return View("~/Views/Home/ExportDailyReport.cshtml");
+                bool isWorkingDay = _exportDailyReportsLogic.CheckWorkingDays();
+                if (!isWorkingDay && !fromWeb)
+                {
+                    return View("~/Views/Home/ExportDailyReport.cshtml");
+                }
+
+                List<Order> lsOfOrders = await _exportDailyReportsLogic.ExportDailyReportsAsync(dateToRetriveFrom, dateToRetriveTo);
+
+                await _exportDailyReportsLogic.GenerateDailyReportFilesAsync(file, lsOfOrders);
             }
-
-            List<Order> lsOfOrders = await _exportDailyReportsLogic.ExportDailyReportsAsync(dateToRetriveFrom, dateToRetriveTo);
-
-            await _exportDailyReportsLogic.GenerateDailyReportFilesAsync(file, lsOfOrders);
+            catch (Exception ex)
+            {
+                _log.Error($"Exception While Exporting The Daily Reports: {JsonConvert.SerializeObject(ex)}");
+            }
 
             return View("~/Views/Home/ExportDailyReport.cshtml", file);
         }

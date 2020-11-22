@@ -26,7 +26,7 @@ namespace SyncApp.Logic
             _context = context;
         }
 
-        private Configrations _config
+        private Configrations Config
         {
             get
             {
@@ -35,81 +35,81 @@ namespace SyncApp.Logic
         }
 
         #region prop
-        private string host
+        private string Host
         {
             get
             {
-                return _config.FtpHost;
+                return Config.FtpHost ?? string.Empty;
             }
         }
-        private string userName
+        private string UserName
         {
             get
             {
-                return _config.FtpUserName;
+                return Config.FtpUserName ?? string.Empty;
             }
         }
-        private string password
+        private string Password
         {
             get
             {
-                return _config.FtpPassword;
+                return Config.FtpPassword ?? string.Empty;
             }
         }
-        private string smtpHost
+        private string SmtpHost
         {
             get
             {
-                return _config.SmtpHost;
+                return Config.SmtpHost ?? string.Empty;
             }
         }
-        private int smtpPort
+        private int SmtpPort
         {
             get
             {
-                return _config.SmtpPort.GetValueOrDefault();
+                return Config.SmtpPort.GetValueOrDefault();
             }
         }
-        private string emailUserName
+        private string EmailUserName
         {
             get
             {
-                return _config.SenderEmail;
+                return Config.SenderEmail ?? string.Empty;
             }
         }
-        private string emailPassword
+        private string EmailPassword
         {
             get
             {
-                return _config.SenderemailPassword;
+                return Config.SenderemailPassword ?? string.Empty;
             }
         }
-        private string displayName
+        private string DisplayName
         {
             get
             {
-                return _config.DisplayName;
+                return Config.DisplayName ?? string.Empty;
             }
         }
-        private string toEmail
+        private string ToEmail
         {
             get
             {
-                return _config.NotificationEmail;
+                return Config.NotificationEmail ?? string.Empty;
             }
         }
         private string StoreUrl
         {
             get
             {
-                return _config.StoreUrl;
+                return Config.StoreUrl ?? string.Empty;
             }
         }
-        private string api_secret
+        private string ApiSecret
         {
             get
             {
-                return _config.ApiSecret;
+                return Config.ApiSecret ?? string.Empty;
             }
         }
         #endregion
@@ -146,7 +146,7 @@ namespace SyncApp.Logic
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
                     var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                     if (!sucess)
@@ -162,16 +162,16 @@ namespace SyncApp.Logic
 
                 if (importSuccess)
                 {
-                    FtpHandler.DeleteFile(info.fileName, host, "/out", userName, password);
+                    FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "success", info.fileName + ".log");
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
                 }
                 else
                 {
                     var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
-                    FtpHandler.DeleteFile(info.fileName, host, "/out", userName, password);
+                    FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "failed", info.fileName + ".log");
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject, logFile);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, logFile);
                 }
 
                 UpdateFileImportStatus(importSuccess, true, info);
@@ -236,7 +236,7 @@ namespace SyncApp.Logic
             try
             {
                 var fileName = "";
-                var fileContent = FtpHandler.ReadLatestFileFromFtp(host, userName, password, "/Out", out fileName);
+                var fileContent = FtpHandler.ReadLatestFileFromFtp(Host, UserName, Password, "/Out", out fileName);
 
                 info.fileName = fileName;
 
@@ -244,8 +244,8 @@ namespace SyncApp.Logic
                 {
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
 
-                    var ProductServices = new ProductService(StoreUrl, api_secret);
-                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
+                    var ProductServices = new ProductService(StoreUrl, ApiSecret);
+                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
                     var Headers = Rows[0];
                     if (ValidateCSV.IsValidHeaders(Headers))
@@ -370,8 +370,8 @@ namespace SyncApp.Logic
             {
                 List<string> RowsWithoutHeader = info.fileRows;
 
-                var ProductServices = new ProductService(StoreUrl, api_secret);
-                var InventoryLevelsServices = new InventoryLevelService(StoreUrl, api_secret);
+                var ProductServices = new ProductService(StoreUrl, ApiSecret);
+                var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
                 info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
                 info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
