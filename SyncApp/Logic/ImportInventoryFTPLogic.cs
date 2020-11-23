@@ -170,7 +170,7 @@ namespace SyncApp.Logic
                     var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
                     FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "failed", info.fileName + ".log");
-                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, logFile);
                 }
 
                 UpdateFileImportStatus(importSuccess, true, info);
