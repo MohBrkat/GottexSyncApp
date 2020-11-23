@@ -12,17 +12,17 @@ namespace ShopifyApp2
     {
         public static string AddDoubleQuotes(this string value)
         {
-            return string.Format('"' + @"{0}" + '"',value);
+            return string.Format('"' + @"{0}" + '"', value);
         }
         public static bool IsNotNullOrEmpty(this string s)
         {
-            return  !(string.IsNullOrEmpty(s) && string.IsNullOrWhiteSpace(s));
+            return !(string.IsNullOrEmpty(s) && string.IsNullOrWhiteSpace(s));
         }
         public static string InsertLeadingSpaces(this string s, int target)
         {
             while (s.Length < target)
             {
-                s = s.Insert(0  , " ");
+                s = s.Insert(0, " ");
             }
             return s;
         }
@@ -30,7 +30,7 @@ namespace ShopifyApp2
         {
             while (s.Length < target)
             {
-               s =  s.Insert(0, "0");
+                s = s.Insert(0, "0");
             }
             return s;
         }
@@ -49,12 +49,12 @@ namespace ShopifyApp2
             return string.Join(",", ls.ToArray());
         }
 
-        public static decimal ValueWithoutTax(this decimal? value, decimal taxPercentage = 17)
+        public static decimal ValueWithoutTax(this decimal? value, decimal taxPercentage)
         {
             return value.GetValueOrDefault() / ((taxPercentage / 100) + 1);
         }
 
-        public static decimal ValueWithoutTax(this decimal value, decimal taxPercentage = 17)
+        public static decimal ValueWithoutTax(this decimal value, decimal taxPercentage)
         {
             return value / ((taxPercentage / 100) + 1);
         }
@@ -64,15 +64,15 @@ namespace ShopifyApp2
     {
         public static IConfigurationRoot Configuration;
 
-        public static string GetConfig(string parent,string child)
+        public static string GetConfig(string parent, string child)
         {
             var builder = new ConfigurationBuilder()
-                   
+
                    .AddJsonFile("appsettings.json");
 
 
             Configuration = builder.Build();
-           return Configuration[parent+":"+child];
+            return Configuration[parent + ":" + child];
 
 
         }

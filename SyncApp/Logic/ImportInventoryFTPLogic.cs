@@ -210,6 +210,7 @@ namespace SyncApp.Logic
                 {
                     importStatus.IsCompleted = isCompleted;
                     importStatus.IsImportSuccess = importSuccess;
+                    importStatus.UpdateDate = DateTime.Now;
 
                     _context.SaveChanges();
                 }
