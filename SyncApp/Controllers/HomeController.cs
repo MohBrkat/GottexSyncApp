@@ -1348,7 +1348,7 @@ namespace ShopifyApp2.Controllers
                         var discountZero = 0;
                         var shipOrder = order;
 
-                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
+                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
                         //bool isPartiallyRefunded = shipOrder.FinancialStatus == "partially_refunded";
 
                         //If the order (e.g partially/refunded or paid) 
@@ -1386,7 +1386,7 @@ namespace ShopifyApp2.Controllers
                         {
                             var mQuant = "-1";
 
-                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax());
+                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax(taxPercentage));
 
                             lock (salesFileLock)
                             {

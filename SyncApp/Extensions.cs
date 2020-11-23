@@ -49,12 +49,12 @@ namespace ShopifyApp2
             return string.Join(",", ls.ToArray());
         }
 
-        public static decimal ValueWithoutTax(this decimal? value, decimal taxPercentage = 17)
+        public static decimal ValueWithoutTax(this decimal? value, decimal taxPercentage)
         {
             return value.GetValueOrDefault() / ((taxPercentage / 100) + 1);
         }
 
-        public static decimal ValueWithoutTax(this decimal value, decimal taxPercentage = 17)
+        public static decimal ValueWithoutTax(this decimal value, decimal taxPercentage)
         {
             return value / ((taxPercentage / 100) + 1);
         }
