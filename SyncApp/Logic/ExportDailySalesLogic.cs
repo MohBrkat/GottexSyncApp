@@ -275,7 +275,7 @@ namespace SyncApp.Logic
                         var discountZero = 0;
                         var shipOrder = order;
 
-                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax();
+                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
 
                         //If the order (e.g partially/refunded or paid) 
                         //has shipping cost and this cost is not refunded,
@@ -312,7 +312,7 @@ namespace SyncApp.Logic
                         {
                             var mQuant = "-1";
 
-                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax());
+                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax(taxPercentage));
 
                             lock (salesFileLock)
                             {
