@@ -141,12 +141,10 @@ namespace SyncApp.Logic
 
                 _log.Info("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed.");
 
-                string subject = info.fileName + " Import Status";
+                Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
-
                     var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                     if (!sucess)
                     {
@@ -158,6 +156,7 @@ namespace SyncApp.Logic
                     }
                 }
 
+                string subject = info.fileName + " Import Status";
 
                 if (importSuccess)
                 {
