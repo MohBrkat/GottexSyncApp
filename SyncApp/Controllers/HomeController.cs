@@ -443,15 +443,11 @@ namespace ShopifyApp2.Controllers
 
                 _log.Info("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed.");
 
-                //var fileName = Path.GetFileNameWithoutExtension(info.fileName);
-                string subject = info.fileName + " Import Status";
+                Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
-
                     var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
-                    // _log.Logger.Repository.Shutdown();
                     if (!sucess)
                     {
                         importSuccess = false;
@@ -462,16 +458,12 @@ namespace ShopifyApp2.Controllers
                     }
                 }
 
+                string subject = info.fileName + " Import Status";
 
                 if (importSuccess)
                 {
                     string msg = "Importing Success";
-                    //  FtpHandler.UploadFile(info.fileName + ".log", Encoding.ASCII.GetBytes(msg), host, "shopify/out", userName, password);
                     FtpHandler.DeleteFile(info.fileName, host, "/out", userName, password);
-
-                    //Utility.UploadLogFile(host, userName, password, port, "File Imported Sucesfuly", info.fileName + ".success.log", "Logs");
-                    //Utility.ArchiveFile(host, userName, password, port, info.fileName);
-
                     var body = messageBody("Import inventory File", "success", info.fileName + ".log");
                     Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject);
 
@@ -479,13 +471,9 @@ namespace ShopifyApp2.Controllers
                 else
                 {
                     var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
-                    //  FtpHandler.UploadFile(info.fileName + ".log", logFile, host, "shopify/out", userName, password);
                     FtpHandler.DeleteFile(info.fileName, host, "/out", userName, password);
-
-
                     var body = messageBody("Import inventory File", "failed", info.fileName + ".log");
                     Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, body, subject, logFile);
-
                 }
 
                 UpdateFileImportStatus(importSuccess, true, info);
