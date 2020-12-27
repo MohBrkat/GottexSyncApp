@@ -443,8 +443,6 @@ namespace ShopifyApp2.Controllers
 
                 _log.Info("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed.");
 
-                Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
-
                 if (info.isValid && info.lsErrorCount == 0)
                 {
                     var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
@@ -556,6 +554,7 @@ namespace ShopifyApp2.Controllers
 
                 if (!string.IsNullOrEmpty(fileContent))
                 {
+                    Utility.SendEmail(smtpHost, smtpPort, emailUserName, emailPassword, displayName, toEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
 
