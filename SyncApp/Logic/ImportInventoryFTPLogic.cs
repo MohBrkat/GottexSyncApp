@@ -141,8 +141,6 @@ namespace SyncApp.Logic
 
                 _log.Info("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed.");
 
-                Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
-
                 if (info.isValid && info.lsErrorCount == 0)
                 {
                     var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
@@ -238,6 +236,8 @@ namespace SyncApp.Logic
 
                 if (!string.IsNullOrEmpty(fileContent))
                 {
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
+
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
 
                     var ProductServices = new ProductService(StoreUrl, ApiSecret);
