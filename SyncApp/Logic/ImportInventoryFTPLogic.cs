@@ -146,8 +146,6 @@ namespace SyncApp.Logic
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
-
                     var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                     if (!sucess)
                     {
@@ -243,6 +241,8 @@ namespace SyncApp.Logic
 
                 if (!string.IsNullOrEmpty(fileContent))
                 {
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
+
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
 
                     var ProductServices = new ProductService(StoreUrl, ApiSecret);
@@ -302,7 +302,6 @@ namespace SyncApp.Logic
                                     {
                                         throw new Exception(string.Format("Method {0} not defined.", Method, rowIndex));
                                     }
-                                    Thread.Sleep(500);
                                 }
                                 else
                                 {
@@ -396,7 +395,6 @@ namespace SyncApp.Logic
                     var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
                     var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
 
-                    Thread.Sleep(500);
                     if (Method.ToLower().Trim() == "set")
                     {
                         var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
@@ -413,8 +411,6 @@ namespace SyncApp.Logic
                     _log.Info("the handle : " + Handle + "--" + "processed");
 
                     info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
-
-                    Thread.Sleep(500);
                 }
                 _log.Info("file processed sucesfully");
 
