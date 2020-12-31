@@ -298,7 +298,6 @@ namespace SyncApp.Logic
                                     {
                                         throw new Exception(string.Format("Method {0} not defined.", Method, rowIndex));
                                     }
-                                    Thread.Sleep(500);
                                 }
                                 else
                                 {
@@ -393,7 +392,6 @@ namespace SyncApp.Logic
                     var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
                     var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
 
-                    Thread.Sleep(500);
                     if (Method.ToLower().Trim() == "set")
                     {
                         var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
@@ -411,7 +409,6 @@ namespace SyncApp.Logic
 
                     info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
 
-                    Thread.Sleep(500);
                 }
                 _log.Info("file processed sucesfully");
 
