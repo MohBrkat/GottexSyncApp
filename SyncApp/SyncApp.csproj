@@ -23,7 +23,7 @@
     <PackageReference Include="Hangfire.SqlServer" Version="1.7.3" />
     <PackageReference Include="jQuery" Version="3.4.1" />
     <PackageReference Include="jQuery.UI.Combined" Version="1.12.1" />
-    <PackageReference Include="log4net" Version="2.0.8" />
+    <PackageReference Include="log4net" Version="2.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IIS" Version="2.2.6" />
