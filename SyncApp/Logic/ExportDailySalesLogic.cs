@@ -155,6 +155,13 @@ namespace SyncApp.Logic
                 return Config.TaxPercentage.GetValueOrDefault();
             }
         }
+        private bool ExcludeShippingFeesInSales
+        {
+            get
+            {
+                return Config.ExcludeShippingFeesInSales;
+            }
+        }
         #endregion
 
         public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
@@ -280,7 +287,7 @@ namespace SyncApp.Logic
                         //If the order (e.g partially/refunded or paid) 
                         //has shipping cost and this cost is not refunded,
                         //then write shipping data
-                        if (shippingAmount > 0 && shipOrder.RefundKind != "refund_discrepancy")
+                        if (shippingAmount > 0 && shipOrder.RefundKind != "refund_discrepancy"&& !ExcludeShippingFeesInSales)
                         {
                             var mQuant = "1";
                             if (shipOrder.RefundKind == "shipping_refund")
