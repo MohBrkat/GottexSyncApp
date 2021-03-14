@@ -159,7 +159,7 @@ namespace SyncApp.Logic
         {
             get
             {
-                return Config.ExcludeShippingFeesInSales;
+                return Config.ExcludeShippingFeesInSales.GetValueOrDefault();
             }
         }
         #endregion
