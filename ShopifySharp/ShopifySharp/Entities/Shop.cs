@@ -261,5 +261,11 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("updated_at")]
         public DateTimeOffset? UpdatedAt { get; set; }
+
+        /// <summary>
+        /// The default location of the shop
+        /// </summary>
+        [JsonProperty("primary_location_id")]
+        public long? PrimaryLocationId { get; set; }
     }
 }
