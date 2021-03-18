@@ -176,14 +176,14 @@ namespace SyncApp.Logic
 
             try
             {
-                await Task.Delay(1000);
-                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
+               await Task.Delay(1000);
+               refunded = await new GetShopifyOrders(StoreUrl, ApiSecret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
-                await Task.Delay(10000);
+               await Task.Delay(10000);
 
-                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
+               refunded = await new GetShopifyOrders(StoreUrl, ApiSecret).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -236,7 +236,8 @@ namespace SyncApp.Logic
                     var PaymentMeanCode = 0;
                     if (transaction != null)
                     {
-                        PaymentMeanCode = GetPaymentMeanCode(transaction.cc_type);
+                        string company = string.IsNullOrEmpty(transaction.cc_type) ? transaction.brand_name : transaction.cc_type;
+                        PaymentMeanCode = GetPaymentMeanCode(company);
                         if (transaction.x_timestamp.IsNotNullOrEmpty())
                         {
                             invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");

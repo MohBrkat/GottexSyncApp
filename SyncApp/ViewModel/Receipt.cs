@@ -22,6 +22,7 @@ namespace SyncApp.ViewModel
         public string tourist_card { get; set; }
         public string x_timestamp { get; set; }
         public string x_signature { get; set; }
+        public string brand_name { get; set; }
 
     }
 }
