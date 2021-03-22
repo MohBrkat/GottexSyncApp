@@ -287,10 +287,10 @@ namespace SyncApp.Logic
                         //If the order (e.g partially/refunded or paid) 
                         //has shipping cost and this cost is not refunded,
                         //then write shipping data
-                        if (shippingAmount > 0 && shipOrder.RefundKind != "refund_discrepancy"&& !ExcludeShippingFeesInSales)
+                        if (shippingAmount > 0 && && !ExcludeShippingFeesInSales && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
                         {
                             var mQuant = "1";
-                            if (shipOrder.RefundKind == "shipping_refund")
+                            if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
                             {
                                 mQuant = "-1";
                                 //Calculate refunded shipping
