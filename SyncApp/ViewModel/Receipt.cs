@@ -23,6 +23,7 @@ namespace SyncApp.ViewModel
         public string x_timestamp { get; set; }
         public string x_signature { get; set; }
         public string brand_name { get; set; }
+        public string clearing_name { get; set; }
 
     }
 }

@@ -236,7 +236,7 @@ namespace SyncApp.Logic
                     var PaymentMeanCode = 0;
                     if (transaction != null)
                     {
-                        string company = string.IsNullOrEmpty(transaction.cc_type) ? transaction.brand_name : transaction.cc_type;
+                        string company = string.IsNullOrEmpty(transaction.cc_type) ? transaction.clearing_name : transaction.cc_type;
                         PaymentMeanCode = GetPaymentMeanCode(company);
                         if (transaction.x_timestamp.IsNotNullOrEmpty())
                         {
