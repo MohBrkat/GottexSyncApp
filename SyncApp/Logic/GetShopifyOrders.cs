@@ -2,6 +2,7 @@
 using ShopifySharp.Filters;
 using SyncApp.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -109,13 +110,14 @@ namespace SyncApp.Logic
             List<Order> orders = await GetRefundedOrdersByFiltersAsync();
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
-            var ordersToReturn = new List<Order>();
+
+            var ordersToReturn = new ConcurrentBag<Order>();
             decimal taxPercentage = taxPercent;
 
-            foreach (var order in OrdersHasRefunds)
+            Parallel.ForEach(OrdersHasRefunds, order =>
             {
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom.AbsoluteStart() &&
-                a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
+a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
 
                 foreach (var refund in targetRefunds)
                 {
@@ -186,7 +188,8 @@ namespace SyncApp.Logic
 
                     ordersToReturn.Add(orderToReturn);
                 }
-            }
+            });
+
             refundedOrders.Orders = ordersToReturn.ToList();
 
             return refundedOrders;

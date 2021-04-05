@@ -332,9 +332,11 @@ namespace SyncApp.Logic
             }
             else
             {
+                var transaction = JsonConvert.DeserializeObject<Receipt>(order.Transactions.FirstOrDefault().Receipt.ToString());
                 r = JsonConvert.DeserializeObject<Receipt>(
                     order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().Receipt.ToString());
                 r.x_timestamp = order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().CreatedAt.ToString();
+                r.clearing_name = transaction.clearing_name;
             }
             return r;
         }
