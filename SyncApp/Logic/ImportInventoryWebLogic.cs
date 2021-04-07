@@ -349,14 +349,17 @@ namespace SyncApp.Logic
                     if (Method.ToLower().Trim() == "set")
                     {
                         var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
+                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i+1, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "in")
                     {
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
+                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i+1, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "out")
                     {
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
+                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i+1, "Updated"));
                     }
 
                     _log.Info("the handle : " + Handle + "--" + "processed");
@@ -372,11 +375,12 @@ namespace SyncApp.Logic
                     if (retryCount >= MAX_RETRY_COUNT)
                     {
                         _log.Error("error occured in the row# " + i + 1 + " : " + ex.Message);
+                        LsOfManualErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
                         info.LsOfErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
                         i++;
                         retryCount = 0;
                     }
-
+                    
                     Thread.Sleep(10000);
                 }
             }
@@ -385,7 +389,7 @@ namespace SyncApp.Logic
 
             info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
 
-            return true;
+            return LsOfManualErrors.Count > 0 ? false : true;
         }
     }
 }
