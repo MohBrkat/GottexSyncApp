@@ -20,6 +20,7 @@ namespace SyncApp.Logic
         private readonly ShopifyAppContext _context;
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private static readonly object importInventoryLock = new object();
+        public const int MAX_RETRY_COUNT = 5;
 
         public ImportInventoryFTPLogic(ShopifyAppContext context)
         {
@@ -364,20 +365,24 @@ namespace SyncApp.Logic
             return info;
         }
 
-        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info)
+        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info, int retryCount = 0)
         {
-            try
+            List<string> RowsWithoutHeader = info.fileRows;
+
+            retryCount++;
+
+            var ProductServices = new ProductService(StoreUrl, ApiSecret);
+            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
+
+            info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+            info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+
+            for (int i = 0; i <= RowsWithoutHeader.Count;)
             {
-                List<string> RowsWithoutHeader = info.fileRows;
-
-                var ProductServices = new ProductService(StoreUrl, ApiSecret);
-                var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
-
-                info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
-                info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
-
-                foreach (var row in RowsWithoutHeader)
+                try
                 {
+                    var row = RowsWithoutHeader[i];
+
                     var splittedRow = row.Split(',');
 
                     string Handle = splittedRow[0];
@@ -411,20 +416,25 @@ namespace SyncApp.Logic
                     _log.Info("the handle : " + Handle + "--" + "processed");
 
                     info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
+
+                    i++;
                 }
-                _log.Info("file processed sucesfully");
-
-                info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
-
-                return true;
+                catch (Exception ex)
+                {
+                    if (retryCount >= MAX_RETRY_COUNT)
+                    {
+                        _log.Error("error occured in the row# " + i + 1 + " : " + ex.Message);
+                        info.LsOfErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
+                        i++;
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                _log.Error("Error While Importing The File : " + ex.Message);
-                info.LsOfErrors.Add("file: " + info.fileName + "processed failed,Error Message: " + ex.Message + "Error: " + ex.ToString());
 
-                return false;
-            }
+            _log.Info("file processed sucesfully");
+
+            info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
+
+            return true;
         }
     }
 }

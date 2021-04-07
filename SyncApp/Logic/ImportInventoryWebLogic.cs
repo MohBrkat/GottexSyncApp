@@ -22,6 +22,8 @@ namespace SyncApp.Logic
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
 
+        public const int MAX_RETRY_COUNT = 5;
+
         List<string> LsOfManualSuccess = new List<string>();
         List<string> LsOfManualErrors = new List<string>();
 
@@ -108,16 +110,16 @@ namespace SyncApp.Logic
             {
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    var errorCount = await ImportValidInvenotryUpdatesFromCSVAsync(File);
+
+                    var success = await ImportValidInvenotryUpdatesFromCSVAsync(info);
+
+                    if (!success)
                     {
-                        if (errorCount > 0)
-                        {
-                            importSuccess = false;
-                        }
-                        else
-                        {
-                            importSuccess = true;
-                        }
+                        importSuccess = false;
+                    }
+                    else
+                    {
+                        importSuccess = true;
                     }
                 }
                 else if (!info.isValid && info.lsErrorCount > 0)
@@ -150,6 +152,9 @@ namespace SyncApp.Logic
         {
             FileInformation info = new FileInformation();
             bool validFile = false;
+
+            List<string> fileRows = new List<string>();
+
             try
             {
                 using (var reader = new StreamReader(File.OpenReadStream()))
@@ -165,6 +170,9 @@ namespace SyncApp.Logic
                     if (ValidateCSV.IsValidHeaders(Headers))
                     {
                         Rows = Rows.Skip(1).ToArray();// skip headers
+
+                        fileRows = Rows.ToList();
+
                         int rowIndex = 2; // first row in csv sheet is 2 (after header)
                         foreach (var row in Rows)
                         {
@@ -235,6 +243,8 @@ namespace SyncApp.Logic
             {
                 _log.Error(ls);
             }
+
+            info.fileRows = fileRows;
             info.LsOfSucess = LsOfManualSuccess;
             info.lsErrorCount = LsOfManualErrors.Count();
             info.isValid = validFile;
@@ -303,5 +313,79 @@ namespace SyncApp.Logic
             return LsOfManualErrors.Count;
         }
 
+        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info, int retryCount = 0)
+        {
+            List<string> RowsWithoutHeader = info.fileRows;
+
+            var ProductServices = new ProductService(StoreUrl, ApiSecret);
+            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
+
+            info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+            info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+
+            for (int i = 0; i <= RowsWithoutHeader.Count;)
+            {
+                try
+                {
+                    var row = RowsWithoutHeader[i];
+
+                    var splittedRow = row.Split(',');
+
+                    string Handle = splittedRow[0];
+                    string Sku = splittedRow[1];
+                    string Method = splittedRow[2];
+                    string Quantity = splittedRow[3];
+
+                    var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
+                    var ProductObj = Products.Items.FirstOrDefault();
+                    var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
+
+                    var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                    var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+
+                    var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
+                    var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+
+                    if (Method.ToLower().Trim() == "set")
+                    {
+                        var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
+                    }
+                    else if (Method.ToLower().Trim() == "in")
+                    {
+                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
+                    }
+                    else if (Method.ToLower().Trim() == "out")
+                    {
+                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
+                    }
+
+                    _log.Info("the handle : " + Handle + "--" + "processed");
+
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
+
+                    i++;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+
+                    if (retryCount >= MAX_RETRY_COUNT)
+                    {
+                        _log.Error("error occured in the row# " + i + 1 + " : " + ex.Message);
+                        info.LsOfErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
+                        i++;
+                        retryCount = 0;
+                    }
+
+                    Thread.Sleep(10000);
+                }
+            }
+
+            _log.Info("file processed sucesfully");
+
+            info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
+
+            return true;
+        }
     }
 }
