@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -110,21 +111,7 @@ namespace SyncApp.Logic
             {
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-
-                    var success = await ImportValidInvenotryUpdatesFromCSVAsync(info);
-
-                    if (!success)
-                    {
-                        importSuccess = false;
-                    }
-                    else
-                    {
-                        importSuccess = true;
-                    }
-                }
-                else if (!info.isValid && info.lsErrorCount > 0)
-                {
-                    importSuccess = false;
+                    importSuccess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                 }
 
                 if (importSuccess)
@@ -134,8 +121,10 @@ namespace SyncApp.Logic
                 }
                 else
                 {
+                    var successLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfSucess.ToArray()));
+                    var failedLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
                     var body = EmailMessages.messageBody("Import inventory File", "Failed", File.FileName);
-                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, successLogFile, failedLogFile);
                 }
             }
 
@@ -349,22 +338,22 @@ namespace SyncApp.Logic
                     if (Method.ToLower().Trim() == "set")
                     {
                         var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
-                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i+1, "Updated"));
+                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i + 1, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "in")
                     {
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
-                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i+1, "Updated"));
+                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i + 1, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "out")
                     {
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
-                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i+1, "Updated"));
+                        LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", i + 1, "Updated"));
                     }
 
-                    _log.Info("the handle : " + Handle + "--" + "processed");
+                    _log.Info("the handle : " + Handle + "--" + "processed, row#: " + i + 1);
 
-                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, row#: " + i + 1);
 
                     i++;
                 }
@@ -377,11 +366,9 @@ namespace SyncApp.Logic
                         _log.Error("error occured in the row# " + i + 1 + " : " + ex.Message);
                         LsOfManualErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
                         info.LsOfErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
-                        i++;
                         retryCount = 0;
+                        return false;
                     }
-                    
-                    Thread.Sleep(10000);
                 }
             }
 
@@ -389,7 +376,7 @@ namespace SyncApp.Logic
 
             info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
 
-            return LsOfManualErrors.Count > 0 ? false : true;
+            return true;
         }
     }
 }

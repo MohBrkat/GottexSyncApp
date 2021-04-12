@@ -147,15 +147,7 @@ namespace SyncApp.Logic
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
-                    if (!sucess)
-                    {
-                        importSuccess = false;
-                    }
-                    else
-                    {
-                        importSuccess = true;
-                    }
+                    importSuccess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                 }
 
 
@@ -167,10 +159,11 @@ namespace SyncApp.Logic
                 }
                 else
                 {
-                    var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
+                    var successLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfSucess.ToArray()));
+                    var failedLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
                     FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "failed", info.fileName + ".log");
-                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, logFile);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, successLogFile, failedLogFile);
                 }
 
                 UpdateFileImportStatus(importSuccess, true, info);
@@ -369,8 +362,6 @@ namespace SyncApp.Logic
         {
             List<string> RowsWithoutHeader = info.fileRows;
 
-            retryCount++;
-
             var ProductServices = new ProductService(StoreUrl, ApiSecret);
             var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
@@ -413,19 +404,22 @@ namespace SyncApp.Logic
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
                     }
 
-                    _log.Info("the handle : " + Handle + "--" + "processed");
+                    _log.Info("the handle : " + Handle + "--" + "processed, row#: " + i + 1);
 
-                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, row#: " + i + 1);
 
                     i++;
                 }
                 catch (Exception ex)
                 {
+                    retryCount++;
+
                     if (retryCount >= MAX_RETRY_COUNT)
                     {
                         _log.Error("error occured in the row# " + i + 1 + " : " + ex.Message);
                         info.LsOfErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
-                        i++;
+                        retryCount = 0;
+                        return false;
                     }
                 }
             }

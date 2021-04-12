@@ -264,7 +264,7 @@ namespace SyncApp
             }
         }
 
-        public static void SendEmail(string host, int port, string email, string password, string displayName, string to, string message, string subject, byte[] logFile = null)
+        public static void SendEmail(string host, int port, string email, string password, string displayName, string to, string message, string subject, byte[] successLogFile = null, byte[] failedLogFile = null)
         {
             SmtpClient smtpClient = new SmtpClient(host, port);
             smtpClient.UseDefaultCredentials = false;
@@ -281,9 +281,15 @@ namespace SyncApp
             mail.Body = message;
             mail.IsBodyHtml = true;
 
-            if (logFile != null)
+            if (successLogFile != null)
             {
-                Attachment att = new Attachment(new MemoryStream(logFile), "logs.txt");
+                Attachment att = new Attachment(new MemoryStream(successLogFile), "SuccessLogs.txt");
+                mail.Attachments.Add(att);
+            }
+
+            if (failedLogFile != null)
+            {
+                Attachment att = new Attachment(new MemoryStream(failedLogFile), "FailedLogs.txt");
                 mail.Attachments.Add(att);
             }
 
