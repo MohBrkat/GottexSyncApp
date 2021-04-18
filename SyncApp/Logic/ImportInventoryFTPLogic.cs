@@ -368,7 +368,9 @@ namespace SyncApp.Logic
             info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
             info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
 
-            for (int i = 0; i <= RowsWithoutHeader.Count;)
+            int rowIndex = 1;
+
+            for (int i = 0; i < RowsWithoutHeader.Count;)
             {
                 try
                 {
@@ -404,11 +406,12 @@ namespace SyncApp.Logic
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
                     }
 
-                    _log.Info("the handle : " + Handle + "--" + "processed, row#: " + i + 1);
+                    _log.Info("the handle : " + Handle + "--" + "processed, row#: " + rowIndex);
 
-                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, row#: " + i + 1);
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, row#: " + rowIndex);
 
                     i++;
+                    rowIndex++;
                 }
                 catch (Exception ex)
                 {
@@ -416,8 +419,8 @@ namespace SyncApp.Logic
 
                     if (retryCount >= MAX_RETRY_COUNT)
                     {
-                        _log.Error("error occured in the row# " + i + 1 + " : " + ex.Message);
-                        info.LsOfErrors.Add("error occured in the row# " + i + 1 + " : " + ex.Message);
+                        _log.Error("error occured in the row# " + rowIndex + " : " + ex.Message);
+                        info.LsOfErrors.Add("error occured in the row# " + rowIndex + " : " + ex.Message);
                         retryCount = 0;
                         return false;
                     }
