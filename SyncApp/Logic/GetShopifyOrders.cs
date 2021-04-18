@@ -114,7 +114,7 @@ namespace SyncApp.Logic
             var ordersToReturn = new ConcurrentBag<Order>();
             decimal taxPercentage = taxPercent;
 
-            foreach(var order in ordersToReturn)
+            foreach(var order in OrdersHasRefunds)
             {
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom.AbsoluteStart() &&
 a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
