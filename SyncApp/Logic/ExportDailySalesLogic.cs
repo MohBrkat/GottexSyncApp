@@ -283,8 +283,6 @@ namespace SyncApp.Logic
                             if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
                             {
                                 mQuant = "-1";
-                                //Calculate refunded shipping
-                                shippingAmount = Math.Abs(shipOrder.RefundAmount / ((taxPercentage / 100.0m) + 1.0m));
                             }
 
                             lock (salesFileLock)
