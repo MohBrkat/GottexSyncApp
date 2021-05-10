@@ -20,6 +20,7 @@ namespace SyncApp.Logic
         private readonly ShopifyAppContext _context;
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private static readonly object importInventoryLock = new object();
+        public const int MAX_RETRY_COUNT = 5;
 
         public ImportInventoryFTPLogic(ShopifyAppContext context)
         {
@@ -143,15 +144,7 @@ namespace SyncApp.Logic
 
                 if (info.isValid && info.lsErrorCount == 0)
                 {
-                    var sucess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
-                    if (!sucess)
-                    {
-                        importSuccess = false;
-                    }
-                    else
-                    {
-                        importSuccess = true;
-                    }
+                    importSuccess = await ImportValidInvenotryUpdatesFromCSVAsync(info);
                 }
 
                 string subject = info.fileName + " Import Status";
@@ -164,10 +157,11 @@ namespace SyncApp.Logic
                 }
                 else
                 {
-                    var logFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
+                    var successLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfSucess.ToArray()));
+                    var failedLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
                     FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "failed", info.fileName + ".log");
-                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, logFile);
+                    Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, successLogFile, failedLogFile);
                 }
 
                 UpdateFileImportStatus(importSuccess, true, info);
@@ -359,22 +353,26 @@ namespace SyncApp.Logic
             info.LsOfErrors = LsOfErrors;
             return info;
         }
-        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info)
+
+        private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info, int retryCount = 0)
         {
-            try
+            List<string> RowsWithoutHeader = info.fileRows;
+
+            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
+
+            info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+            info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
+
+            int rowIndex = 1;
+
+            var Products = await GetProductsAsync();
+
+            for (int i = 0; i < RowsWithoutHeader.Count;)
             {
-                List<string> RowsWithoutHeader = info.fileRows;
-
-                var ProductServices = new ProductService(StoreUrl, ApiSecret);
-                var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
-
-                info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
-                info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
-
-                var Products = await GetProductsAsync();
-
-                foreach (var row in RowsWithoutHeader)
+                try
                 {
+                    var row = RowsWithoutHeader[i];
+
                     var splittedRow = row.Split(',');
 
                     string Handle = splittedRow[0];
@@ -383,7 +381,6 @@ namespace SyncApp.Logic
                     string Quantity = splittedRow[3];
 
                     var ProductObj = Products.FirstOrDefault(p => p.Handle.ToLower().StartsWith(Handle.ToLower()));
-
                     var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
                     var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
@@ -405,25 +402,34 @@ namespace SyncApp.Logic
                         var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
                     }
 
-                    _log.Info("the handle : " + Handle + "--" + "processed");
+                    _log.Info("the handle : " + Handle + "--" + "processed, row#: " + rowIndex);
 
-                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed.");
+                    info.LsOfSucess.Add("the handle : " + Handle + "--" + "processed, row#: " + rowIndex);
 
+                    i++;
+                    rowIndex++;
                 }
-                _log.Info("file processed sucesfully");
+                catch (Exception ex)
+                {
+                    retryCount++;
 
-                info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
-
-                return true;
+                    if (retryCount >= MAX_RETRY_COUNT)
+                    {
+                        _log.Error("error occured in the row# " + rowIndex + " : " + ex.Message);
+                        info.LsOfErrors.Add("error occured in the row# " + rowIndex + " : " + ex.Message);
+                        retryCount = 0;
+                        return false;
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                _log.Error("Error While Importing The File : " + ex.Message);
-                info.LsOfErrors.Add("file: " + info.fileName + "processed failed,Error Message: " + ex.Message + "Error: " + ex.ToString());
 
-                return false;
-            }
+            _log.Info("file processed sucesfully");
+
+            info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
+
+            return true;
         }
+
         public async Task<List<Product>> GetProductsAsync()
         {
             return await new GetShopifyProducts(StoreUrl, ApiSecret).GetProductsAsync();
