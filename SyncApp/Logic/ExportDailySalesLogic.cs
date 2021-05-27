@@ -232,6 +232,8 @@ namespace SyncApp.Logic
                         var shipRefOrder = order;
                         foreach (var orderItem in order.LineItems)
                         {
+                            if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
+                                continue;
 
                             var discountPercentage = 0;
 
