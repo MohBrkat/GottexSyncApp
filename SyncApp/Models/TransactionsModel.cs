@@ -9,7 +9,7 @@ namespace SyncApp.Models
 {
     public class TransactionsModel
     {
-        public Receipt ReceiptTransaction { get; set; }
+        public List<Receipt> ReceiptTransactions { get; set; }
         public GiftCardModel GiftCardTransaction { get; set; }
     }
 }
