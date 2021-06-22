@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SyncApp.Filters;
 using SyncApp.Models.EF;
+using SyncApp.ViewModel;
+using SyncApp.Models.Enums;
+using SyncApp.Logic;
 
 namespace SyncApp.Controllers
 {
@@ -28,6 +31,8 @@ namespace SyncApp.Controllers
         // GET: Configrations/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
+            ConfigurationsModel configs = new ConfigurationsModel();
+
             if (id == null)
             {
                 return NotFound();
@@ -38,41 +43,52 @@ namespace SyncApp.Controllers
             {
                 return NotFound();
             }
-            return View(configrations);
+
+            configs.Configurations = configrations;
+
+            await new ReportsScheduleLogic(_context, (int)ReportTypesEnum.DailyReport).GetScheduleReports(configs);
+
+            return View(configs);
         }
 
         // POST: Configrations/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-         public async Task<IActionResult> Edit(Configrations configrations)
+        public async Task<IActionResult> Edit(ConfigurationsModel configs)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(configrations);
-                    if(!configrations.UseRecurringJob.GetValueOrDefault())
+                    _context.Update(configs.Configurations);
+                    if (!configs.Configurations.UseRecurringJob.GetValueOrDefault())
                     {
                         _context.Database.ExecuteSqlCommand("DELETE FROM [Hangfire].[Hash];DELETE FROM [Hangfire].[JOB];DELETE FROM [Hangfire].[Set]");
-
                     }
+
+                    await new ReportsScheduleLogic(_context, (int)ReportTypesEnum.DailyReport).UpdateScheduleReportsAsync(configs);
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                     
-                        throw;
-                     
+
+                    throw;
+
                 }
-                return RedirectToAction("Index","Home");
+
+                return RedirectToAction("Index", "Home");
             }
-            return View(configrations);
+            else
+            {
+                var message = string.Join(" | ", ModelState.Values
+                                            .SelectMany(v => v.Errors)
+                                            .Select(e => e.ErrorMessage));
+            }
+
+
+            return View(configs);
         }
-
-
-
-
-
     }
 }

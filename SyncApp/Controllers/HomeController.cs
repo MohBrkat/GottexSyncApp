@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using SyncApp.Logic;
 using Log4NetLibrary;
 using Newtonsoft.Json;
+using SyncApp.Models.Enums;
 
 namespace ShopifyApp2.Controllers
 {
@@ -122,7 +123,9 @@ namespace ShopifyApp2.Controllers
             RecurringJob.AddOrUpdate(() => DoImoportAsync(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
             RecurringJob.AddOrUpdate(() => ExportSalesAsync(false, default, default), SalesCron, TimeZoneInfo.Local);
             RecurringJob.AddOrUpdate(() => ExportReceiptsAsync(false, default, default), RecieptsCron, TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportReportAsync(false, default, default, string.Empty), ReportsCron, TimeZoneInfo.Local);
+
+            ScheduleReports((int)ReportTypesEnum.DailyReport);
+            //RecurringJob.AddOrUpdate(() => ExportReportAsync(false, default, default, string.Empty), ReportsCron, TimeZoneInfo.Local);
 
             return Ok(new { valid = true });
         }
@@ -243,12 +246,6 @@ namespace ShopifyApp2.Controllers
 
             try
             {
-                bool isWorkingDay = _exportDailyReportsLogic.CheckWorkingDays();
-                if (!isWorkingDay && !fromWeb)
-                {
-                    return View("~/Views/Home/ExportDailyReport.cshtml");
-                }
-
                 List<Order> lsOfOrders = await _exportDailyReportsLogic.ExportDailyReportsAsync(dateToRetriveFrom, dateToRetriveTo);
 
                 await _exportDailyReportsLogic.GenerateDailyReportFilesAsync(file, lsOfOrders);
@@ -262,7 +259,7 @@ namespace ShopifyApp2.Controllers
         }
 
         #endregion
-
+        #region General
         [HttpPost]
         public FileResult DownloadReport(string fileData, string contentType, string fileName)
         {
@@ -277,5 +274,31 @@ namespace ShopifyApp2.Controllers
 
             return File(fileBytes, "application/force-download", fileName);
         }
+
+        private void ScheduleReports(int reportType)
+        {
+            var reportsSchedules = _context.ScheduleReports.Where(r => r.ReportType == reportType).ToList();
+
+            foreach (var report in reportsSchedules)
+            {
+                ReportHangFire(report.Saturday, DayOfWeek.Saturday, report);
+                ReportHangFire(report.Sunday, DayOfWeek.Sunday, report);
+                ReportHangFire(report.Monday, DayOfWeek.Monday, report);
+                ReportHangFire(report.Tuesday, DayOfWeek.Tuesday, report);
+                ReportHangFire(report.Wednesday, DayOfWeek.Wednesday, report);
+                ReportHangFire(report.Thursday, DayOfWeek.Thursday, report);
+                ReportHangFire(report.Friday, DayOfWeek.Friday, report);
+            }
+        }
+
+        private void ReportHangFire(bool? dayChecked, DayOfWeek dayOfWeek, ScheduleReports report)
+        {
+            if (report.ScheduleHour.HasValue && report.ScheduleMinutes.HasValue && dayChecked.HasValue && dayChecked.Value == true)
+            {
+                string cron = Cron.Weekly(dayOfWeek, report.ScheduleHour.Value, report.ScheduleMinutes.Value);
+                RecurringJob.AddOrUpdate(() => ExportReportAsync(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
+            }
+        }
+        #endregion
     }
 }

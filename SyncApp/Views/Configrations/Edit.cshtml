@@ -1,4 +1,4 @@
-﻿@model SyncApp.Models.EF.Configrations
+﻿@model SyncApp.ViewModel.ConfigurationsModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -17,16 +17,7 @@
     <hr />
 
     <form action="Edit" method="post">
-        <input type="hidden" asp-for="Id" />
-
-        @*<div class="column">
-                <label asp-for="InventoryUpdateHour" class="control-label">Inventory update Hour</label>
-                <input asp-for="InventoryUpdateHour" class="form-control" />
-            </div>
-            <div class="column">
-                <label asp-for="InventoryUpdateMinute" class="control-label">Inventory update Minute</label>
-                <input asp-for="InventoryUpdateMinute" class="form-control" />
-            </div>*@
+        <input type="hidden" asp-for="Configurations.Id" />
 
         <section id="general-content">
             <h5>General Configurations </h5>
@@ -34,32 +25,32 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="NotificationEmail" class="control-label">Notification Email</label>
-                        <input type="email" asp-for="NotificationEmail" class="form-control" />
+                        <label asp-for="Configurations.NotificationEmail" class="control-label">Notification Email</label>
+                        <input type="email" asp-for="Configurations.NotificationEmail" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="InventoryUpdateEveryMinute" class="control-label">Inventory Update Frequency in Minutes</label>
-                        <input min="1" max="59" asp-for="InventoryUpdateEveryMinute" class="form-control" />
+                        <label asp-for="Configurations.InventoryUpdateEveryMinute" class="control-label">Inventory Update Frequency in Minutes</label>
+                        <input min="1" max="59" asp-for="Configurations.InventoryUpdateEveryMinute" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="WareHouseCode" class="control-label">WareHouse Code</label>
-                        <input asp-for="WareHouseCode" class="form-control" />
+                        <label asp-for="Configurations.WareHouseCode" class="control-label">WareHouse Code</label>
+                        <input asp-for="Configurations.WareHouseCode" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="CustoemrCode" class="control-label">Customer code</label>
-                        <input asp-for="CustoemrCode" class="form-control" />
+                        <label asp-for="Configurations.CustoemrCode" class="control-label">Customer code</label>
+                        <input asp-for="Configurations.CustoemrCode" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="BranchCodeReceipt" class="control-label">Branch Code for Receipts</label>
-                        <input asp-for="BranchCodeReceipt" class="form-control" />
+                        <label asp-for="Configurations.BranchCodeReceipt" class="control-label">Branch Code for Receipts</label>
+                        <input asp-for="Configurations.BranchCodeReceipt" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="BranchcodeSalesInvoices" class="control-label">Branch code for Sales Invoices</label>
-                        <input asp-for="BranchcodeSalesInvoices" class="form-control" />
+                        <label asp-for="Configurations.BranchcodeSalesInvoices" class="control-label">Branch code for Sales Invoices</label>
+                        <input asp-for="Configurations.BranchcodeSalesInvoices" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="SiteName" class="control-label">Site Name</label>
-                        <input asp-for="SiteName" class="form-control" />
+                        <label asp-for="Configurations.SiteName" class="control-label">Site Name</label>
+                        <input asp-for="Configurations.SiteName" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -71,20 +62,20 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="FtpHost" class="control-label">Ftp Host Url</label>
-                        <input asp-for="FtpHost" class="form-control" />
+                        <label asp-for="Configurations.FtpHost" class="control-label">Ftp Host Url</label>
+                        <input asp-for="Configurations.FtpHost" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="FtpUserName" class="control-label">Ftp User Name</label>
-                        <input asp-for="FtpUserName" class="form-control" />
+                        <label asp-for="Configurations.FtpHost" class="control-label">Ftp User Name</label>
+                        <input asp-for="Configurations.FtpUserName" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="FtpPassword" class="control-label">Ftp Password</label>
-                        <input asp-for="FtpPassword" class="form-control" />
+                        <label asp-for="Configurations.FtpUserName" class="control-label">Ftp Password</label>
+                        <input asp-for="Configurations.FtpPassword" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="FtpPort" class="control-label">Ftp Port</label>
-                        <input asp-for="FtpPort" class="form-control" />
+                        <label asp-for="Configurations.FtpPassword" class="control-label">Ftp Port</label>
+                        <input asp-for="Configurations.FtpPassword" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -95,24 +86,24 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="SmtpHost" class="control-label">Smtp Host</label>
-                        <input asp-for="SmtpHost" class="form-control" />
+                        <label asp-for="Configurations.FtpPort" class="control-label">Smtp Host</label>
+                        <input asp-for="Configurations.FtpPort" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="SmtpPort" class="control-label">Smtp Port</label>
-                        <input asp-for="SmtpPort" class="form-control" />
+                        <label asp-for="Configurations.SmtpHost" class="control-label">Smtp Port</label>
+                        <input asp-for="Configurations.SmtpHost" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="SenderEmail" class="control-label">Sender Email</label>
-                        <input readonly asp-for="SenderEmail" class="form-control" />
+                        <label asp-for="Configurations.SmtpPort" class="control-label">Sender Email</label>
+                        <input readonly asp-for="Configurations.SmtpPort" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="SenderemailPassword" class="control-label">Sender email Password</label>
-                        <input readonly asp-for="SenderemailPassword" class="form-control" />
+                        <label asp-for="Configurations.SenderEmail" class="control-label">Sender email Password</label>
+                        <input readonly asp-for="Configurations.SenderEmail" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="DisplayName" class="control-label">Email Display Name</label>
-                        <input asp-for="DisplayName" class="form-control" />
+                        <label asp-for="Configurations.SenderemailPassword" class="control-label">Email Display Name</label>
+                        <input asp-for="Configurations.SenderemailPassword" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -123,16 +114,16 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="StoreUrl" class="control-label">Store Url</label>
-                        <input asp-for="StoreUrl" class="form-control" />
+                        <label asp-for="Configurations.DisplayName" class="control-label">Store Url</label>
+                        <input asp-for="Configurations.DisplayName" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="ApiKey" class="control-label">Api Key</label>
-                        <input asp-for="ApiKey" class="form-control" />
+                        <label asp-for="Configurations.StoreUrl" class="control-label">Api Key</label>
+                        <input asp-for="Configurations.StoreUrl" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="ApiSecret" class="control-label">Api Secret</label>
-                        <input asp-for="ApiSecret" class="form-control" />
+                        <label asp-for="Configurations.ApiKey" class="control-label">Api Secret</label>
+                        <input asp-for="Configurations.ApiKey" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -145,12 +136,12 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="DailyRecieptsHour" class="control-label">Daily Reciept Export Hour</label>
-                        <input asp-for="DailyRecieptsHour" class="form-control" min="0" max="23" />
+                        <label asp-for="Configurations.ApiSecret" class="control-label">Daily Reciept Export Hour</label>
+                        <input asp-for="Configurations.ApiSecret" class="form-control" min="0" max="23" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
-                        <input asp-for="DailyRecieptsMinute" class="form-control" min="0" max="59" />
+                        <label asp-for="Configurations.DailyRecieptsHour" class="control-label">Daily Reciept Export Minute</label>
+                        <input asp-for="Configurations.DailyRecieptsHour" class="form-control" min="0" max="59" />
                     </div>
                 </div>
             </div>
@@ -162,12 +153,12 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="DailySalesHour" class="control-label">Daily Sales Export Hour</label>
-                        <input asp-for="DailySalesHour" class="form-control" min="0" max="23" />
+                        <label asp-for="Configurations.DailyRecieptsMinute" class="control-label">Daily Sales Export Hour</label>
+                        <input asp-for="Configurations.DailyRecieptsMinute" class="form-control" min="0" max="23" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
-                        <input asp-for="DailySalesMinute" class="form-control" min="0" max="59" />
+                        <label asp-for="Configurations.DailySalesHour" class="control-label">Daily Sales Export Minute</label>
+                        <input asp-for="Configurations.DailySalesHour" class="form-control" min="0" max="59" />
                     </div>
                 </div>
             </div>
@@ -181,62 +172,125 @@
                 <div class="row">
                     <div class="form-group col-sm-6">
 
-                        <label asp-for="ReportEmailAddress1" class="control-label">First Daily Report Email Address</label>
-                        <input type="email" asp-for="ReportEmailAddress1" class="form-control" required />
+                        <label asp-for="Configurations.ReportEmailAddress1" class="control-label">First Daily Report Email Address</label>
+                        <input type="email" asp-for="Configurations.ReportEmailAddress1" class="form-control" required />
 
                     </div>
 
                     <div class="form-group col-sm-6">
 
-                        <label asp-for="ReportEmailAddress2" class="control-label">Second Daily Report Email Address</label>
-                        <input type="email" asp-for="ReportEmailAddress2" class="form-control" required />
+                        <label asp-for="Configurations.ReportEmailAddress2" class="control-label">Second Daily Report Email Address</label>
+                        <input type="email" asp-for="Configurations.ReportEmailAddress2" class="form-control" required />
 
                     </div>
+                </div>
+            </div>
+            <h5>First Daily Report Schedule</h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <input type="hidden" asp-for="ThirdTimeSchedule.ReportType" value="@((int)SyncApp.Models.Enums.ReportTypesEnum.DailyReport)" />
+
                     <div class="form-group col-sm-6">
-
-                        <label asp-for="DailyReportHour" class="control-label">Daily Report Hour</label>
-                        <input asp-for="DailyReportHour" class="form-control" min="0" max="23" required />
-
+                        <label asp-for="FirstTimeSchedule.ScheduleHour" class="control-label">First Daily Report Hour</label>
+                        <input asp-for="FirstTimeSchedule.ScheduleHour" class="form-control" min="0" max="23" required />
                     </div>
 
                     <div class="form-group col-sm-6">
-
-                        <label asp-for="DailyReportMinute" class="control-label">Daily Report Minute</label>
-                        <input asp-for="DailyReportMinute" class="form-control" min="0" max="59" required />
-
+                        <label asp-for="FirstTimeSchedule.ScheduleMinutes" class="control-label">First Daily Report Minute</label>
+                        <input asp-for="FirstTimeSchedule.ScheduleMinutes" class="form-control" min="0" max="59" required />
                     </div>
                     <section id="dailyReport-content">
                         <h6>Daily Report Working Days</h6>
+
+                        <input type="hidden" asp-for="FirstTimeSchedule.ReportType" value="@((int)SyncApp.Models.Enums.ReportTypesEnum.DailyReport)" />
+                        <input type="hidden" asp-for="FirstTimeSchedule.TimeOfDay" value="@((int)SyncApp.Models.Enums.TimeOfDayEnum.FirstTime)" />
+
                         <hr />
                         <div class="container">
                             <div class="row">
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Saturday" class="control-label">Saturday</label>
-                                    <input type="checkbox" class="" name="Saturday" value="true" checked="@Model.Saturday" />
+                                    <label asp-for="FirstTimeSchedule.Saturday" class="control-label">Saturday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Saturday" value="true" checked="@Model.FirstTimeSchedule?.Saturday" />
+                                </div>
+                                <div class="form-group col-sm-6" ?
+                                    <label asp-for="FirstTimeSchedule.Sunday" class="control-label">Sunday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Sunday" value="true" checked="@Model.FirstTimeSchedule?.Sunday" />
                                 </div>
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Sunday" class="control-label">Sunday</label>
-                                    <input type="checkbox" class="" name="Sunday" value="true" checked="@Model.Sunday" />
+                                    <label asp-for="FirstTimeSchedule.Monday" class="control-label">Monday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Monday" value="true" checked="@Model.FirstTimeSchedule?.Monday" />
                                 </div>
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Monday" class="control-label">Monday</label>
-                                    <input type="checkbox" class="" name="Monday" value="true" checked="@Model.Monday" />
+                                    <label asp-for="FirstTimeSchedule.Tuesday" class="control-label">Tuesday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Tuesday" value="true" checked="@Model.FirstTimeSchedule?.Tuesday" />
                                 </div>
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Tuesday" class="control-label">Tuesday</label>
-                                    <input type="checkbox" class="" name="Tuesday" value="true" checked="@Model.Tuesday" />
+                                    <label asp-for="FirstTimeSchedule.Wednesday" class="control-label">Wednesday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Wednesday" value="true" checked="@Model.FirstTimeSchedule?.Wednesday" />
                                 </div>
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Wednesday" class="control-label">Wednesday</label>
-                                    <input type="checkbox" class="" name="Wednesday" value="true" checked="@Model.Wednesday" />
+                                    <label asp-for="FirstTimeSchedule.Thursday" class="control-label">Thursday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Thursday" value="true" checked="@Model.FirstTimeSchedule?.Thursday" />
                                 </div>
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Thursday" class="control-label">Thursday</label>
-                                    <input type="checkbox" class="" name="Thursday" value="true" checked="@Model.Thursday" />
+                                    <label asp-for="FirstTimeSchedule.Friday" class="control-label">Friday</label>
+                                    <input type="checkbox" class="" name="FirstTimeSchedule.Friday" value="true" checked="@Model.FirstTimeSchedule?.Friday" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <h5>Second Daily Report Schedule</h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="SecondTimeSchedule.ScheduleHour" class="control-label">Second Daily Report Hour</label>
+                        <input asp-for="SecondTimeSchedule.ScheduleHour" class="form-control" min="0" max="23" required />
+                    </div>
+
+                    <div class="form-group col-sm-6">
+                        <label asp-for="SecondTimeSchedule.ScheduleMinutes" class="control-label">Second Daily Report Minute</label>
+                        <input asp-for="SecondTimeSchedule.ScheduleMinutes" class="form-control" min="0" max="59" required />
+                    </div>
+                    <section id="dailyReport-content">
+                        <h6>Daily Report Working Days</h6>
+
+                        <input type="hidden" asp-for="SecondTimeSchedule.ReportType" value="@((int)SyncApp.Models.Enums.ReportTypesEnum.DailyReport)" />
+                        <input type="hidden" asp-for="SecondTimeSchedule.TimeOfDay" value="@((int)SyncApp.Models.Enums.TimeOfDayEnum.SecondTime)" />
+
+                        <hr />
+                        <div class="container">
+                            <div class="row">
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="SecondTimeSchedule.Saturday" class="control-label">Saturday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Saturday" value="true" checked="@Model.SecondTimeSchedule?.Saturday" />
+                                </div>
+                                <div class="form-group col-sm-6" ?
+                                    <label asp-for="SecondTimeSchedule.Sunday" class="control-label">Sunday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Sunday" value="true" checked="@Model.SecondTimeSchedule?.Sunday" />
                                 </div>
                                 <div class="form-group col-sm-6">
-                                    <label asp-for="Friday" class="control-label">Friday</label>
-                                    <input type="checkbox" class="" name="Friday" value="true" checked="@Model.Friday" />
+                                    <label asp-for="SecondTimeSchedule.Monday" class="control-label">Monday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Monday" value="true" checked="@Model.SecondTimeSchedule?.Monday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="SecondTimeSchedule.Tuesday" class="control-label">Tuesday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Tuesday" value="true" checked="@Model.SecondTimeSchedule?.Tuesday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="SecondTimeSchedule.Wednesday" class="control-label">Wednesday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Wednesday" value="true" checked="@Model.SecondTimeSchedule?.Wednesday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="SecondTimeSchedule.Thursday" class="control-label">Thursday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Thursday" value="true" checked="@Model.SecondTimeSchedule?.Thursday" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="SecondTimeSchedule.Friday" class="control-label">Friday</label>
+                                    <input type="checkbox" class="" name="SecondTimeSchedule.Friday" value="true" checked="@Model.SecondTimeSchedule?.Friday" />
                                 </div>
                             </div>
                         </div>
@@ -251,8 +305,8 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="TaxPercentage" class="control-label">Tax Percentage <b>(%)</b></label>
-                        <input asp-for="TaxPercentage" class="form-control" />
+                        <label asp-for="Configurations.TaxPercentage" class="control-label">Tax Percentage <b>(%)</b></label>
+                        <input asp-for="Configurations.TaxPercentage" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -264,8 +318,8 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="UseRecurringJob" class="control-label">Use Recurring Job</label>
-                        <input type="checkbox" class="" name="UseRecurringJob" value="true" checked="@Model.UseRecurringJob" />
+                        <label asp-for="Configurations.UseRecurringJob" class="control-label">Use Recurring Job</label>
+                        <input type="checkbox" class="" name="Configurations.UseRecurringJob" value="true" checked="@Model.Configurations.UseRecurringJob" />
                     </div>
                 </div>
             </div>
