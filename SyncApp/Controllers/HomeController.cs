@@ -295,8 +295,9 @@ namespace ShopifyApp2.Controllers
         {
             if (report.ScheduleHour.HasValue && report.ScheduleMinutes.HasValue && dayChecked.HasValue && dayChecked.Value == true)
             {
+                string recurringId = $"{(ReportTypesEnum)report.ReportType} {(TimeOfDayEnum)report.TimeOfDay} {(int)dayOfWeek}";
                 string cron = Cron.Weekly(dayOfWeek, report.ScheduleHour.Value, report.ScheduleMinutes.Value);
-                RecurringJob.AddOrUpdate(() => ExportReportAsync(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
+                RecurringJob.AddOrUpdate(recurringId, () => ExportReportAsync(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
             }
         }
         #endregion
