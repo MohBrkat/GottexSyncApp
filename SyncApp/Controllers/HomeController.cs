@@ -293,11 +293,19 @@ namespace ShopifyApp2.Controllers
 
         private void ReportHangFire(bool? dayChecked, DayOfWeek dayOfWeek, ScheduleReports report)
         {
-            if (report.ScheduleHour.HasValue && report.ScheduleMinutes.HasValue && dayChecked.HasValue && dayChecked.Value == true)
+            string recurringId = $"{(ReportTypesEnum)report.ReportType} {(TimeOfDayEnum)report.TimeOfDay} {(int)dayOfWeek}";
+
+            if (dayChecked.HasValue && dayChecked.Value == true)
             {
-                string recurringId = $"{(ReportTypesEnum)report.ReportType} {(TimeOfDayEnum)report.TimeOfDay} {(int)dayOfWeek}";
-                string cron = Cron.Weekly(dayOfWeek, report.ScheduleHour.Value, report.ScheduleMinutes.Value);
-                RecurringJob.AddOrUpdate(recurringId, () => ExportReportAsync(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
+                if (report.ScheduleHour.HasValue && report.ScheduleMinutes.HasValue)
+                {
+                    string cron = Cron.Weekly(dayOfWeek, report.ScheduleHour.Value, report.ScheduleMinutes.Value);
+                    RecurringJob.AddOrUpdate(recurringId, () => ExportReportAsync(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
+                }
+            }
+            else
+            {
+                RecurringJob.RemoveIfExists(recurringId);
             }
         }
         #endregion
