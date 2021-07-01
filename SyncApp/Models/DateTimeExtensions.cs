@@ -9,7 +9,8 @@ namespace SyncApp.Models
     {
         public static DateTime AbsoluteStart(this DateTime dateTime)
         {
-            return dateTime.Date;
+            var date = DateTimeWithZone(dateTime.Date, TimeZoneInfo.Utc).Date;
+            return date;
         }
 
         /// <summary>
@@ -18,6 +19,13 @@ namespace SyncApp.Models
         public static DateTime AbsoluteEnd(this DateTime dateTime)
         {
             return AbsoluteStart(dateTime).AddDays(1).AddTicks(-1);
+        }
+
+        public static DateTime DateTimeWithZone(DateTime dateTime, TimeZoneInfo timeZone)
+        {
+            var dateTimeUnspec = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+            var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(dateTimeUnspec, timeZone);
+            return utcDateTime;
         }
     }
 }
