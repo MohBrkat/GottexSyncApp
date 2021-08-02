@@ -9,7 +9,8 @@ namespace SyncApp.Models
     {
         public static DateTime AbsoluteStart(this DateTime dateTime)
         {
-            var date = DateTimeWithZone(dateTime.Date, TimeZoneInfo.Utc).Date;
+            TimeZoneInfo infotime = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            var date = DateTimeWithZone(dateTime.Date, infotime).Date;
             return date;
         }
 
@@ -18,14 +19,13 @@ namespace SyncApp.Models
         /// </summary>
         public static DateTime AbsoluteEnd(this DateTime dateTime)
         {
-            return AbsoluteStart(dateTime).AddDays(1).AddTicks(-1);
+            return AbsoluteStart(dateTime).AddDays(1).AddSeconds(-1);
         }
 
         public static DateTime DateTimeWithZone(DateTime dateTime, TimeZoneInfo timeZone)
         {
-            var dateTimeUnspec = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
-            var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(dateTimeUnspec, timeZone);
-            return utcDateTime;
+            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
+            return convertedTime;
         }
     }
 }
