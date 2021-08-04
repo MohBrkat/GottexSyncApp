@@ -7,25 +7,25 @@ namespace SyncApp.Models
 {
     public static class DateTimeExtensions
     {
-        public static DateTime AbsoluteStart(this DateTime dateTime)
+        public static DateTimeOffset AbsoluteStart(this DateTime dateTime)
         {
             TimeZoneInfo infotime = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
-            var date = DateTimeWithZone(dateTime.Date, infotime).Date;
+            var date = DateTimeWithZone(dateTime, infotime);
             return date;
         }
 
         /// <summary>
         /// Gets the 11:59:59 instance of a DateTime
         /// </summary>
-        public static DateTime AbsoluteEnd(this DateTime dateTime)
+        public static DateTimeOffset AbsoluteEnd(this DateTime dateTime)
         {
             return AbsoluteStart(dateTime).AddDays(1).AddSeconds(-1);
         }
 
-        public static DateTime DateTimeWithZone(DateTime dateTime, TimeZoneInfo timeZone)
+        public static DateTimeOffset DateTimeWithZone(DateTime dateTime, TimeZoneInfo timeZone)
         {
-            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZone);
-            return convertedTime;
+            var convertedDate = new DateTimeOffset(new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, DateTimeKind.Unspecified), timeZone.BaseUtcOffset);
+            return convertedDate;
         }
     }
 }

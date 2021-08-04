@@ -142,8 +142,8 @@ namespace SyncApp.Logic
 
             foreach (var order in OrdersHasRefunds)
             {
-                var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom.AbsoluteStart() &&
-                a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
+                var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault() >= dateFrom.AbsoluteStart() &&
+                a.CreatedAt.GetValueOrDefault() <= dateTo.AbsoluteEnd()).ToList();
 
                 foreach (var refund in targetRefunds)
                 {
