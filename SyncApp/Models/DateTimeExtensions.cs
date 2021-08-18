@@ -9,7 +9,7 @@ namespace SyncApp.Models
     {
         public static DateTimeOffset AbsoluteStart(this DateTime dateTime)
         {
-            TimeZoneInfo infotime = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            TimeZoneInfo infotime = TimeZoneInfo.Local;
             var date = DateTimeWithZone(dateTime, infotime);
             return date;
         }
