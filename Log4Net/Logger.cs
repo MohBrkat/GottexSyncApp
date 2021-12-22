@@ -2,6 +2,7 @@
 using log4net.Appender;
 using log4net.Config;
 using log4net.Repository;
+using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -43,6 +44,34 @@ namespace Log4NetLibrary
             return log;
 
 
+        }
+
+
+        public static void LogObjectInfo(object response, object request, string message, string url = "")
+        {
+            ILog log = GetLogger();
+            try
+            {
+                if (response == null)
+                {
+                    response = "Waiting for response";
+                }
+
+                if (log.IsDebugEnabled)
+                {
+                    message += $"\r URL: {url} \r Request: \r {Serialize(request)} \r Response: \r {Serialize(response)}";
+                    log.Info($"\n\r {message} \n\r");
+                }
+            }
+            catch (Exception e)
+            {
+                log.Error("Error while logging parameters :" + e.Message);
+            }
+        }
+
+        public static string Serialize(object alert)
+        {
+            return JsonConvert.SerializeObject(alert);
         }
 
         public static ILog GetManualLogger()

@@ -219,7 +219,17 @@ namespace ShopifyApp2.Controllers
                 string path = string.Empty;
                 if (lsOfOrders.Count() > 0)
                 {
-                    path = await _exportDailyReceiptsLogic.GenerateReceiptFileAsync(lsOfOrders, fromWeb);
+                    if (dateToRetriveFrom == default) //Yesterday option (Default)
+                    {
+                        dateToRetriveFrom = DateTime.Now.AddDays(-1); // by default
+                        dateToRetriveTo = DateTime.Now.AddDays(-1);
+                    }
+                    else if (dateToRetriveTo == default) //Single day option
+                    {
+                        dateToRetriveTo = dateToRetriveFrom.Date;
+                    }
+
+                    path = await _exportDailyReceiptsLogic.GenerateReceiptFileAsync(lsOfOrders, fromWeb, dateToRetriveFrom, dateToRetriveTo);
                     return View("~/Views/Home/ExportDailyReceipts.cshtml", path);
                 }
             }

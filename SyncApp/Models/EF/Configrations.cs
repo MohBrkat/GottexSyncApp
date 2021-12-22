@@ -44,6 +44,10 @@ namespace SyncApp.Models.EF
         public bool? Thursday { get; set; }
         public bool? Friday { get; set; }
         public string SiteName { get; set; }
+        public bool? ExcludeShippingFeesInSales { get; set; }
+        public string PayPlusUrl { get; set; }
+        public string PayPlusApiKey { get; set; }
+        public string PayPlusSecretKey { get; set; }
 
     }
 }

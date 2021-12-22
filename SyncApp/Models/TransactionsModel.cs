@@ -11,5 +11,6 @@ namespace SyncApp.Models
     {
         public List<Receipt> ReceiptTransactions { get; set; }
         public GiftCardModel GiftCardTransaction { get; set; }
+        public List<GiftCardModel> GiftCardTransactions { get; set; }
     }
 }
