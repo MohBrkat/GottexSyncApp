@@ -143,6 +143,26 @@
                         <label asp-for="Configurations.DailyRecieptsHour" class="control-label">Daily Reciept Export Minute</label>
                         <input asp-for="Configurations.DailyRecieptsHour" class="form-control" min="0" max="59" />
                     </div>
+                    <section id="dailyReport-content">
+                        <h6>PayPlus Configurations</h6>
+                        <hr />
+                        <div class="container">
+                            <div class="row">
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Configurations.PayPlusUrl" class="control-label">PayPlus Url</label>
+                                    <input asp-for="Configurations.PayPlusUrl" class="form-control" disabled/>
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Configurations.PayPlusApiKey" class="control-label">PayPlus Api Key</label>
+                                    <input asp-for="Configurations.PayPlusApiKey" class="form-control" />
+                                </div>
+                                <div class="form-group col-sm-6">
+                                    <label asp-for="Configurations.PayPlusSecretKey" class="control-label">PayPlus Secret Key</label>
+                                    <input asp-for="Configurations.PayPlusSecretKey" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </section>
