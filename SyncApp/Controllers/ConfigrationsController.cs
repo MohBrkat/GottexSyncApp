@@ -64,7 +64,7 @@ namespace SyncApp.Controllers
                     _context.Update(configs.Configurations);
                     if (!configs.Configurations.UseRecurringJob.GetValueOrDefault())
                     {
-                        _context.Database.ExecuteSqlCommand("DELETE FROM [Hangfire].[Hash];DELETE FROM [Hangfire].[JOB];DELETE FROM [Hangfire].[Set]");
+                        _context.Database.ExecuteSqlRaw("DELETE FROM [Hangfire].[Hash];DELETE FROM [Hangfire].[JOB];DELETE FROM [Hangfire].[Set]");
                     }
 
                     await new ReportsScheduleLogic(_context, (int)ReportTypesEnum.DailyReport).UpdateScheduleReportsAsync(configs);

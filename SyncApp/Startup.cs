@@ -76,6 +76,11 @@ namespace ShopifyApp2
                 options => options.UseSqlServer(connectionString)
             );
 
+            services.Configure<MvcOptions>(options =>
+            {
+                options.EnableEndpointRouting = false;
+            });
+
             services.AddMvc();
         }
 
