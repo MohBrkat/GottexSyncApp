@@ -66,16 +66,16 @@
                         <input asp-for="Configurations.FtpHost" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.FtpHost" class="control-label">Ftp User Name</label>
+                        <label asp-for="Configurations.FtpUserName" class="control-label">Ftp User Name</label>
                         <input asp-for="Configurations.FtpUserName" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.FtpUserName" class="control-label">Ftp Password</label>
+                        <label asp-for="Configurations.FtpPassword" class="control-label">Ftp Password</label>
                         <input asp-for="Configurations.FtpPassword" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.FtpPassword" class="control-label">Ftp Port</label>
-                        <input asp-for="Configurations.FtpPassword" class="form-control" />
+                        <label asp-for="Configurations.FtpPort" class="control-label">Ftp Port</label>
+                        <input asp-for="Configurations.FtpPort" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -86,24 +86,24 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.FtpPort" class="control-label">Smtp Host</label>
-                        <input asp-for="Configurations.FtpPort" class="form-control" />
-                    </div>
-                    <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.SmtpHost" class="control-label">Smtp Port</label>
+                        <label asp-for="Configurations.SmtpHost" class="control-label">Smtp Host</label>
                         <input asp-for="Configurations.SmtpHost" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.SmtpPort" class="control-label">Sender Email</label>
-                        <input readonly asp-for="Configurations.SmtpPort" class="form-control" />
+                        <label asp-for="Configurations.SmtpPort" class="control-label">Smtp Port</label>
+                        <input asp-for="Configurations.SmtpPort" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.SenderEmail" class="control-label">Sender email Password</label>
+                        <label asp-for="Configurations.SenderEmail" class="control-label">Sender Email</label>
                         <input readonly asp-for="Configurations.SenderEmail" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.SenderemailPassword" class="control-label">Email Display Name</label>
-                        <input asp-for="Configurations.SenderemailPassword" class="form-control" />
+                        <label asp-for="Configurations.SenderemailPassword" class="control-label">Sender email Password</label>
+                        <input readonly asp-for="Configurations.SenderemailPassword" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.DisplayName" class="control-label">Email Display Name</label>
+                        <input asp-for="Configurations.DisplayName" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -114,16 +114,16 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.DisplayName" class="control-label">Store Url</label>
-                        <input asp-for="Configurations.DisplayName" class="form-control" />
-                    </div>
-                    <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.StoreUrl" class="control-label">Api Key</label>
+                        <label asp-for="Configurations.StoreUrl" class="control-label">Store Url</label>
                         <input asp-for="Configurations.StoreUrl" class="form-control" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.ApiKey" class="control-label">Api Secret</label>
+                        <label asp-for="Configurations.ApiKey" class="control-label">Api Key</label>
                         <input asp-for="Configurations.ApiKey" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.ApiSecret" class="control-label">Api Secret</label>
+                        <input asp-for="Configurations.ApiSecret" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -136,12 +136,12 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.ApiSecret" class="control-label">Daily Reciept Export Hour</label>
-                        <input asp-for="Configurations.ApiSecret" class="form-control" min="0" max="23" />
+                        <label asp-for="Configurations.DailyRecieptsHour" class="control-label">Daily Reciept Export Hour</label>
+                        <input asp-for="Configurations.DailyRecieptsHour" class="form-control" min="0" max="23" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.DailyRecieptsHour" class="control-label">Daily Reciept Export Minute</label>
-                        <input asp-for="Configurations.DailyRecieptsHour" class="form-control" min="0" max="59" />
+                        <label asp-for="Configurations.DailyRecieptsMinute" class="control-label">Daily Reciept Export Minute</label>
+                        <input asp-for="Configurations.DailyRecieptsMinute" class="form-control" min="0" max="59" />
                     </div>
                     <section id="dailyReport-content">
                         <h6>PayPlus Configurations</h6>
@@ -173,12 +173,12 @@
             <div class="container">
                 <div class="row">
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.DailyRecieptsMinute" class="control-label">Daily Sales Export Hour</label>
-                        <input asp-for="Configurations.DailyRecieptsMinute" class="form-control" min="0" max="23" />
+                        <label asp-for="Configurations.DailySalesHour" class="control-label">Daily Sales Export Hour</label>
+                        <input asp-for="Configurations.DailySalesHour" class="form-control" min="0" max="23" />
                     </div>
                     <div class="form-group col-sm-6">
-                        <label asp-for="Configurations.DailySalesHour" class="control-label">Daily Sales Export Minute</label>
-                        <input asp-for="Configurations.DailySalesHour" class="form-control" min="0" max="59" />
+                        <label asp-for="Configurations.DailySalesMinute" class="control-label">Daily Sales Export Minute</label>
+                        <input asp-for="Configurations.DailySalesMinute" class="form-control" min="0" max="59" />
                     </div>
                 </div>
             </div>
