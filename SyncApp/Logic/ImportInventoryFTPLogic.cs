@@ -153,7 +153,7 @@ namespace SyncApp.Logic
 
                 if (importSuccess)
                 {
-                    FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
+                    FtpHandler.DeleteFile(info.fileName, Host, FTPPathConsts.OUT_PATH, UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "success", info.fileName + ".log");
                     Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
                 }
@@ -161,7 +161,7 @@ namespace SyncApp.Logic
                 {
                     var successLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfSucess.ToArray()));
                     var failedLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
-                    FtpHandler.DeleteFile(info.fileName, Host, "/out", UserName, Password);
+                    FtpHandler.DeleteFile(info.fileName, Host, FTPPathConsts.OUT_PATH, UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "failed", info.fileName + ".log");
                     Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, successLogFile, failedLogFile);
                 }
@@ -229,7 +229,7 @@ namespace SyncApp.Logic
             try
             {
                 var fileName = "";
-                var fileContent = FtpHandler.ReadLatestFileFromFtp(Host, UserName, Password, "/Out", out fileName);
+                var fileContent = FtpHandler.ReadLatestFileFromFtp(Host, UserName, Password, FTPPathConsts.OUT_PATH, out fileName);
 
                 info.fileName = fileName;
 

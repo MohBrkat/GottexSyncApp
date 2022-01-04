@@ -63,5 +63,7 @@ namespace SyncApp.ViewModel
         public string first_payment_amount { get; set; }
         public string rest_payments_amount { get; set; }
         public string token_uid { get; set; }
+        public string payment_id { get; set; }
+        public string refund_id { get; set; }
     }
 }

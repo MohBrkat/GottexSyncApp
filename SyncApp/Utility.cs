@@ -124,21 +124,10 @@ namespace SyncApp
                         var expectedFileName = "inventory-update-" + DateTime.Now.ToString("yyMMdd") + ".dat";
                         if (remoteFileName == expectedFileName && dateNow == DateTime.Now.ToString("yyMMdd"))
                         {
-                            //var fileAlreadyUploaded = checkFileName(Path.GetFileNameWithoutExtension(remoteFileName),"/Logs/", connectionInfo);
-                            //if (fileAlreadyUploaded)
-                            //{
-                            //    throw new Exception("File was already uploaded");
-                            //}
 
                             var fileName = "inventory-update-" + DateTime.Today.ToString("yyMMdd") + ".dat";
                             realfileName = fileName;
-                            //if (File.Exists("" + fileName))
-                            //{
-                            //    File.Delete("" + fileName);
-                            //}
                             string fileContent = "";
-                            //using (Stream s = new MemoryStream())
-                            //{
                             if (client.Exists(remoteDirectory + remoteFileName))
                             {
                                 fileContent = ReadFile(remoteDirectory + remoteFileName, client);
@@ -146,13 +135,10 @@ namespace SyncApp
                             }
                             else
                             {
-
                                 return string.Empty;
                             }
 
-
                             return fileContent;
-
                         }
                     }
                 }
@@ -198,12 +184,8 @@ namespace SyncApp
 
         public static void UploadLogFile(string host, string username, string password, int port, string fileContent, string fileName, string directoryPath = "Logs")
         {
-
-
-
             using (SftpClient _client = new SftpClient(host, port, username, password))
             {
-
                 _client.Connect();
                 _client.ChangeDirectory(directoryPath);
 
@@ -211,20 +193,12 @@ namespace SyncApp
 
                 using (MemoryStream stream = new MemoryStream(byteArray))
                 {
-                    // if overrite , then delete old one, and create new one
-                    //if (true && _client.Exists(fileName))
-                    //{
-                    //    _client.DeleteFile(fileName);
-                    //}
 
                     _client.BufferSize = 4 * 1024;
                     _client.UploadFile(stream, fileName);
 
-
-
                     stream.Close();
                 }
-
             }
         }
 
@@ -417,7 +391,6 @@ namespace SyncApp
                 worksheet.PrinterSettings.ShowGridLines = true;
                 worksheet.Protection.IsProtected = false;
 
-                //worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
                 int totalRows = list.Count;
 
@@ -461,12 +434,6 @@ namespace SyncApp
                             worksheet.Cells[row, j].Formula = "\"" + worksheet.Cells[row, j].Value.ToString() + "\"";
                         }
 
-                        //if (IsExponentialFormat(worksheet.Cells[row, j].Value.ToString()) || double.TryParse(worksheet.Cells[row, j].Value.ToString(), out double dummy))
-                        //{
-                        //    worksheet.Cells[row, j].Style.Numberformat.Format = "0";
-                        //    double convertedValue = Convert.ToDouble(worksheet.Cells[row, j].Value);
-                        //    worksheet.Cells[row, j].Value = convertedValue;
-                        //}
 
                         if (worksheet.Cells[row, j].Value is DateTime)
                             worksheet.Cells[row, j].Value = ((DateTime)worksheet.Cells[row, j].Value).ToShortDateString();
@@ -494,14 +461,6 @@ namespace SyncApp
                 var properties = typeof(T).GetProperties().ToList();
                 StringBuilder sb = new StringBuilder();
 
-                //For Headers
-                //for (int j = 1; j <= properties.Count; j++)
-                //{
-                //    worksheet.Cells[1, j].Value = Regex.Replace(Regex.Replace(properties[j - 1].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2");
-                //    sb.Append(worksheet.Cells[1, j].Value + ",");
-                //}
-
-                //sb.AppendLine();
 
                 int i = 0;
 
@@ -706,7 +665,6 @@ namespace SyncApp
             catch (Exception ex)
             {
                 return "";
-                //Console.WriteLine(ex.ToString());
             }
             finally
             {
@@ -715,11 +673,8 @@ namespace SyncApp
                 ftpResponse.Close();
                 ftpRequest = null;
             }
+
             return "";
-
-
-
-
         }
 
         public static string ReadLatestFileFromFtp(string Host, string UserName, string Password, string FolderPath, out string fileName)
@@ -743,7 +698,6 @@ namespace SyncApp
                 // Do something such as log error, but this is based on OP's original code
                 // so for now we do nothing.
             }
-
         }
 
         public static string DwonloadFile(string fileName, string ServerUrl, string path, string userName, string password)
@@ -763,7 +717,6 @@ namespace SyncApp
             {
                 throw;
             }
-
         }
 
         public static void ArchiveFileOld(string fileName, string ServerUrl, string path, string userName, string password)
@@ -776,9 +729,6 @@ namespace SyncApp
             // Get network credentials.
             request.Credentials = new NetworkCredential(userName, password);
 
-            // Read the file's contents into a byte array.
-
-
             // Write the bytes into the request stream.
             request.RenameTo = fileName.Replace(".dat", ".dat.archive");
 
@@ -787,8 +737,6 @@ namespace SyncApp
 
                 request_stream.Close();
             }
-
-
         }
 
         public static void ArchiveFile(string fileName, string ServerUrl, string path, string userName, string password)
@@ -816,27 +764,17 @@ namespace SyncApp
                 ftpStream.Close();
 
                 response.Close();
-
             }
-
             catch (Exception ex)
-
             {
-
                 if (ftpStream != null)
-
                 {
-
                     ftpStream.Close();
-
                     ftpStream.Dispose();
-
                 }
 
                 throw new Exception(ex.Message.ToString());
-
             }
-
         }
         public static bool UploadFile(string fileName, byte[] file, string ServerUrl, string path, string userName, string password)
         {
@@ -850,9 +788,6 @@ namespace SyncApp
 
                 // Get network credentials.
                 request.Credentials = new NetworkCredential(userName, password);
-
-                // Read the file's contents into a byte array.
-
 
                 // Write the bytes into the request stream.
                 request.ContentLength = file.Length;
@@ -892,29 +827,17 @@ namespace SyncApp
                 ftpStream.Close();
 
                 response.Close();
-
             }
-
             catch (Exception ex)
-
             {
-
                 if (ftpStream != null)
-
                 {
-
                     ftpStream.Close();
-
                     ftpStream.Dispose();
-
                 }
 
                 throw new Exception(ex.Message.ToString());
-
             }
-
         }
-
-
     }
 }

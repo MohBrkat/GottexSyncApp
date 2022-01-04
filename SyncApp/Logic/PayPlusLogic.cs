@@ -30,7 +30,7 @@ namespace SyncApp.Logic
             }
         }
 
-        public PayPlusIPNResponse GetPaymentInfo(string transaction_uid)
+        public PayPlusIPNResponse GetPaymentInfo(string payment_id, string transaction_uid)
         {
             string baseUrl = _config.PayPlusUrl?.Trim();
             string path = PayPlusPathConst.GET_PAYMENT_PAGE.Trim();
@@ -38,7 +38,8 @@ namespace SyncApp.Logic
 
             var payPlusIPNRequest = new PayPlusIPNRequest
             {
-                transaction_uid = transaction_uid
+                transaction_uid = transaction_uid,
+                more_info = payment_id
             };
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
@@ -56,7 +57,7 @@ namespace SyncApp.Logic
             if (payPlusIPNResponse != null && payPlusIPNResponse.results.status != "error")
                 return payPlusIPNResponse;
 
-            throw new Exception("Error retrieving IPN from payplus for transaction_uid: " + transaction_uid);
+            throw new Exception("Error retrieving IPN from payplus for payment_id: " + payment_id);
         }
 
         public int GetClearingCompanyCodeById(int clearing_id)

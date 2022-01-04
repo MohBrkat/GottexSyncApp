@@ -272,7 +272,7 @@ namespace SyncApp.Logic
                                 foreach (var transaction in transactionsModel.ReceiptTransactions)
                                 {
                                     int paymentMeanCode = 0;
-                                    var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.transaction_uid);
+                                    var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.transaction_uid);
                                     if(paymentInfo != null && paymentInfo.data != null)
                                     {
                                         paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
@@ -357,7 +357,7 @@ namespace SyncApp.Logic
             if (!fromWeb)
             {
 
-                FtpSuccesfully = FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), Host, "/In", UserName, Password);
+                FtpSuccesfully = FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), Host, FTPPathConsts.IN_PATH, UserName, Password);
                 string subject = "Generate Receipt File Status";
                 var body = EmailMessages.messageBody("Generate Receipt File", "Success", "Invoices and Receipts/" + FileName);
                 Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
