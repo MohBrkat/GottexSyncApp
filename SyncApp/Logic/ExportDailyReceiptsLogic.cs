@@ -272,12 +272,15 @@ namespace SyncApp.Logic
                                 foreach (var transaction in transactionsModel.ReceiptTransactions)
                                 {
                                     int paymentMeanCode = 0;
-                                    var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.transaction_uid);
-                                    if(paymentInfo != null && paymentInfo.data != null)
+                                    if(transaction.payment_id.IsNotNullOrEmpty() || transaction.more_info.IsNotNullOrEmpty())
                                     {
-                                        paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                        var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
+                                        if (paymentInfo != null && paymentInfo.data != null)
+                                        {
+                                            paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                        }
                                     }
-                                    
+
                                     if (transaction.x_timestamp.IsNotNullOrEmpty())
                                     {
                                         invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");

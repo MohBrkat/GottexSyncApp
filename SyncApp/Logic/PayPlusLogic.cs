@@ -38,8 +38,7 @@ namespace SyncApp.Logic
 
             var payPlusIPNRequest = new PayPlusIPNRequest
             {
-                transaction_uid = transaction_uid,
-                more_info = payment_id
+                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : transaction_uid
             };
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";

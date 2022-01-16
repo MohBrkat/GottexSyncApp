@@ -229,6 +229,7 @@ namespace SyncApp.Logic
 
                     foreach (var order in DayOrders.Data)
                     {
+                        var discountZero = 0;
                         var shipRefOrder = order;
                         foreach (var orderItem in order.LineItems)
                         {
@@ -268,10 +269,28 @@ namespace SyncApp.Logic
                                 + "\t" +
                                 order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
                             }
+
+                            if(order.FulfillmentStatus == null && order.FinancialStatus == "paid" && order.RefundKind == "no_refund" && order.Refunds.Any())
+                            {
+                                decimal restockPrice = 0;
+
+                                lock (salesFileLock)
+                                {
+                                    file.WriteLine(
+                                    "1" + "\t" +
+                                    orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                                    "-1".InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                    restockPrice.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                                    discountZero.ToString("F") +
+                                    "\t" + "\t" + "\t" +
+                                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                                    + "\t" +
+                                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                                }
+                            }
                         }
 
-
-                        var discountZero = 0;
                         var shipOrder = order;
 
                         var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
@@ -279,7 +298,7 @@ namespace SyncApp.Logic
                         //If the order (e.g partially/refunded or paid) 
                         //has shipping cost and this cost is not refunded,
                         //then write shipping data
-                        if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
+                        if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy") /*&& shipOrder.FulfillmentStatus != null*/)
                         {
                             var mQuant = "1";
                             if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
@@ -303,7 +322,7 @@ namespace SyncApp.Logic
                             }
                         }
 
-                        if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund")
+                        if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund" /*&& shipOrder.FulfillmentStatus != null*/)
                         {
                             var mQuant = "-1";
 
