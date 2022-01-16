@@ -276,6 +276,28 @@ namespace SyncApp.Logic
                                 + "\t" +
                                 vatTax);
                             }
+
+                            if (order.FulfillmentStatus == null && order.FinancialStatus == "paid" && order.RefundKind == "no_refund" && order.Refunds.Any())
+                            {
+                                decimal restockPrice = 0;
+
+                                lock (salesFileLock)
+                                {
+                                    file.WriteLine(
+                                    "1" + "\t" +
+                                    orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                                    "-1".InsertLeadingSpaces(10) + "\t" + // total quantity 
+                                    restockPrice.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                                    discountPercentage.ToString("F") +
+                                    "\t" + "\t" + "\t" +
+                                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                                    + "\t" +
+                                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                                    + "\t" +
+                                    vatTax);
+                                }
+                            }
                         }
 
 
