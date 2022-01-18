@@ -36,7 +36,7 @@ namespace SyncApp.Logic
             string path = PayPlusPathConst.GET_PAYMENT_PAGE.Trim();
             string url = baseUrl + path;
 
-            var payPlusIPNRequest = new PayPlusIPNRequest
+            var payPlusIPNRequest = new PayPlusRequest
             {
                 more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : transaction_uid
             };
@@ -80,6 +80,35 @@ namespace SyncApp.Logic
                 return clearingCompanies.clearing.FirstOrDefault(c => c.id == clearing_id).code;
 
             throw new Exception("Error retrieving clearing companies from payplus");
+        }
+
+        public PayPlusTransactionResponse GetTransactionDetails(string payment_id, string transaction_uid)
+        {
+            string baseUrl = _config.PayPlusUrl?.Trim();
+            string path = PayPlusPathConst.GET_TRANSACTION.Trim();
+            string url = baseUrl + path;
+
+            var payPlusTransactionRequest = new PayPlusRequest
+            {
+                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : transaction_uid
+            };
+
+            string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
+            Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    { "authorization", authorizationValue }
+                };
+
+            string body = JsonConvert.SerializeObject(payPlusTransactionRequest);
+            var payPlusTransactionResponse = new RESTHelper().SendPostRequest<PayPlusTransactionResponse>(
+                url, body, headers);
+
+            Logger.LogObjectInfo(payPlusTransactionResponse, payPlusTransactionRequest, "GetPaymentInfo", url);
+
+            if (payPlusTransactionResponse != null && payPlusTransactionResponse.results.status != "error")
+                return payPlusTransactionResponse;
+
+            throw new Exception("Error retrieving transacton from payplus for payment_id: " + payment_id);
         }
     }
 }

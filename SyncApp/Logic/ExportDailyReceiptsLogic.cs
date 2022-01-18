@@ -272,21 +272,36 @@ namespace SyncApp.Logic
                                 foreach (var transaction in transactionsModel.ReceiptTransactions)
                                 {
                                     int paymentMeanCode = 0;
+                                    decimal amount = 0m;
                                     if(transaction.payment_id.IsNotNullOrEmpty() || transaction.more_info.IsNotNullOrEmpty())
                                     {
-                                        var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
-                                        if (paymentInfo != null && paymentInfo.data != null)
+                                        try
                                         {
-                                            paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                            var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
+                                            if (paymentInfo != null && paymentInfo.data != null)
+                                            {
+                                                paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                            }
+
+                                            var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
+                                            if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
+                                            {
+                                                var transactionDetails = transactionInfo.data.FirstOrDefault().transaction;
+                                                amount = transactionDetails.amount;
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            _log.Error($"[receipts] : Error while getting IPN or Transaction", ex);
                                         }
                                     }
+
 
                                     if (transaction.x_timestamp.IsNotNullOrEmpty())
                                     {
                                         invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
                                     }
 
-                                    var amount = Convert.ToDecimal(transaction.x_amount);
                                     if (order.RefundKind != "no_refund")
                                     {
                                         amount *= -1;
