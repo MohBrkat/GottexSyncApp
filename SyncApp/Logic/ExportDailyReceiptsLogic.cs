@@ -213,157 +213,7 @@ namespace SyncApp.Logic
             {
                 foreach (var order in orders)
                 {
-                    //Transactions
-                    var index = orders.IndexOf(order);
-
-                    // If this order is not the first, wait for .5 seconds (an average of 2 calls per second).
-                    if (index > 0)
-                    {
-                        await Task.Delay(1000);
-                    }
-
-                    TransactionsModel transactionsModel = null;
-                    try
-                    {
-                        transactionsModel = await GetTransactionModelByOrderAsync(order, dateToRetriveFrom, dateToRetriveTo);
-                    }
-                    catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
-                    {
-                        await Task.Delay(10000);
-
-                        transactionsModel = await GetTransactionModelByOrderAsync(order, dateToRetriveFrom, dateToRetriveTo);
-                    }
-
-                    var InvoiceNumber = GetInvoiceNumber(order);
-                    var priceWithTaxes = order.TotalPrice;
-
-                    var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
-
-                    var giftCardItems = order.LineItems.Where(li => li.GiftCard == true).ToList();
-
-                    if (giftCardItems != null)
-                    {
-                        foreach (var giftCardItem in giftCardItems)
-                        {
-                            priceWithTaxes -= giftCardItem.Price;
-                        }
-                    }
-
-                    //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
-                    if (order.RefundKind != "no_refund")
-                    {
-                        priceWithTaxes *= -1;
-                    }
-
-                    lock (reciptsFileLock)
-                    {
-                        file.WriteLine(
-                        "0" +  // spaces to fit indexes
-                        " " + CustomerCodeWithLeadingSpaces +
-                        " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                        " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                        " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
-                        " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
-
-                        if (transactionsModel != null)
-                        {
-                            if (transactionsModel.ReceiptTransactions != null)
-                            {
-                                foreach (var transaction in transactionsModel.ReceiptTransactions)
-                                {
-                                    int paymentMeanCode = 0;
-                                    decimal amount = 0m;
-                                    if(transaction.payment_id.IsNotNullOrEmpty() || transaction.more_info.IsNotNullOrEmpty())
-                                    {
-                                        try
-                                        {
-                                            var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
-                                            if (paymentInfo != null && paymentInfo.data != null)
-                                            {
-                                                paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
-                                            }
-
-                                            var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
-                                            if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
-                                            {
-                                                var transactionDetails = transactionInfo.data.FirstOrDefault().transaction;
-                                                amount = transactionDetails.amount;
-                                            }
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            _log.Error($"[receipts] : Error while getting IPN or Transaction", ex);
-                                        }
-                                    }
-
-
-                                    if (transaction.x_timestamp.IsNotNullOrEmpty())
-                                    {
-                                        invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
-                                    }
-
-                                    if (order.RefundKind != "no_refund")
-                                    {
-                                        amount *= -1;
-                                    }
-
-                                    file.WriteLine(
-                                    "2" +
-                                    " " + paymentMeanCode.ToString().InsertLeadingZeros(2) +
-                                    " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
-                                    " " + "00" + //term code
-                                    " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
-                                    " " + invoiceDate +
-                                    " " + "".InsertLeadingSpaces(8) +//card number
-                                    " " + "".InsertLeadingZeros(16));//Payment account
-
-                                    if (giftCardItems != null)
-                                    {
-                                        foreach (var giftCardItem in giftCardItems)
-                                        {
-                                            var giftCardAmount = giftCardItem.Price * -1;
-
-                                            int giftCardPaymentMeanCode = GetPaymentMeanCode("ReceiptGiftCard");
-                                            file.WriteLine(
-                                            "2" +
-                                            " " + giftCardPaymentMeanCode.ToString().InsertLeadingZeros(2) +
-                                            " " + giftCardAmount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
-                                            " " + "00" + //term code
-                                            " " + giftCardAmount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
-                                            " " + invoiceDate +
-                                            " " + "".InsertLeadingSpaces(8) +//card number
-                                            " " + "".InsertLeadingZeros(16));//Payment account
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (transactionsModel.GiftCardTransactions != null)
-                            {
-                                int paymentMeanCode = GetPaymentMeanCode("GiftCard");
-                                foreach (var giftCardTransaction in transactionsModel.GiftCardTransactions)
-                                {
-                                    invoiceDate = Convert.ToDateTime(giftCardTransaction.CreatedAt).ToString("dd/MM/yy");
-
-                                    var giftCardBalance = giftCardTransaction.Amount;
-                                    if (order.RefundKind != "no_refund")
-                                    {
-                                        giftCardBalance *= -1;
-                                    }
-
-                                    file.WriteLine(
-                                    "2" +
-                                    " " + paymentMeanCode.ToString().InsertLeadingZeros(2) +
-                                    " " + giftCardBalance.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
-                                    " " + "00" + //term code
-                                    " " + giftCardBalance.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
-                                    " " + invoiceDate +
-                                    " " + "".InsertLeadingSpaces(8) +//card number
-                                    " " + "".InsertLeadingZeros(16));//Payment account
-                                }
-                            }
-                        }
-                    }
+                    await WriteReceiptTransactions(orders, dateToRetriveFrom, dateToRetriveTo, file, order, false);
                 }
 
                 file.Close();
@@ -399,6 +249,183 @@ namespace SyncApp.Logic
 
             return FileName;
         }
+
+        private async Task WriteReceiptTransactions(List<Order> orders, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, StreamWriter file, Order order, bool isSuperPharmOrder)
+        {
+            //Transactions
+            var index = orders.IndexOf(order);
+
+            // If this order is not the first, wait for .5 seconds (an average of 2 calls per second).
+            if (index > 0)
+            {
+                await Task.Delay(1000);
+            }
+
+            TransactionsModel transactionsModel = null;
+            try
+            {
+                transactionsModel = await GetTransactionModelByOrderAsync(order, dateToRetriveFrom, dateToRetriveTo);
+            }
+            catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
+            {
+                await Task.Delay(10000);
+
+                transactionsModel = await GetTransactionModelByOrderAsync(order, dateToRetriveFrom, dateToRetriveTo);
+            }
+
+            var InvoiceNumber = GetInvoiceNumber(order);
+            var priceWithTaxes = order.TotalPrice;
+
+            var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
+
+            var giftCardItems = order.LineItems.Where(li => li.GiftCard == true).ToList();
+
+            if (giftCardItems != null)
+            {
+                foreach (var giftCardItem in giftCardItems)
+                {
+                    priceWithTaxes -= giftCardItem.Price;
+                }
+            }
+
+            //if it's a refund make it [minus] and [priceWithoutTaxes = priceWithTaxes]
+            if (order.RefundKind != "no_refund")
+            {
+                priceWithTaxes *= -1;
+            }
+
+            lock (reciptsFileLock)
+            {
+                file.WriteLine(
+                "0" +  // spaces to fit indexes
+                " " + CustomerCodeWithLeadingSpaces +
+                " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
+                " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+
+                if (transactionsModel != null)
+                {
+                    if (transactionsModel.ReceiptTransactions != null)
+                    {
+                        foreach (var transaction in transactionsModel.ReceiptTransactions)
+                        {
+                            int paymentMeanCode = 0;
+                            decimal amount = 0m;
+                            if (transaction.payment_id.IsNotNullOrEmpty() || transaction.more_info.IsNotNullOrEmpty())
+                            {
+                                try
+                                {
+                                    var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
+                                    if (paymentInfo != null && paymentInfo.data != null)
+                                    {
+                                        paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                    }
+
+                                    var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
+                                    if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
+                                    {
+                                        if (order.RefundKind != "no_refund")
+                                        {
+                                            var payplusRefundTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() == "refund" &&
+                                                                            Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
+
+                                            if (payplusRefundTransaction != null)
+                                            {
+                                                amount = -1 * payplusRefundTransaction.amount;
+                                            }
+                                            else
+                                            {
+                                                var refundTransaction = order.Transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
+                                                                        && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
+
+                                                amount = -1 * (refundTransaction?.Amount ?? 0m);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var chargeTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() != "refund" &&
+                                                                        Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
+                                            amount = chargeTransaction.amount;
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _log.Error($"[receipts] : Error while getting IPN or Transaction", ex);
+                                }
+                            }
+
+
+                            if (transaction.x_timestamp.IsNotNullOrEmpty())
+                            {
+                                invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
+                            }
+
+                            if (order.RefundKind != "no_refund")
+                            {
+                                amount *= -1;
+                            }
+
+                            file.WriteLine(
+                            "2" +
+                            " " + paymentMeanCode.ToString().InsertLeadingZeros(2) +
+                            " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                            " " + "00" + //term code
+                            " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                            " " + invoiceDate +
+                            " " + "".InsertLeadingSpaces(8) +//card number
+                            " " + "".InsertLeadingZeros(16));//Payment account
+
+                            if (giftCardItems != null)
+                            {
+                                foreach (var giftCardItem in giftCardItems)
+                                {
+                                    var giftCardAmount = giftCardItem.Price * -1;
+
+                                    int giftCardPaymentMeanCode = GetPaymentMeanCode("ReceiptGiftCard");
+                                    file.WriteLine(
+                                    "2" +
+                                    " " + giftCardPaymentMeanCode.ToString().InsertLeadingZeros(2) +
+                                    " " + giftCardAmount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                                    " " + "00" + //term code
+                                    " " + giftCardAmount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                                    " " + invoiceDate +
+                                    " " + "".InsertLeadingSpaces(8) +//card number
+                                    " " + "".InsertLeadingZeros(16));//Payment account
+                                }
+                            }
+                        }
+                    }
+
+                    if (transactionsModel.GiftCardTransactions != null)
+                    {
+                        int paymentMeanCode = GetPaymentMeanCode("GiftCard");
+                        foreach (var giftCardTransaction in transactionsModel.GiftCardTransactions)
+                        {
+                            invoiceDate = Convert.ToDateTime(giftCardTransaction.CreatedAt).ToString("dd/MM/yy");
+
+                            var giftCardBalance = giftCardTransaction.Amount;
+                            if (order.RefundKind != "no_refund")
+                            {
+                                giftCardBalance *= -1;
+                            }
+
+                            file.WriteLine(
+                            "2" +
+                            " " + paymentMeanCode.ToString().InsertLeadingZeros(2) +
+                            " " + giftCardBalance.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                            " " + "00" + //term code
+                            " " + giftCardBalance.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                            " " + invoiceDate +
+                            " " + "".InsertLeadingSpaces(8) +//card number
+                            " " + "".InsertLeadingZeros(16));//Payment account
+                        }
+                    }
+                }
+            }
+        }
+
         private async Task<Receipt> GetTransactionByOrderAsync(Order order)
         {
             Receipt r = null;
@@ -447,7 +474,9 @@ namespace SyncApp.Logic
             var service = new TransactionService(StoreUrl, ApiSecret);
             var serviceTransactions = await service.ListAsync((long)order.Id);
 
-            var transactions = order.Transactions != null && order.Transactions.Any() ? order.Transactions : serviceTransactions;
+            var transactions = serviceTransactions;
+
+            var originalTransaction = transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success");
 
             if (order.RefundKind == "no_refund")
             {
@@ -482,7 +511,9 @@ namespace SyncApp.Logic
             if (receiptTransaction != null)
             {
                 var receipt = JsonConvert.DeserializeObject<Receipt>(receiptTransaction.Receipt.ToString());
+                var originalReceipt = JsonConvert.DeserializeObject<Receipt>(originalTransaction?.Receipt?.ToString());
                 receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
+                receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
                 transactionsModel.ReceiptTransactions.Add(receipt);
             }
 
@@ -508,6 +539,5 @@ namespace SyncApp.Logic
                 return 0;
             }
         }
-
     }
 }

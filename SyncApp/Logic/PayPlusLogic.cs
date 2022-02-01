@@ -30,7 +30,7 @@ namespace SyncApp.Logic
             }
         }
 
-        public PayPlusIPNResponse GetPaymentInfo(string payment_id, string transaction_uid)
+        public PayPlusIPNResponse GetPaymentInfo(string payment_id, string more_info)
         {
             string baseUrl = _config.PayPlusUrl?.Trim();
             string path = PayPlusPathConst.GET_PAYMENT_PAGE.Trim();
@@ -38,7 +38,7 @@ namespace SyncApp.Logic
 
             var payPlusIPNRequest = new PayPlusRequest
             {
-                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : transaction_uid
+                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info
             };
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
@@ -82,7 +82,7 @@ namespace SyncApp.Logic
             throw new Exception("Error retrieving clearing companies from payplus");
         }
 
-        public PayPlusTransactionResponse GetTransactionDetails(string payment_id, string transaction_uid)
+        public PayPlusTransactionResponse GetTransactionDetails(string payment_id, string more_info)
         {
             string baseUrl = _config.PayPlusUrl?.Trim();
             string path = PayPlusPathConst.GET_TRANSACTION.Trim();
@@ -90,7 +90,7 @@ namespace SyncApp.Logic
 
             var payPlusTransactionRequest = new PayPlusRequest
             {
-                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : transaction_uid
+                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info
             };
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
