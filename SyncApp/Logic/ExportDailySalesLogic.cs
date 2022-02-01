@@ -155,6 +155,27 @@ namespace SyncApp.Logic
                 return Config.TaxPercentage.GetValueOrDefault();
             }
         }
+        private string SuperPharmCustomerCode
+        {
+            get
+            {
+                return Config.SuperPharmCustomerCode ?? string.Empty;
+            }
+        }
+        private string SuperPharmSalesBranchCode
+        {
+            get
+            {
+                return Config.SuperPharmSalesBranchCode ?? string.Empty;
+            }
+        }
+        private string SuperPharmCustomerCodeWithLeadingSpaces
+        {
+            get
+            {
+                return SuperPharmCustomerCode.InsertLeadingSpaces(16);
+            }
+        }
         #endregion
 
         public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
@@ -217,131 +238,42 @@ namespace SyncApp.Logic
                     lock (salesFileLock)
                     {
                         file.WriteLine(
-                       "0" +
-                       "\t" + CustomerCodeWithLeadingSpaces +
-                       "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                       "\t" + BookNum +
-                       "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
-                       "\t" + ShortBranchCodeSales
-                       );
+                           "0" +
+                           "\t" + CustomerCodeWithLeadingSpaces +
+                           "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                           "\t" + BookNum +
+                           "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
+                           "\t" + ShortBranchCodeSales
+                           );
 
                     }
 
-                    foreach (var order in DayOrders.Data)
+                    var regularOrders = DayOrders.Data.Where(o => !o.Tags.ToLower().Contains("super-pharm")).ToList();
+                    foreach (var order in regularOrders)
                     {
-                        var discountZero = 0;
-                        var shipRefOrder = order;
-                        foreach (var orderItem in order.LineItems)
+                        WriteOrderTransactions(file, taxPercentage, order);
+                    }
+
+
+                    var superPharmOrders = DayOrders.Data.Where(o => o.Tags.ToLower().Contains("super-pharm")).ToList();
+                    if (superPharmOrders.Count > 0)
+                    {
+                        //Super Pharm Line 0
+                        lock (salesFileLock)
                         {
-                            if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
-                                continue;
-
-                            var discountPercentage = 0;
-
-                            decimal? price;
-                            decimal totalDiscount = 0;
-
-                            //Calculate Discount on single lineItem
-                            if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
-                            {
-                                totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
-                            }
-
-                            decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
-                            decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
-                            //Discounted Price without TAX and Discount
-                            price = orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
-
-                            if (orderItem.Taxable == false || order.TaxesIncluded == true)
-                                price /= totalWithVatPercentage;
-
-                            lock (salesFileLock)
-                            {
-                                file.WriteLine(
-                                "1" + "\t" +
-                                orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
-                                orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                "".InsertLeadingSpaces(4) + "\t" + // agent code
-                                discountPercentage.ToString("F") +
-                                "\t" + "\t" + "\t" +
-                                order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                + "\t" +
-                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                            }
-
-                            if(order.FulfillmentStatus == null && order.FinancialStatus == "paid" && order.RefundKind == "no_refund" && order.Refunds.Any())
-                            {
-                                decimal restockPrice = 0;
-
-                                lock (salesFileLock)
-                                {
-                                    file.WriteLine(
-                                    "1" + "\t" +
-                                    orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
-                                    "-1".InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                    restockPrice.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                    "".InsertLeadingSpaces(4) + "\t" + // agent code
-                                    discountZero.ToString("F") +
-                                    "\t" + "\t" + "\t" +
-                                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                    + "\t" +
-                                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                                }
-                            }
+                            file.WriteLine(
+                              "0" +
+                              "\t" + SuperPharmCustomerCodeWithLeadingSpaces +
+                              "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                              "\t" + BookNum +
+                              "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
+                              "\t" + SuperPharmSalesBranchCode
+                              );
                         }
 
-                        var shipOrder = order;
-
-                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
-
-                        //If the order (e.g partially/refunded or paid) 
-                        //has shipping cost and this cost is not refunded,
-                        //then write shipping data
-                        if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
+                        foreach (var order in superPharmOrders)
                         {
-                            var mQuant = "1";
-                            if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
-                            {
-                                mQuant = "-1";
-                            }
-
-                            lock (salesFileLock)
-                            {
-                                file.WriteLine(
-                                "1" + "\t" +
-                                "921".InsertLeadingSpaces(15) + "\t" +
-                                mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                "".InsertLeadingSpaces(4) + "\t" + // agent code
-                                discountZero.ToString("F") +
-                                "\t" + "\t" + "\t" +
-                                order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                + "\t" +
-                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                            }
-                        }
-
-                        if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund")
-                        {
-                            var mQuant = "-1";
-
-                            var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax(taxPercentage));
-
-                            lock (salesFileLock)
-                            {
-                                file.WriteLine(
-                                "1" + "\t" +
-                                "925".InsertLeadingSpaces(15) + "\t" +
-                                mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
-                                refundedAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
-                                "".InsertLeadingSpaces(4) + "\t" + // agent code
-                                discountZero.ToString("F") +
-                                "\t" + "\t" + "\t" +
-                                order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
-                                + "\t" +
-                                order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
-                            }
+                            WriteOrderTransactions(file, taxPercentage, order);
                         }
                     }
                 }
@@ -377,5 +309,122 @@ namespace SyncApp.Logic
             return FileName;
         }
 
+        private static void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order)
+        {
+            var discountZero = 0;
+            var shipRefOrder = order;
+            foreach (var orderItem in order.LineItems)
+            {
+                if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
+                    continue;
+
+                var discountPercentage = 0;
+
+                decimal? price;
+                decimal totalDiscount = 0;
+
+                //Calculate Discount on single lineItem
+                if (orderItem.DiscountAllocations != null && orderItem.DiscountAllocations.Count() != 0)
+                {
+                    totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
+                }
+
+                decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
+                decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
+                //Discounted Price without TAX and Discount
+                price = orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
+
+                if (orderItem.Taxable == false || order.TaxesIncluded == true)
+                    price /= totalWithVatPercentage;
+
+                lock (salesFileLock)
+                {
+                    file.WriteLine(
+                    "1" + "\t" +
+                    orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                    orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
+                    price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                    discountPercentage.ToString("F") +
+                    "\t" + "\t" + "\t" +
+                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                    + "\t" +
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                }
+
+                if (order.FulfillmentStatus == null && order.FinancialStatus == "paid" && order.RefundKind == "no_refund" && order.Refunds.Any())
+                {
+                    decimal restockPrice = 0;
+
+                    lock (salesFileLock)
+                    {
+                        file.WriteLine(
+                        "1" + "\t" +
+                        orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                        "-1".InsertLeadingSpaces(10) + "\t" + // total quantity 
+                        restockPrice.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                        "".InsertLeadingSpaces(4) + "\t" + // agent code
+                        discountZero.ToString("F") +
+                        "\t" + "\t" + "\t" +
+                        order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                        + "\t" +
+                        order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    }
+                }
+            }
+
+            var shipOrder = order;
+
+            var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
+
+            //If the order (e.g partially/refunded or paid) 
+            //has shipping cost and this cost is not refunded,
+            //then write shipping data
+            if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
+            {
+                var mQuant = "1";
+                if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
+                {
+                    mQuant = "-1";
+                }
+
+                lock (salesFileLock)
+                {
+                    file.WriteLine(
+                    "1" + "\t" +
+                    "921".InsertLeadingSpaces(15) + "\t" +
+                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                    shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                    discountZero.ToString("F") +
+                    "\t" + "\t" + "\t" +
+                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                    + "\t" +
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                }
+            }
+
+            if (order.LineItems.Count() == 0 && shipOrder.RefundKind != "shipping_refund")
+            {
+                var mQuant = "-1";
+
+                var refundedAmount = Math.Abs(order.RefundAmount.ValueWithoutTax(taxPercentage));
+
+                lock (salesFileLock)
+                {
+                    file.WriteLine(
+                    "1" + "\t" +
+                    "925".InsertLeadingSpaces(15) + "\t" +
+                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                    refundedAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                    discountZero.ToString("F") +
+                    "\t" + "\t" + "\t" +
+                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                    + "\t" +
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                }
+            }
+        }
     }
 }

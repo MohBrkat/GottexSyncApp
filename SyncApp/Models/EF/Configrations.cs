@@ -48,6 +48,10 @@ namespace SyncApp.Models.EF
         public string PayPlusUrl { get; set; }
         public string PayPlusApiKey { get; set; }
         public string PayPlusSecretKey { get; set; }
+        public string SuperPharmCustomerCode { get; set; }
+        public string SuperPharmReceiptBranchCode { get; set; }
+        public string SuperPharmSalesBranchCode { get; set; }
+        public int? SuperPharmPaymentCode { get; set; }
 
     }
 }

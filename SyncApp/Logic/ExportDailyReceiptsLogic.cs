@@ -165,6 +165,41 @@ namespace SyncApp.Logic
                 return Config.TaxPercentage.GetValueOrDefault();
             }
         }
+        private string SuperPharmCustomerCode
+        {
+            get
+            {
+                return Config.SuperPharmCustomerCode ?? string.Empty;
+            }
+        }
+        private string SuperPharmReceiptBranchCode
+        {
+            get
+            {
+                return Config.SuperPharmReceiptBranchCode ?? string.Empty;
+            }
+        }
+        private int SuperPharmPaymentCode
+        {
+            get
+            {
+                return Config.SuperPharmPaymentCode.GetValueOrDefault();
+            }
+        }
+        private string SuperPharmCustomerCodeWithLeadingSpaces
+        {
+            get
+            {
+                return SuperPharmCustomerCode.InsertLeadingSpaces(16);
+            }
+        }
+        private string SuperPharmReceiptBranchCodeWithLeadingspaces
+        {
+            get
+            {
+                return SuperPharmReceiptBranchCode.ToString().InsertLeadingSpaces(8);
+            }
+        }
         #endregion
 
         public async Task<List<Order>> ExportDailyReceiptsAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
@@ -208,12 +243,27 @@ namespace SyncApp.Logic
             var FolderDirectory = "/Data/receipts/";
             string path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + "/" + FileName;
 
+            var ordersGroupedByDate = orders
+                   .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
+                   .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
+
             using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(fileStream))
             {
-                foreach (var order in orders)
+                foreach (var DayOrders in ordersGroupedByDate)
                 {
-                    await WriteReceiptTransactions(orders, dateToRetriveFrom, dateToRetriveTo, file, order, false);
+                    var regularOrders = DayOrders.Data.Where(o => !o.Tags.ToLower().Contains("super-pharm")).ToList();
+                    foreach (var order in regularOrders)
+                    {
+                        await WriteReceiptTransactions(orders, dateToRetriveFrom, dateToRetriveTo, file, order, false);
+                    }
+
+
+                    var superPharmOrders = DayOrders.Data.Where(o => o.Tags.ToLower().Contains("super-pharm")).ToList();
+                    foreach (var order in superPharmOrders)
+                    {
+                        await WriteReceiptTransactions(orders, dateToRetriveFrom, dateToRetriveTo, file, order, true);
+                    }
                 }
 
                 file.Close();
@@ -296,13 +346,27 @@ namespace SyncApp.Logic
 
             lock (reciptsFileLock)
             {
-                file.WriteLine(
-                "0" +  // spaces to fit indexes
-                " " + CustomerCodeWithLeadingSpaces +
-                " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
-                " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+                if (!isSuperPharmOrder)
+                {
+                    file.WriteLine(
+                    "0" +  // spaces to fit indexes
+                    " " + CustomerCodeWithLeadingSpaces +
+                    " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                    " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
+                    " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                    " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+                }
+                else
+                {
+                    file.WriteLine(
+                    "0" +  // spaces to fit indexes
+                    " " + SuperPharmCustomerCodeWithLeadingSpaces +
+                    " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                    " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
+                    " " + SuperPharmReceiptBranchCodeWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                    " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+                }
+
 
                 if (transactionsModel != null)
                 {
@@ -316,10 +380,17 @@ namespace SyncApp.Logic
                             {
                                 try
                                 {
-                                    var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
-                                    if (paymentInfo != null && paymentInfo.data != null)
+                                    if (!isSuperPharmOrder)
                                     {
-                                        paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                        var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
+                                        if (paymentInfo != null && paymentInfo.data != null)
+                                        {
+                                            paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        paymentMeanCode = SuperPharmPaymentCode;
                                     }
 
                                     var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
@@ -356,15 +427,15 @@ namespace SyncApp.Logic
                                 }
                             }
 
+                            if(isSuperPharmOrder)
+                            {
+                                amount = priceWithTaxes ?? 0;
+                                paymentMeanCode = SuperPharmPaymentCode;
+                            }
 
                             if (transaction.x_timestamp.IsNotNullOrEmpty())
                             {
                                 invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
-                            }
-
-                            if (order.RefundKind != "no_refund")
-                            {
-                                amount *= -1;
                             }
 
                             file.WriteLine(

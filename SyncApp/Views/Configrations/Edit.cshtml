@@ -55,7 +55,30 @@
                 </div>
             </div>
         </section>
-
+        <section id="superPahrm-content">
+            <h5>Super-Pharm Configurations </h5>
+            <hr />
+            <div class="container">
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.SuperPharmCustomerCode" class="control-label">Super-Pharm Customer Code</label>
+                        <input asp-for="Configurations.SuperPharmCustomerCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.SuperPharmReceiptBranchCode" class="control-label">Super-Pahrm Receipt Branch Code</label>
+                        <input asp-for="Configurations.SuperPharmReceiptBranchCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.SuperPharmSalesBranchCode" class="control-label">Super-Pahrm Sales Branch Code</label>
+                        <input asp-for="Configurations.SuperPharmSalesBranchCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.SuperPharmPaymentCode" class="control-label">Super-Pahrm Payment Code</label>
+                        <input asp-for="Configurations.SuperPharmPaymentCode" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </section>
         <section id="ftp-content">
             <h5>FTP Configurations </h5>
             <hr />
@@ -150,7 +173,7 @@
                             <div class="row">
                                 <div class="form-group col-sm-6">
                                     <label asp-for="Configurations.PayPlusUrl" class="control-label">PayPlus Url</label>
-                                    <input readonly asp-for="Configurations.PayPlusUrl" class="form-control"/>
+                                    <input readonly asp-for="Configurations.PayPlusUrl" class="form-control" />
                                 </div>
                                 <div class="form-group col-sm-6">
                                     <label asp-for="Configurations.PayPlusApiKey" class="control-label">PayPlus Api Key</label>
