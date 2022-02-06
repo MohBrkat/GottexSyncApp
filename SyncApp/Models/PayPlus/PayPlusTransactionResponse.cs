@@ -16,8 +16,8 @@ namespace SyncApp.Models.PayPlus
     public class Payments
     {
         public int number_of_payments { get; set; }
-        public int first_payment_amount { get; set; }
-        public int rest_payments_amount { get; set; }
+        public decimal first_payment_amount { get; set; }
+        public decimal rest_payments_amount { get; set; }
     }
 
     public class Secure3D

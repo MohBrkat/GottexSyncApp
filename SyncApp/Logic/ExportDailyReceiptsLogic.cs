@@ -213,7 +213,7 @@ namespace SyncApp.Logic
             {
                 foreach (var order in orders)
                 {
-                    await WriteReceiptTransactions(orders, dateToRetriveFrom, dateToRetriveTo, file, order, false);
+                    await WriteReceiptTransactions(orders, dateToRetriveFrom, dateToRetriveTo, file, order);
                 }
 
                 file.Close();
@@ -250,7 +250,7 @@ namespace SyncApp.Logic
             return FileName;
         }
 
-        private async Task WriteReceiptTransactions(List<Order> orders, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, StreamWriter file, Order order, bool isSuperPharmOrder)
+        private async Task WriteReceiptTransactions(List<Order> orders, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, StreamWriter file, Order order)
         {
             //Transactions
             var index = orders.IndexOf(order);
@@ -322,37 +322,11 @@ namespace SyncApp.Logic
                                         paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
                                     }
 
-                                    var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
-                                    if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
-                                    {
-                                        if (order.RefundKind != "no_refund")
-                                        {
-                                            var payplusRefundTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() == "refund" &&
-                                                                            Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
-
-                                            if (payplusRefundTransaction != null)
-                                            {
-                                                amount = -1 * payplusRefundTransaction.amount;
-                                            }
-                                            else
-                                            {
-                                                var refundTransaction = order.Transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
-                                                                        && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
-
-                                                amount = -1 * (refundTransaction?.Amount ?? 0m);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            var chargeTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() != "refund" &&
-                                                                        Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
-                                            amount = chargeTransaction.amount;
-                                        }
-                                    }
+                                    amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
                                 }
                                 catch (Exception ex)
                                 {
-                                    _log.Error($"[receipts] : Error while getting IPN or Transaction", ex);
+                                    _log.Error($"[receipts] : Error while getting IPN or Transaction for order: " + order.OrderNumber, ex);
                                 }
                             }
 
@@ -362,9 +336,9 @@ namespace SyncApp.Logic
                                 invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
                             }
 
-                            if (order.RefundKind != "no_refund")
+                            if (amount == 0)
                             {
-                                amount *= -1;
+                                amount = priceWithTaxes ?? 0m;
                             }
 
                             file.WriteLine(
@@ -426,35 +400,48 @@ namespace SyncApp.Logic
             }
         }
 
-        private async Task<Receipt> GetTransactionByOrderAsync(Order order)
+        private decimal GetAmountFromTransaction(DateTime dateToRetriveFrom, DateTime dateToRetriveTo, Order order, Receipt transaction, decimal amount)
         {
-            Receipt r = null;
-            if (order.RefundKind == "no_refund" || !order.Transactions.Any())
+            var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
+            if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
             {
-                var service = new TransactionService(StoreUrl, ApiSecret);
-                var transactions = await service.ListAsync((long)order.Id);
-                if (transactions.FirstOrDefault() != null)
+                if (order.RefundKind != "no_refund")
                 {
+                    var payplusRefundTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() == "refund" &&
+                                                    Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
 
-                    r = JsonConvert.DeserializeObject<Receipt>(transactions.FirstOrDefault().Receipt.ToString());
+                    if (payplusRefundTransaction != null)
+                    {
+                        amount = -1 * (payplusRefundTransaction?.amount ?? 0m);
+                    }
+                    else
+                    {
+                        var refundTransaction = order.Transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
+                                                && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
 
-                    /*
-                     * x_timestamp which is basically from the payment provider(Payplus) and it's inaccurate and wrong
-                     * (it is in 12h UTC format and without AM or PM !)
-                     * So transaction's created_at DateTime value used instead
-                     */
-                    r.x_timestamp = transactions.FirstOrDefault().CreatedAt.ToString();
+                        amount = -1 * (refundTransaction?.Amount ?? 0m);
+                    }
+                }
+                else
+                {
+                    var payPluschargeTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() != "refund" &&
+                                                Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
+
+                    if (payPluschargeTransaction != null)
+                    {
+                        amount = payPluschargeTransaction?.amount ?? 0m;
+                    }
+                    else
+                    {
+                        var chargeTransaction = order.Transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success"
+                                                && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
+
+                        amount = chargeTransaction?.Amount ?? 0m;
+                    }
                 }
             }
-            else
-            {
-                var transaction = JsonConvert.DeserializeObject<Receipt>(order.Transactions.FirstOrDefault().Receipt.ToString());
-                r = JsonConvert.DeserializeObject<Receipt>(
-                    order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().Receipt.ToString());
-                r.x_timestamp = order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().CreatedAt.ToString();
-                r.clearing_name = transaction.clearing_name;
-            }
-            return r;
+
+            return amount;
         }
 
         private async Task<TransactionsModel> GetTransactionModelByOrderAsync(Order order, DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
@@ -514,6 +501,7 @@ namespace SyncApp.Logic
                 var originalReceipt = JsonConvert.DeserializeObject<Receipt>(originalTransaction?.Receipt?.ToString());
                 receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
                 receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
+                receipt.more_info = receipt.more_info.IsNotNullOrEmpty() ? receipt.more_info : originalReceipt?.more_info;
                 transactionsModel.ReceiptTransactions.Add(receipt);
             }
 
