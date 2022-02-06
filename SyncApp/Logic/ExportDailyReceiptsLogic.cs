@@ -404,11 +404,6 @@ namespace SyncApp.Logic
                             if (amount == 0)
                             {
                                 amount = priceWithTaxes ?? 0m;
-
-                                if (order.RefundKind != "no_refund")
-                                {
-                                    amount = -1 * amount;
-                                }
                             }
 
                             if (isSuperPharmOrder)
@@ -611,6 +606,7 @@ namespace SyncApp.Logic
                 var originalReceipt = JsonConvert.DeserializeObject<Receipt>(originalTransaction?.Receipt?.ToString());
                 receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
                 receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
+                receipt.more_info = receipt.more_info.IsNotNullOrEmpty() ? receipt.more_info : originalReceipt?.more_info;
                 transactionsModel.ReceiptTransactions.Add(receipt);
             }
 
