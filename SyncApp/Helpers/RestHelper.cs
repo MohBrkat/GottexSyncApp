@@ -100,6 +100,8 @@ namespace SyncApp.Helpers
             if (response != null && response.ErrorException != null)
             {
                 ex = response.ErrorException;
+                _errorLogger.Info(info);
+                info = string.Empty;
             }
             else
             {
