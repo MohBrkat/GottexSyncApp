@@ -234,6 +234,7 @@ namespace SyncApp.Logic
                     var InvoiceDate = DayOrders.OrdersDate;
 
                     var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
+                    var superPharmBookNum = SuperPharmSalesBranchCode + InvoiceDate.ToString("ddMMyy");
 
                     lock (salesFileLock)
                     {
@@ -265,7 +266,7 @@ namespace SyncApp.Logic
                               "0" +
                               "\t" + SuperPharmCustomerCodeWithLeadingSpaces +
                               "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                              "\t" + BookNum +
+                              "\t" + superPharmBookNum +
                               "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
                               "\t" + SuperPharmSalesBranchCode
                               );
