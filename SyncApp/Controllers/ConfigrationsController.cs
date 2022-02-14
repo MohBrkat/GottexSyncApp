@@ -10,6 +10,7 @@ using SyncApp.Models.EF;
 using SyncApp.ViewModel;
 using SyncApp.Models.Enums;
 using SyncApp.Logic;
+using ShopifySharp;
 
 namespace SyncApp.Controllers
 {
@@ -23,10 +24,34 @@ namespace SyncApp.Controllers
             _context = context;
         }
 
+        #region fields
+        private Configrations Config
+        {
+            get
+            {
+                return _context.Configrations.First();
+            }
+        }
+
+        private string StoreUrl
+        {
+            get
+            {
+                return Config.StoreUrl ?? string.Empty;
+            }
+        }
+        private string ApiSecret
+        {
+            get
+            {
+                return Config.ApiSecret ?? string.Empty;
+            }
+        }
+        #endregion
         // POST: Configrations/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
-        
+
 
         // GET: Configrations/Edit/5
         public async Task<IActionResult> Edit(int? id)
@@ -87,6 +112,64 @@ namespace SyncApp.Controllers
                                             .Select(e => e.ErrorMessage));
             }
 
+
+            return View(configs);
+        }
+
+
+        public async Task<IActionResult> Warehouses()
+        {
+            WarehouseModel configs = new WarehouseModel
+            {
+                Warehouses = new List<Warehouse>()
+
+            };
+
+            var locationService = new LocationService(StoreUrl, ApiSecret);
+            var shopifyLocations = await locationService.ListAsync();
+
+            foreach (var loc in shopifyLocations)
+            {
+                Warehouse warehouse = new Warehouse
+                {
+                    Id = 1,
+                    WarehouseId = loc.Id.ToString(),
+                    WarehouseName = loc.Name,
+                    WarehouseCode = "ON01",
+                    IsDefault = true
+                };
+
+                configs.Warehouses.Add(warehouse);
+            }
+
+            configs.Warehouses.Add(new Warehouse
+            {
+                Id = 2,
+                WarehouseId = "ttt",
+                WarehouseName = "test",
+                WarehouseCode = "test",
+                IsDefault = false
+            });
+
+
+            configs.Warehouses.Add(new Warehouse
+            {
+                Id = 2,
+                WarehouseId = "ttt",
+                WarehouseName = "test",
+                WarehouseCode = "test",
+                IsDefault = false
+            });
+
+
+            configs.Warehouses.Add(new Warehouse
+            {
+                Id = 2,
+                WarehouseId = "ttt",
+                WarehouseName = "test",
+                WarehouseCode = "test",
+                IsDefault = false
+            });
 
             return View(configs);
         }

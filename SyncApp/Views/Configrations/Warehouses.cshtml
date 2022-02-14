@@ -1,0 +1,60 @@
+﻿@model SyncApp.ViewModel.WarehouseModel
+
+@{
+    ViewData["Title"] = "Warehouses";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width" />
+    <title>Warehouses</title>
+
+    <script>
+        $(document).on('click', 'input[type="checkbox"]', function () {
+            $('input[type="checkbox"]').not(this).prop('checked', false);
+        });
+    </script>
+</head>
+<body>
+    <h4>Warehouses</h4>
+    <hr />
+    <form>
+        <div class="container">
+            <div class="row">
+                <div class="form-group col-sm-3">
+                    <label class="control-label">Warehouse Name</label>
+                </div>
+                <div class="form-group col-sm-3">
+                    <label class="control-label">Warehouse Id</label>
+                </div>
+                <div class="form-group col-sm-3">
+                    <label class="control-label">Warehouse Code</label>
+                </div>
+                <div class="form-group col-sm-3">
+                    <label class="control-label">Is Default</label>
+                </div>
+            </div>
+            @for (int i = 0; i < Model.Warehouses.Count; i++)
+            {
+                <div class="row">
+                    <input type="hidden" asp-for="@Model.Warehouses[i].Id" />
+                    <div class="form-group col-sm-3">
+                        <label asp-for="@Model.Warehouses[i].WarehouseName" class="control-label">@Model.Warehouses[i].WarehouseName</label>
+                    </div>
+                    <div class="form-group col-sm-3">
+                        <label asp-for="@Model.Warehouses[i].WarehouseId" class="control-label">@Model.Warehouses[i].WarehouseId</label>
+                    </div>
+                    <div class="form-group col-sm-3">
+                        <input asp-for="@Model.Warehouses[i].WarehouseCode" class="control-label" />
+                    </div>
+                    <div class="form-group col-sm-3">
+                        <input type="checkbox" id="isDefault" checked="@Model.Warehouses[i].IsDefault" value="@Model.Warehouses[i].IsDefault" />
+                    </div>
+                </div>
+            }
+        </div>
+    </form>
+</body>
+</html>
