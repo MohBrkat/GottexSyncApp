@@ -346,32 +346,34 @@ namespace SyncApp.Logic
 
             lock (reciptsFileLock)
             {
-                if (!isSuperPharmOrder)
-                {
-                    file.WriteLine(
-                    "0" +  // spaces to fit indexes
-                    " " + CustomerCodeWithLeadingSpaces +
-                    " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                    " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                    " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
-                    " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
-                }
-                else
-                {
-                    file.WriteLine(
-                    "0" +  // spaces to fit indexes
-                    " " + SuperPharmCustomerCodeWithLeadingSpaces +
-                    " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
-                    " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                    " " + SuperPharmReceiptBranchCodeWithLeadingspaces + "".InsertLeadingSpaces(18) +
-                    " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
-                }
-
-
                 if (transactionsModel != null)
                 {
                     if (transactionsModel.ReceiptTransactions != null)
                     {
+                        if (transactionsModel.ReceiptTransactions.Count() > 0)
+                        {
+                            if (!isSuperPharmOrder)
+                            {
+                                file.WriteLine(
+                                "0" +  // spaces to fit indexes
+                                " " + CustomerCodeWithLeadingSpaces +
+                                " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                                " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
+                                " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                                " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+                            }
+                            else
+                            {
+                                file.WriteLine(
+                                "0" +  // spaces to fit indexes
+                                " " + SuperPharmCustomerCodeWithLeadingSpaces +
+                                " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
+                                " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
+                                " " + SuperPharmReceiptBranchCodeWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                                " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
+                            }
+                        }
+
                         foreach (var transaction in transactionsModel.ReceiptTransactions)
                         {
                             int paymentMeanCode = 0;
@@ -393,7 +395,7 @@ namespace SyncApp.Logic
                                         paymentMeanCode = SuperPharmPaymentCode;
                                     }
 
-                                    amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
+                                    //amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
                                 }
                                 catch (Exception ex)
                                 {
@@ -483,7 +485,7 @@ namespace SyncApp.Logic
                 if (order.RefundKind != "no_refund")
                 {
                     var payplusRefundTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() == "refund" &&
-                                                    Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
+                                                    Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo && (string.IsNullOrEmpty(transaction.transaction_uid) || t.transaction?.transaction_uid == transaction.transaction_uid))?.transaction;
 
                     if (payplusRefundTransaction != null)
                     {
@@ -491,7 +493,7 @@ namespace SyncApp.Logic
                     }
                     else
                     {
-                        var refundTransaction = order.Transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
+                        var refundTransaction = order.Transactions?.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
                                                 && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
 
                         amount = -1 * (refundTransaction?.Amount ?? 0m);
@@ -500,14 +502,14 @@ namespace SyncApp.Logic
                 else
                 {
                     var payPluschargeTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() != "refund" &&
-                                                Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo)?.transaction;
+                                                Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo && (string.IsNullOrEmpty(transaction.transaction_uid) || t.transaction?.transaction_uid == transaction.transaction_uid))?.transaction;
                     if (payPluschargeTransaction != null)
                     {
                         amount = payPluschargeTransaction?.amount ?? 0m;
                     }
                     else
                     {
-                        var chargeTransaction = order.Transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success"
+                        var chargeTransaction = order.Transactions?.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success"
                                                 && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
 
                         amount = chargeTransaction?.Amount ?? 0m;
@@ -566,9 +568,9 @@ namespace SyncApp.Logic
             var service = new TransactionService(StoreUrl, ApiSecret);
             var serviceTransactions = await service.ListAsync((long)order.Id);
 
-            var transactions = serviceTransactions;
+            var transactions = order.Transactions?.Count() > 0 ? order.Transactions : serviceTransactions;
 
-            var originalTransaction = transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success");
+            var originalTransaction = serviceTransactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success");
 
             if (order.RefundKind == "no_refund")
             {
