@@ -34,6 +34,21 @@ namespace SyncApp.Logic
                 return _context.Configrations.First();
             }
         }
+        private WarehouseLogic warehouseLogic
+        {
+            get
+            {
+                return new WarehouseLogic(_context);
+            }
+        }
+
+        private string DefaultWarehouseCode
+        {
+            get
+            {
+                return new WarehouseLogic(_context).GetDefaultWarehouseCode();
+            }
+        }
 
         #region prop
         private string Host
@@ -310,10 +325,14 @@ namespace SyncApp.Logic
             return FileName;
         }
 
-        private static void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order)
+        private void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order)
         {
             var discountZero = 0;
             var shipRefOrder = order;
+
+            //Get order location
+            string warehouseCode = GetWarehouseCodeByOrderLocationId(order.LocationId);
+
             foreach (var orderItem in order.LineItems)
             {
                 if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
@@ -350,7 +369,9 @@ namespace SyncApp.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
 
                 if (order.FulfillmentStatus == null && order.FinancialStatus == "paid" && order.RefundKind == "no_refund" && order.Refunds.Any())
@@ -369,7 +390,9 @@ namespace SyncApp.Logic
                         "\t" + "\t" + "\t" +
                         order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                         + "\t" +
-                        order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                        order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                        + "\t" +
+                        warehouseCode);
                     }
                 }
             }
@@ -401,7 +424,9 @@ namespace SyncApp.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
             }
 
@@ -423,9 +448,23 @@ namespace SyncApp.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
             }
+        }
+
+        private string GetWarehouseCodeByOrderLocationId(long? locationId)
+        {
+            var warehouseCode = warehouseLogic.GetWarehouse(locationId ?? 0)?.WarehouseCode;
+
+            if (string.IsNullOrWhiteSpace(warehouseCode))
+            {
+                warehouseCode = DefaultWarehouseCode;
+            }
+
+            return warehouseCode;
         }
     }
 }

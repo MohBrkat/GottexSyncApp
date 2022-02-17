@@ -20,7 +20,7 @@
 <body>
     <h4>Warehouses</h4>
     <hr />
-    <form>
+    <form action="Warehouses" method="post">
         <div class="container">
             <div class="row">
                 <div class="form-group col-sm-3">
@@ -36,25 +36,32 @@
                     <label class="control-label"><b>Set As Default</b></label>
                 </div>
             </div>
-            @for (int i = 0; i < Model.Warehouses.Count; i++)
+            @for (int i = 0; i < Model.WarehousesList.Count; i++)
             {
                 <div class="row">
-                    <input type="hidden" asp-for="@Model.Warehouses[i].Id" />
+                    <input type="hidden" asp-for="WarehousesList[i].Id" />
                     <div class="form-group col-sm-3">
-                        <label asp-for="@Model.Warehouses[i].WarehouseName" class="control-label">@Model.Warehouses[i].WarehouseName</label>
+                        <label asp-for="WarehousesList[i].WarehouseName" class="control-label">@Model.WarehousesList[i].WarehouseName</label>
+                        <input type="hidden" asp-for="WarehousesList[i].WarehouseName" value="@Model.WarehousesList[i].WarehouseName" id="warehouseName" />
                     </div>
                     <div class="form-group col-sm-3">
-                        <label asp-for="@Model.Warehouses[i].WarehouseId" class="control-label">@Model.Warehouses[i].WarehouseId</label>
+                        <label asp-for="WarehousesList[i].WarehouseId" class="control-label">@Model.WarehousesList[i].WarehouseId</label>
+                        <input type="hidden" asp-for="WarehousesList[i].WarehouseId" value="@Model.WarehousesList[i].WarehouseId" id="warehouseId" />
                     </div>
                     <div class="form-group col-sm-3">
-                        <input asp-for="@Model.Warehouses[i].WarehouseCode" class="control-label" />
+                        <input asp-for="WarehousesList[i].WarehouseCode" class="control-label" />
                     </div>
                     <div class="form-group col-sm-3">
-                        <input type="checkbox" id="isDefault" checked="@Model.Warehouses[i].IsDefault" value="@Model.Warehouses[i].IsDefault" />
+                        @Html.CheckBoxFor(m => Model.WarehousesList[i].IsDefault)
                     </div>
                 </div>
             }
         </div>
+
+        <div class="form-group col-sm-6">
+            <input type="submit" value="Save" class="btn btn-primary" />
+        </div>
+
     </form>
 </body>
 </html>

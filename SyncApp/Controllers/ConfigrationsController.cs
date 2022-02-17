@@ -18,10 +18,12 @@ namespace SyncApp.Controllers
     public class ConfigrationsController : Controller
     {
         private readonly ShopifyAppContext _context;
+        private readonly WarehouseLogic _warehouseLogic;
 
         public ConfigrationsController(ShopifyAppContext context)
         {
             _context = context;
+            _warehouseLogic = new WarehouseLogic(context);
         }
 
         #region fields
@@ -119,9 +121,9 @@ namespace SyncApp.Controllers
 
         public async Task<IActionResult> Warehouses()
         {
-            WarehouseModel configs = new WarehouseModel
+            WarehouseModel warehouseModel = new WarehouseModel
             {
-                Warehouses = new List<Warehouse>()
+                WarehousesList = new List<Warehouses>()
 
             };
 
@@ -130,48 +132,60 @@ namespace SyncApp.Controllers
 
             foreach (var loc in shopifyLocations)
             {
-                Warehouse warehouse = new Warehouse
+                var warehouseDB = _warehouseLogic.GetWarehouse(loc.Id ?? 0);
+                Warehouses warehouse = new Warehouses
                 {
-                    Id = 1,
-                    WarehouseId = loc.Id.ToString(),
+                    Id = warehouseDB?.Id ?? 0,
+                    WarehouseId = loc.Id,
                     WarehouseName = loc.Name,
-                    WarehouseCode = "ON01",
-                    IsDefault = true
+                    WarehouseCode = warehouseDB?.WarehouseCode,
+                    IsDefault = warehouseDB?.IsDefault ?? false
                 };
 
-                configs.Warehouses.Add(warehouse);
+                warehouseModel.WarehousesList.Add(warehouse);
             }
 
-            configs.Warehouses.Add(new Warehouse
+            return View(warehouseModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Warehouses(WarehouseModel warehouse)
+        {
+            if (ModelState.IsValid)
             {
-                Id = 2,
-                WarehouseId = "ttt",
-                WarehouseName = "test",
-                WarehouseCode = "test",
-                IsDefault = false
-            });
+                try
+                {
+                    foreach (var whouse in warehouse.WarehousesList)
+                    {
+                        var warehouseDB = _warehouseLogic.GetWarehouse(whouse.WarehouseId ?? 0);
+                        if (warehouseDB != null)
+                        {
+                            warehouseDB.WarehouseCode = whouse.WarehouseCode;
+                            warehouseDB.WarehouseName = whouse.WarehouseName;
+                            warehouseDB.IsDefault = whouse.IsDefault;
+                            _context.Update(warehouseDB);
+                        }
+                        else
+                        {
+                            _context.Add(whouse);
+                        }
+                    }
 
-
-            configs.Warehouses.Add(new Warehouse
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    throw;
+                }
+            }
+            else
             {
-                Id = 2,
-                WarehouseId = "ttt",
-                WarehouseName = "test",
-                WarehouseCode = "test",
-                IsDefault = false
-            });
+                var message = string.Join(" | ", ModelState.Values
+                                            .SelectMany(v => v.Errors)
+                                            .Select(e => e.ErrorMessage));
+            }
 
-
-            configs.Warehouses.Add(new Warehouse
-            {
-                Id = 2,
-                WarehouseId = "ttt",
-                WarehouseName = "test",
-                WarehouseCode = "test",
-                IsDefault = false
-            });
-
-            return View(configs);
+            return View(warehouse);
         }
     }
 }

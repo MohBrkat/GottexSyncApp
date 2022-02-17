@@ -1,17 +1,11 @@
-﻿using SyncApp.Models.EF;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SyncApp.ViewModel
+namespace SyncApp.Models.EF
 {
-    public class WarehouseModel
-    {
-        public List<Warehouses> WarehousesList { get; set; }
-    }
-
-    public class Warehouse
+    public class Warehouses
     {
         public int Id { get; set; }
         public long? WarehouseId { get; set; }
