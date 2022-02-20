@@ -395,7 +395,7 @@ namespace SyncApp.Logic
                                         paymentMeanCode = SuperPharmPaymentCode;
                                     }
 
-                                    amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
+                                    //amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
                                 }
                                 catch (Exception ex)
                                 {
