@@ -52,6 +52,10 @@
                         <label asp-for="Configurations.SiteName" class="control-label">Site Name</label>
                         <input asp-for="Configurations.SiteName" class="form-control" />
                     </div>
+                    <div class="form-group col-sm-6">
+                        <label asp-for="Configurations.RefundOrdersHistoryDays" class="control-label">Refund History Days</label>
+                        <input asp-for="Configurations.RefundOrdersHistoryDays" min="0" class="form-control" />
+                    </div>
                 </div>
             </div>
         </section>

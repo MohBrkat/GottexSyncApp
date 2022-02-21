@@ -52,6 +52,6 @@ namespace SyncApp.Models.EF
         public string SuperPharmReceiptBranchCode { get; set; }
         public string SuperPharmSalesBranchCode { get; set; }
         public int? SuperPharmPaymentCode { get; set; }
-
+        public int? RefundOrdersHistoryDays { get; set; }
     }
 }
