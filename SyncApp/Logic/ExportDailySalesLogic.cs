@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using ShopifyApp2;
 using ShopifySharp;
+using ShopifySharp.Filters;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
@@ -332,9 +333,22 @@ namespace SyncApp.Logic
 
             //Get order location
             string warehouseCode = GetWarehouseCodeByOrderLocationId(order.LocationId);
+            
+            //FOR TESTING INVENTORY STUFF
+            var ProductServices = new ProductService(StoreUrl, ApiSecret);
+            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
             foreach (var orderItem in order.LineItems)
             {
+                var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
+                var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == orderItem.SKU);
+
+                var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+
+                var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
+                var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+
                 if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
                     continue;
 
