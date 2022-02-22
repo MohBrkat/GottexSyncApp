@@ -103,25 +103,25 @@ namespace SyncApp.Logic
             RefundedOrders refunded = new RefundedOrders();
             try
             {
-                lsOfOrders = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                lsOfOrders = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetReportOrders(dateToRetriveFrom, dateToRetriveTo);
             }
 
             try
             {
                 await Task.Delay(1000);
-                refunded = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
+                refunded = new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                refunded = new GetShopifyOrders(StoreUrl, ApiSecret).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
+                refunded = new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetReportRefundedOrders(dateToRetriveFrom, dateToRetriveTo);
             }
 
             if (refunded?.Orders?.Count > 0)

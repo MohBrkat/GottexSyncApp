@@ -1,6 +1,7 @@
 ﻿using ShopifySharp;
 using ShopifySharp.Filters;
 using SyncApp.Models;
+using SyncApp.Models.EF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +13,29 @@ namespace SyncApp.Logic
     {
         private string _storeUrl;
         private string _apiSecret;
-        public GetShopifyOrders(string storeUrl, string apiSecret)
+        private readonly ShopifyAppContext _context;
+
+        public GetShopifyOrders(string storeUrl, string apiSecret, ShopifyAppContext context)
         {
             _storeUrl = storeUrl;
             _apiSecret = apiSecret;
+            _context = context;
+        }
+
+        private Configrations Config
+        {
+            get
+            {
+                return _context.Configrations.First();
+            }
+        }
+
+        private int RefundOrdersHistoryDays
+        {
+            get
+            {
+                return Config.RefundOrdersHistoryDays.GetValueOrDefault();
+            }
         }
 
         public async Task<List<Order>> GetNotExportedOrdersAsync(DateTime dateFrom = default, DateTime dateTo = default)
@@ -134,7 +154,7 @@ namespace SyncApp.Logic
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
-            List<Order> orders = await GetRefundedOrdersByFiltersAsync();
+            List<Order> orders = await GetRefundedOrdersByFiltersAsync(dateFrom, dateTo);
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             var ordersToReturn = new List<Order>();
@@ -219,22 +239,25 @@ namespace SyncApp.Logic
 
             return refundedOrders;
         }
-        public async Task<List<Order>> GetRefundedOrdersByFiltersAsync()
+        public async Task<List<Order>> GetRefundedOrdersByFiltersAsync(DateTime dateFrom, DateTime dateTo)
         {
+            var refundOrderDays = RefundOrdersHistoryDays;
             List<Order> Orders = new List<Order>();
 
             var refundedFilter = new OrderListFilter
             {
                 FinancialStatus = "refunded",
                 Status = "any",
-                FulfillmentStatus = "any"
+                FulfillmentStatus = "any",
+                CreatedAtMin = dateFrom.AddDays(-refundOrderDays).AbsoluteStart()
             };
 
             var partiallyRefundedFilter = new OrderListFilter
             {
                 FinancialStatus = "partially_refunded",
                 Status = "any",
-                FulfillmentStatus = "any"
+                FulfillmentStatus = "any",
+                CreatedAtMin = dateFrom.AddDays(-refundOrderDays).AbsoluteStart()
             };
 
             Orders.AddRange(await GetOrderByFiltersAsync(refundedFilter));
