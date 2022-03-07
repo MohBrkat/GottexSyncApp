@@ -33,5 +33,11 @@ namespace SyncApp.Logic
 
             return string.Empty;
         }
+
+        public long? GetLocationIdByCode(string warehouseCode)
+        {
+            var warehouse = _context.Warehouses.FirstOrDefault(w => w.WarehouseCode == warehouseCode);
+            return warehouse?.WarehouseId;
+        }
     }
 }

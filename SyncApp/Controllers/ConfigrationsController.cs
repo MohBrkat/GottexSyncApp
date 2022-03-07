@@ -151,6 +151,7 @@ namespace SyncApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Warehouses(WarehouseModel warehouse)
         {
+            string message = string.Empty;
             if (ModelState.IsValid)
             {
                 try
@@ -172,18 +173,22 @@ namespace SyncApp.Controllers
                     }
 
                     await _context.SaveChangesAsync();
+
+                    message = $"Changes Saved Successfully";
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)
                 {
-                    throw;
+                    throw ex;
                 }
             }
             else
             {
-                var message = string.Join(" | ", ModelState.Values
+                message = string.Join(" | ", ModelState.Values
                                             .SelectMany(v => v.Errors)
                                             .Select(e => e.ErrorMessage));
             }
+
+            warehouse.Message = message;
 
             return View(warehouse);
         }

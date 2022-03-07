@@ -9,6 +9,7 @@ namespace SyncApp.ViewModel
     public class WarehouseModel
     {
         public List<Warehouses> WarehousesList { get; set; }
+        public string Message { get; set; }
     }
 
     public class Warehouse

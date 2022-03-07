@@ -147,6 +147,8 @@ a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
                             Taxable = itemRefund.LineItem.Taxable,
                             Id = itemRefund.LineItem.Id,
                             DiscountAllocations = itemRefund.LineItem.DiscountAllocations,
+                            ProductId = itemRefund.LineItem.ProductId,
+                            LocationId = itemRefund.LocationId
                         });
                         foreach (var discount in lsOfLineItems.Last().DiscountAllocations)
                         {

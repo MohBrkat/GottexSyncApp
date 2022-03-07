@@ -47,7 +47,19 @@ namespace SyncApp.Logic
         {
             get
             {
-                return new WarehouseLogic(_context).GetDefaultWarehouseCode();
+                var defaultWarehouse = new WarehouseLogic(_context).GetDefaultWarehouseCode();
+                if (string.IsNullOrEmpty(defaultWarehouse))
+                    defaultWarehouse = Config.WareHouseCode;
+
+                return defaultWarehouse;
+            }
+        }
+
+        private string NoWarehouseCode
+        {
+            get
+            {
+                return $"NOWHCODE";
             }
         }
 
@@ -331,23 +343,35 @@ namespace SyncApp.Logic
             var discountZero = 0;
             var shipRefOrder = order;
 
-            //Get order location
-            string warehouseCode = GetWarehouseCodeByOrderLocationId(order.LocationId);
-            
+            string warehouseCode = DefaultWarehouseCode;
             //FOR TESTING INVENTORY STUFF
             var ProductServices = new ProductService(StoreUrl, ApiSecret);
             var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
             foreach (var orderItem in order.LineItems)
             {
-                var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
-                var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == orderItem.SKU);
+                //Product was refunded to another warehouse
+                if (orderItem.LocationId.HasValue)
+                {
+                    warehouseCode = GetWarehouseCodeByLocationId(orderItem.LocationId);
+                }
+                else
+                {
+                    //product is still in the same warehouse
+                    if (orderItem.ProductId.HasValue)
+                    {
+                        var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
+                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == orderItem.SKU);
 
-                var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-                var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
-                var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
-                var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                        var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
+                        var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+
+                        warehouseCode = GetWarehouseCodeByLocationId(LocationId);
+                    }
+                }
 
                 if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
                     continue;
@@ -469,13 +493,18 @@ namespace SyncApp.Logic
             }
         }
 
-        private string GetWarehouseCodeByOrderLocationId(long? locationId)
+        private string GetWarehouseCodeByLocationId(long? locationId)
         {
-            var warehouseCode = warehouseLogic.GetWarehouse(locationId ?? 0)?.WarehouseCode;
+            string warehouseCode = DefaultWarehouseCode;
 
-            if (string.IsNullOrWhiteSpace(warehouseCode))
+            if (locationId != null && locationId != 0)
             {
-                warehouseCode = DefaultWarehouseCode;
+                warehouseCode = warehouseLogic.GetWarehouse(locationId.Value)?.WarehouseCode;
+
+                if (string.IsNullOrWhiteSpace(warehouseCode))
+                {
+                    warehouseCode = NoWarehouseCode;
+                }
             }
 
             return warehouseCode;

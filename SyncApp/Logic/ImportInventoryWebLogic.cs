@@ -174,6 +174,7 @@ namespace SyncApp.Logic
                                     string Sku = splittedRow[1];
                                     string Method = splittedRow[2];
                                     string Quantity = splittedRow[3];
+                                    string warehouse = splittedRow[4];
 
                                     var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
                                     var ProductObj = Products.Items.FirstOrDefault();
@@ -240,68 +241,6 @@ namespace SyncApp.Logic
             return info;
         }
 
-        private async Task<int> ImportValidInvenotryUpdatesFromCSVAsync(IFormFile File)
-        {
-            try
-            {
-                using (var reader = new StreamReader(File.OpenReadStream()))
-                {
-                    var FileContent = reader.ReadToEnd();
-                    var Rows = FileContent.Split(Environment.NewLine).SkipLast(1).ToArray(); // skip the header
-
-                    var ProductServices = new ProductService(StoreUrl, ApiSecret);
-                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
-                    Rows = Rows.Skip(1).ToArray();// skip headers
-                    int rowIndex = 2; // first row in csv sheet is 2 (after header)
-                    foreach (var row in Rows)
-                    {
-                        var splittedRow = row.Split(',');
-                        string Handle = splittedRow[0];
-                        string Sku = splittedRow[1];
-                        string Method = splittedRow[2];
-                        string Quantity = splittedRow[3];
-
-                        var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
-                        var ProductObj = Products.Items.FirstOrDefault();
-
-                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
-
-                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-
-                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
-
-                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
-
-                        var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
-
-                        if (Method.ToLower().Trim() == "set")
-                        {
-                            var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
-                            LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
-                        }
-                        else if (Method.ToLower().Trim() == "in")
-                        {
-                            var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
-                            LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
-                        }
-                        else if (Method.ToLower().Trim() == "out")
-                        {
-                            var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
-                            LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
-                        }
-                        Thread.Sleep(200);
-                        rowIndex++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LsOfManualErrors.Add("Error While Importing The File : " + ex.Message);
-                _log.Error("Error While Importing The File : " + ex.Message);
-            }
-            return LsOfManualErrors.Count;
-        }
-
         private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info, int retryCount = 0)
         {
             List<string> RowsWithoutHeader = info.fileRows;
@@ -326,16 +265,29 @@ namespace SyncApp.Logic
                     string Sku = splittedRow[1];
                     string Method = splittedRow[2];
                     string Quantity = splittedRow[3];
+                    string warehouse = splittedRow[4];
 
-                    var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
-                    var ProductObj = Products.Items.FirstOrDefault();
-                    var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
+                    long? InventoryItemId = 0;
+                    var LocationId = new WarehouseLogic(_context).GetLocationIdByCode(warehouse);
 
-                    var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-                    var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+                    if (LocationId != null && LocationId != 0)
+                    {
+                        var locationIds = new List<long>() { LocationId.GetValueOrDefault() };
+                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { LocationIds = locationIds });
+                        InventoryItemId = LocationQuery.Items.FirstOrDefault().InventoryItemId;
+                    }
+                    else
+                    {
+                        var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
+                        var ProductObj = Products.Items.FirstOrDefault();
+                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
-                    var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
-                    var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+
+                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
+                        LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                    }
 
                     if (Method.ToLower().Trim() == "set")
                     {

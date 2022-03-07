@@ -265,6 +265,7 @@ namespace SyncApp.Logic
                                     string Sku = splittedRow[1];
                                     string Method = splittedRow[2];
                                     string Quantity = splittedRow[3];
+                                    string warehouse = splittedRow[4];
 
                                     var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
                                     var ProductObj = Products.Items.FirstOrDefault();
@@ -382,16 +383,29 @@ namespace SyncApp.Logic
                     string Sku = splittedRow[1];
                     string Method = splittedRow[2];
                     string Quantity = splittedRow[3];
+                    string warehouse = splittedRow[4];
 
-                    var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
-                    var ProductObj = Products.Items.FirstOrDefault();
-                    var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
+                    long? InventoryItemId = 0;
+                    var LocationId = new WarehouseLogic(_context).GetLocationIdByCode(warehouse);
 
-                    var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-                    var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+                    if (LocationId != null && LocationId != 0)
+                    {
+                        var locationIds = new List<long>() { LocationId.GetValueOrDefault() };
+                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { LocationIds = locationIds });
+                        InventoryItemId = LocationQuery.Items.FirstOrDefault().InventoryItemId;
+                    }
+                    else
+                    {
+                        var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
+                        var ProductObj = Products.Items.FirstOrDefault();
+                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
-                    var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
-                    var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+
+                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
+                        LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                    }
 
                     if (Method.ToLower().Trim() == "set")
                     {
