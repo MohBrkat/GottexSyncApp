@@ -53,6 +53,8 @@ namespace SyncApp.Helpers
 
             var response = Execute<T>(request);
 
+            _errorLogger.Info($"PayPlusResponse for body: {body} is {response.Content}");
+
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 return JsonConvert.DeserializeObject<T>(response.Content);
