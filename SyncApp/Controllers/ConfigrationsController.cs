@@ -124,11 +124,12 @@ namespace SyncApp.Controllers
             WarehouseModel warehouseModel = new WarehouseModel
             {
                 WarehousesList = new List<Warehouses>()
-
             };
 
             var locationService = new LocationService(StoreUrl, ApiSecret);
             var shopifyLocations = await locationService.ListAsync();
+
+            DeleteNotExistingLocations(shopifyLocations);
 
             foreach (var loc in shopifyLocations)
             {
@@ -146,6 +147,15 @@ namespace SyncApp.Controllers
             }
 
             return View(warehouseModel);
+        }
+
+        private void DeleteNotExistingLocations(IEnumerable<Location> shopifyLocations)
+        {
+            var locationsIds = shopifyLocations.Select(a => a.Id).ToList();
+            var DBLocations = _warehouseLogic.GetWarehouses();
+
+            var dataToDelete = DBLocations.Where(a => !locationsIds.Contains(a.WarehouseId)).ToList();
+            _warehouseLogic.DeleteWarehouses(dataToDelete);
         }
 
         [HttpPost]

@@ -25,6 +25,11 @@ namespace SyncApp.Logic
             return null;
         }
 
+        public List<Warehouses> GetWarehouses()
+        {
+            return _context.Warehouses.ToList();
+        }
+
         public string GetDefaultWarehouseCode()
         {
             var warehouse = _context.Warehouses.FirstOrDefault(w => w.IsDefault);
@@ -38,6 +43,12 @@ namespace SyncApp.Logic
         {
             var warehouse = _context.Warehouses.FirstOrDefault(w => w.WarehouseCode == warehouseCode);
             return warehouse?.WarehouseId;
+        }
+
+        public void DeleteWarehouses(List<Warehouses> dataToDelete)
+        {
+            _context.Warehouses.RemoveRange(dataToDelete);
+            _context.SaveChanges();
         }
     }
 }
