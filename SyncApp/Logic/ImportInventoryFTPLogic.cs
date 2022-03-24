@@ -388,18 +388,17 @@ namespace SyncApp.Logic
                     long? InventoryItemId = 0;
                     var LocationId = new WarehouseLogic(_context).GetLocationIdByCode(warehouse);
 
+                    var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
+                    var ProductObj = Products.Items.FirstOrDefault();
+                    var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
+
                     if (LocationId != null && LocationId != 0)
                     {
-                        var locationIds = new List<long>() { LocationId.GetValueOrDefault() };
-                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { LocationIds = locationIds });
-                        InventoryItemId = LocationQuery.Items.FirstOrDefault().InventoryItemId;
+                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
                     }
                     else
                     {
-                        var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
-                        var ProductObj = Products.Items.FirstOrDefault();
-                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
-
                         var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
                         InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
