@@ -180,5 +180,10 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("duties")]
         public IEnumerable<LineItemDuty> Duties { get; set; }
+
+        /// <summary>
+        /// Location Id when refunded
+        /// </summary>
+        public long? LocationId { get; set; }
     }
 }

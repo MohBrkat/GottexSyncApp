@@ -1,0 +1,103 @@
+﻿@model SyncApp.ViewModel.WarehouseModel
+
+@{
+    ViewData["Title"] = "Warehouses";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width" />
+    <title>Warehouses</title>
+
+    <script>
+        $(document).on('click', 'input[type="checkbox"]', function () {
+            $('input[type="checkbox"]').not(this).prop('checked', false);
+        });
+    </script>
+
+    <style>
+        .submit-button-container {
+            max-width: 100%;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .submit-button {
+            width: 150px;
+            height: 50px;
+            font-size: 20px;
+        }
+
+        .alert-success,
+        .alert-danger {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h4>Warehouses</h4>
+    <hr />
+    <form action="Warehouses" method="post">
+        <div class="container">
+            <div class="row">
+                <div class="form-group col-sm-3">
+                    <label class="control-label"><b>Warehouse Name</b></label>
+                </div>
+                <div class="form-group col-sm-3">
+                    <label class="control-label"><b>Warehouse Id</b></label>
+                </div>
+                <div class="form-group col-sm-3">
+                    <label class="control-label"><b>Warehouse Code</b></label>
+                </div>
+                <div class="form-group col-sm-3">
+                    <label class="control-label"><b>Set As Default</b></label>
+                </div>
+            </div>
+            @for (int i = 0; i < Model.WarehousesList.Count; i++)
+            {
+                <div class="row">
+                    <input type="hidden" asp-for="WarehousesList[i].Id" />
+                    <div class="form-group col-sm-3">
+                        <label asp-for="WarehousesList[i].WarehouseName" class="control-label">@Model.WarehousesList[i].WarehouseName</label>
+                        <input type="hidden" asp-for="WarehousesList[i].WarehouseName" value="@Model.WarehousesList[i].WarehouseName" id="warehouseName" />
+                    </div>
+                    <div class="form-group col-sm-3">
+                        <label asp-for="WarehousesList[i].WarehouseId" class="control-label">@Model.WarehousesList[i].WarehouseId</label>
+                        <input type="hidden" asp-for="WarehousesList[i].WarehouseId" value="@Model.WarehousesList[i].WarehouseId" id="warehouseId" />
+                    </div>
+                    <div class="form-group col-sm-3">
+                        <input asp-for="WarehousesList[i].WarehouseCode" class="control-label" />
+                    </div>
+                    <div class="form-group col-sm-3">
+                        @Html.CheckBoxFor(m => Model.WarehousesList[i].IsDefault)
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            @if (Model.Message.Contains("Changes Saved Successfully"))
+            {
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong>@Model.Message</strong>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger" style="margin-top:30px">
+                    <strong>@Model.Message</strong>
+                </div>
+            }
+        }
+
+
+        <div class="submit-button-container form-group col-sm-6">
+            <input type="submit" value="Save" class="submit-button btn btn-primary" />
+        </div>
+
+    </form>
+</body>
+</html>

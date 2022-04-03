@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using ShopifyApp2;
 using ShopifySharp;
+using ShopifySharp.Filters;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
@@ -32,6 +33,33 @@ namespace SyncApp.Logic
             get
             {
                 return _context.Configrations.First();
+            }
+        }
+        private WarehouseLogic warehouseLogic
+        {
+            get
+            {
+                return new WarehouseLogic(_context);
+            }
+        }
+
+        private string DefaultWarehouseCode
+        {
+            get
+            {
+                var defaultWarehouse = new WarehouseLogic(_context).GetDefaultWarehouseCode();
+                if (string.IsNullOrEmpty(defaultWarehouse))
+                    defaultWarehouse = Config.WareHouseCode;
+
+                return defaultWarehouse;
+            }
+        }
+
+        private string NoWarehouseCode
+        {
+            get
+            {
+                return $"NOWHCODE";
             }
         }
 
@@ -274,7 +302,7 @@ namespace SyncApp.Logic
 
                         foreach (var order in superPharmOrders)
                         {
-                            WriteOrderTransactions(file, taxPercentage, order);
+                            WriteOrderTransactions(file, taxPercentage, order, true);
                         }
                     }
                 }
@@ -310,12 +338,41 @@ namespace SyncApp.Logic
             return FileName;
         }
 
-        private static void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order)
+        private void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order, bool isSuperPharmOrder = false)
         {
             var discountZero = 0;
             var shipRefOrder = order;
+
+            string warehouseCode = DefaultWarehouseCode;
+            //FOR TESTING INVENTORY STUFF
+            var ProductServices = new ProductService(StoreUrl, ApiSecret);
+            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
+
             foreach (var orderItem in order.LineItems)
             {
+                //Product was refunded to another warehouse
+                if (orderItem.LocationId.HasValue)
+                {
+                    warehouseCode = GetWarehouseCodeByLocationId(orderItem.LocationId);
+                }
+                else
+                {
+                    //product is still in the same warehouse
+                    if (orderItem.ProductId.HasValue)
+                    {
+                        var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
+                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == orderItem.SKU);
+
+                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+
+                        var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
+                        var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+
+                        warehouseCode = GetWarehouseCodeByLocationId(LocationId);
+                    }
+                }
+
                 if (orderItem.GiftCard.GetValueOrDefault() || (orderItem.FulfillmentService == "gift_card" && orderItem.FulfillmentStatus == "fulfilled"))
                     continue;
 
@@ -350,7 +407,9 @@ namespace SyncApp.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
 
                 if (order.FulfillmentStatus == null && order.FinancialStatus == "paid" && order.RefundKind == "no_refund" && order.Refunds.Any())
@@ -369,7 +428,9 @@ namespace SyncApp.Logic
                         "\t" + "\t" + "\t" +
                         order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                         + "\t" +
-                        order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                        order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                        + "\t" +
+                        warehouseCode);
                     }
                 }
             }
@@ -389,11 +450,17 @@ namespace SyncApp.Logic
                     mQuant = "-1";
                 }
 
+                string partNumber = "921";
+                if (isSuperPharmOrder)
+                {
+                    partNumber = "922";
+                }
+
                 lock (salesFileLock)
                 {
                     file.WriteLine(
                     "1" + "\t" +
-                    "921".InsertLeadingSpaces(15) + "\t" +
+                    partNumber.InsertLeadingSpaces(15) + "\t" +
                     mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
                     shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                     "".InsertLeadingSpaces(4) + "\t" + // agent code
@@ -401,7 +468,9 @@ namespace SyncApp.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
             }
 
@@ -423,9 +492,28 @@ namespace SyncApp.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm"));
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
             }
+        }
+
+        private string GetWarehouseCodeByLocationId(long? locationId)
+        {
+            string warehouseCode = DefaultWarehouseCode;
+
+            if (locationId != null && locationId != 0)
+            {
+                warehouseCode = warehouseLogic.GetWarehouse(locationId.Value)?.WarehouseCode;
+
+                if (string.IsNullOrWhiteSpace(warehouseCode))
+                {
+                    warehouseCode = NoWarehouseCode;
+                }
+            }
+
+            return warehouseCode;
         }
     }
 }
