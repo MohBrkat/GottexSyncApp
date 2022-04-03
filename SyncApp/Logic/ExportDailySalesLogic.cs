@@ -302,7 +302,7 @@ namespace SyncApp.Logic
 
                         foreach (var order in superPharmOrders)
                         {
-                            WriteOrderTransactions(file, taxPercentage, order);
+                            WriteOrderTransactions(file, taxPercentage, order, true);
                         }
                     }
                 }
@@ -338,7 +338,7 @@ namespace SyncApp.Logic
             return FileName;
         }
 
-        private void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order)
+        private void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order, bool isSuperPharmOrder = false)
         {
             var discountZero = 0;
             var shipRefOrder = order;
@@ -450,11 +450,17 @@ namespace SyncApp.Logic
                     mQuant = "-1";
                 }
 
+                string partNumber = "921";
+                if (isSuperPharmOrder)
+                {
+                    partNumber = "922";
+                }
+
                 lock (salesFileLock)
                 {
                     file.WriteLine(
                     "1" + "\t" +
-                    "921".InsertLeadingSpaces(15) + "\t" +
+                    partNumber.InsertLeadingSpaces(15) + "\t" +
                     mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
                     shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                     "".InsertLeadingSpaces(4) + "\t" + // agent code
