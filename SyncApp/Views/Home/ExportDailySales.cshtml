@@ -1,4 +1,4 @@
-﻿@model string
+﻿@model List<SyncApp.ViewModel.CountryFiles>
 
 @{
     ViewData["Title"] = "Daily Sales";
@@ -14,16 +14,16 @@
         z-index: 9999;
     }
 
-    #pageloader img {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        transform: -webkit-translate(-50%, -50%);
-        transform: -moz-translate(-50%, -50%);
-        transform: -ms-translate(-50%, -50%);
-        color:darkred;
-    }
+        #pageloader img {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transform: -webkit-translate(-50%, -50%);
+            transform: -moz-translate(-50%, -50%);
+            transform: -ms-translate(-50%, -50%);
+            color: darkred;
+        }
 </style>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -57,7 +57,7 @@
         <strong>Invalid Date Period.</strong>
     </div>
     @{
-        if (Model == "N/A")
+        if (Model != null && Model.Count() == 0)
         {
             <div class="alert alert-danger" style="margin-top:30px">
                 <strong>No such orders to export. </strong>
@@ -65,11 +65,14 @@
 
         }
         else
-        if (Model.IsNotNullOrEmpty())
+        if (Model != null && Model.Count() > 0)
         {
-            <div class="alert alert-success" style="margin-top:30px">
-                <strong>Your file is ready. </strong> <a style="float:right" target="_blank" download href="@Url.Action("DownloadFile", "Home", new {fileToDownload = Model, subFolder = "Data/invoices" })">Click here to download your file</a>
-            </div>
+            @foreach (var file in Model)
+            {
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong>Your file for @file.Country is ready. </strong> <a style="float:right" target="_blank" download href="@Url.Action("DownloadFile", "Home", new {fileToDownload = file.FilePath, subFolder = "Data/invoices" })">Click here to download your file</a>
+                </div>
+            }
         }
 
     }

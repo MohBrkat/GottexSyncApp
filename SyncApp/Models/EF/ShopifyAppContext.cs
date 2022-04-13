@@ -29,6 +29,7 @@ namespace SyncApp.Models.EF
         public virtual DbSet<State> State { get; set; }
         public virtual DbSet<Users> Users { get; set; }
         public virtual DbSet<FilesImportStatus> FilesImportStatus { get; set; }
+        public virtual DbSet<Countries> Countries { get; set; }
 
         // Unable to generate entity type for table 'HangFire.Counter'. Please see the warning messages.
 

@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using SyncApp.Logic;
 using Log4NetLibrary;
 using Newtonsoft.Json;
+using SyncApp.Models;
 
 namespace ShopifyApp2.Controllers
 {
@@ -29,6 +30,7 @@ namespace ShopifyApp2.Controllers
         private ExportDailySalesLogic _exportDailySalesLogic;
         private ExportDailyReceiptsLogic _exportDailyReceiptsLogic;
         private ExportDailyReportsLogic _exportDailyReportsLogic;
+        private CountriesLogic _countriesLogic;
 
         public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
         {
@@ -39,6 +41,7 @@ namespace ShopifyApp2.Controllers
             _exportDailySalesLogic = new ExportDailySalesLogic(context, hostingEnvironment);
             _exportDailyReceiptsLogic = new ExportDailyReceiptsLogic(context, hostingEnvironment);
             _exportDailyReportsLogic = new ExportDailyReportsLogic(context);
+            _countriesLogic = new CountriesLogic(context);
         }
 
         private Configrations Config
@@ -46,6 +49,15 @@ namespace ShopifyApp2.Controllers
             get
             {
                 return _context.Configrations.First();
+            }
+        }
+
+        private string DefaultCountryName
+        {
+            get
+            {
+                var defaultCountryDB = _countriesLogic.GetDefaultCountry()?.CountryName;
+                return !string.IsNullOrEmpty(defaultCountryDB) ? defaultCountryDB : "France";
             }
         }
 
@@ -184,14 +196,38 @@ namespace ShopifyApp2.Controllers
         [HttpPost]
         public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
+            List<CountryFiles> files = new List<CountryFiles>();
+
             try
             {
-                List<Order> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
-                if (lsOfOrders.Count() > 0)
+                List<CountryOrders> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
+
+                var defaultOrders = new List<Order>();
+
+                foreach (var CountryOrders in lsOfOrders)
                 {
-                    string path = _exportDailySalesLogic.GenerateSalesFile(lsOfOrders, fromWeb);
-                    return View("~/Views/Home/ExportDailySales.cshtml", path);
+                    var country = CountryOrders.Country;
+                    var orders = CountryOrders.Orders;
+
+                    //if it doesn't have values add to the default country orders
+                    if (!_countriesLogic.CheckIfHasValues(country) && !CountryIsDefault(country))
+                    {
+                        defaultOrders.AddRange(orders);
+                        continue;
+                    }
+
+                    //add orders for a country with no details saved to the default one
+                    if (CountryIsDefault(country))
+                        orders.AddRange(defaultOrders);
+
+                    var file = _exportDailySalesLogic.GenerateSalesFile(country, orders, fromWeb);
+                    files.Add(new CountryFiles
+                    {
+                        Country = country,
+                        FilePath = file
+                    });
                 }
+                return View("~/Views/Home/ExportDailySales.cshtml", files);
             }
             catch (Exception ex)
             {
@@ -199,6 +235,11 @@ namespace ShopifyApp2.Controllers
             }
 
             return View("~/Views/Home/ExportDailySales.cshtml", "N/A");
+        }
+
+        private bool CountryIsDefault(string country)
+        {
+            return country.Trim().ToLower() == DefaultCountryName.Trim().ToLower();
         }
 
         #endregion

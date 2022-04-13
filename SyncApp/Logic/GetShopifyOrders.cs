@@ -176,7 +176,8 @@ namespace SyncApp.Logic
 
                         SubtotalPrice = order.SubtotalPrice,
                         FinancialStatus = order.FinancialStatus,
-                        ShippingLines = order.ShippingLines
+                        ShippingLines = order.ShippingLines,
+                        ShippingAddress = order.ShippingAddress
                     };
 
                     var refundLineItems = refund.RefundLineItems;
