@@ -244,7 +244,7 @@ namespace SyncApp.Logic
             {
                 foreach (var DayOrders in ordersGroupedByDate)
                 {
-                    decimal taxPercentage = countryDB?.CountryTax * 100 ?? TaxPercentage;
+                    decimal taxPercentage = countryDB?.CountryTax ?? TaxPercentage;
                     var InvoiceDate = DayOrders.OrdersDate;
                     decimal vatTax = taxPercentage + 0.0m;
 
