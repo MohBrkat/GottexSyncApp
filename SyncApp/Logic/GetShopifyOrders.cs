@@ -41,6 +41,13 @@ namespace SyncApp.Logic
         public async Task<List<Order>> GetNotExportedOrdersAsync(DateTime dateFrom = default, DateTime dateTo = default)
         {
             await Task.Delay(1000);
+
+            if (dateFrom == default && dateTo == default) //Yesterday option (Default)
+            {
+                dateFrom = DateTime.Now.AddDays(-1); // by default
+                dateTo = DateTime.Now.AddDays(-1);
+            }
+
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
@@ -63,20 +70,6 @@ namespace SyncApp.Logic
                     FinancialStatus = "any",
                     Status = "any",
                     FulfillmentStatus = "any",
-                    CreatedAtMax = dateTo.AbsoluteEnd()
-                };
-            }
-            else if (dateFrom == default && dateTo == default)
-            {
-                dateFrom = DateTime.Now.AddDays(-1);
-                dateTo = DateTime.Now.AddDays(-1);
-
-                filter = new OrderListFilter
-                {
-                    FinancialStatus = "any",
-                    Status = "any",
-                    FulfillmentStatus = "any",
-                    CreatedAtMin = dateFrom.AbsoluteStart(),
                     CreatedAtMax = dateTo.AbsoluteEnd()
                 };
             }
