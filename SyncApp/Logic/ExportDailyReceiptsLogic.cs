@@ -388,6 +388,7 @@ namespace SyncApp.Logic
                                         if (paymentInfo != null && paymentInfo.data != null)
                                         {
                                             paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                            amount = (decimal)paymentInfo.data.amount;
                                         }
                                     }
                                     else
@@ -395,7 +396,10 @@ namespace SyncApp.Logic
                                         paymentMeanCode = SuperPharmPaymentCode;
                                     }
 
-                                    //amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
+                                    if(amount == 0)
+                                    {
+                                        amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
