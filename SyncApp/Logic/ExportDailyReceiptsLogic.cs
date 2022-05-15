@@ -325,6 +325,7 @@ namespace SyncApp.Logic
 
             var InvoiceNumber = GetInvoiceNumber(order);
             var priceWithTaxes = order.TotalPrice;
+            decimal amount = order.TotalPrice ?? 0m;
 
             var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
 
@@ -334,7 +335,8 @@ namespace SyncApp.Logic
             {
                 foreach (var giftCardItem in giftCardItems)
                 {
-                    priceWithTaxes -= giftCardItem.Price;
+                    var giftCardQuantity = giftCardItem.FulfillableQuantity != null && giftCardItem.FulfillableQuantity != 0 ? giftCardItem.FulfillableQuantity : 1;
+                    priceWithTaxes -= (giftCardItem.Price * giftCardQuantity);
                 }
             }
 
@@ -342,6 +344,7 @@ namespace SyncApp.Logic
             if (order.RefundKind != "no_refund")
             {
                 priceWithTaxes *= -1;
+                amount *= -1;
             }
 
             lock (reciptsFileLock)
@@ -377,7 +380,6 @@ namespace SyncApp.Logic
                         foreach (var transaction in transactionsModel.ReceiptTransactions)
                         {
                             int paymentMeanCode = 0;
-                            decimal amount = 0m;
                             if (transaction.payment_id.IsNotNullOrEmpty() || transaction.more_info.IsNotNullOrEmpty())
                             {
                                 try
@@ -436,7 +438,8 @@ namespace SyncApp.Logic
                             {
                                 foreach (var giftCardItem in giftCardItems)
                                 {
-                                    var giftCardAmount = giftCardItem.Price * -1;
+                                    var giftCardQuantity = giftCardItem.FulfillableQuantity != null && giftCardItem.FulfillableQuantity != 0 ? giftCardItem.FulfillableQuantity : 1;
+                                    var giftCardAmount = (giftCardItem.Price * giftCardQuantity) * -1;
 
                                     int giftCardPaymentMeanCode = GetPaymentMeanCode("ReceiptGiftCard");
                                     file.WriteLine(
