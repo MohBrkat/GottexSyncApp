@@ -390,7 +390,11 @@ namespace SyncApp.Logic
                                         if (paymentInfo != null && paymentInfo.data != null)
                                         {
                                             paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
-                                            amount = (decimal)paymentInfo.data.amount;
+
+                                            if(amount == 0)
+                                            {
+                                                amount = (decimal)paymentInfo.data.amount;
+                                            }
                                         }
                                     }
                                     else
