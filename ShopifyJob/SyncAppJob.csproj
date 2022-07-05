@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="appsettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Log4Net\Log4NetLibrary.csproj" />
+    <ProjectReference Include="..\SyncAppCommon\SyncAppCommon.csproj" />
+    <ProjectReference Include="..\SyncAppEntities\SyncAppEntities.csproj" />
+  </ItemGroup>
+
+</Project>

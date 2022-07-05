@@ -1,4 +1,4 @@
-﻿@model SyncApp.ViewModel.ConfigurationsModel
+﻿@model SyncAppEntities.ViewModel.ConfigurationsModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -236,7 +236,7 @@
             <hr />
             <div class="container">
                 <div class="row">
-                    <input type="hidden" asp-for="ThirdTimeSchedule.ReportType" value="@((int)SyncApp.Models.Enums.ReportTypesEnum.DailyReport)" />
+                    <input type="hidden" asp-for="ThirdTimeSchedule.ReportType" value="@((int)SyncAppEntities.Models.Enums.ReportTypesEnum.DailyReport)" />
 
                     <div class="form-group col-sm-6">
                         <label asp-for="FirstTimeSchedule.ScheduleHour" class="control-label">First Daily Report Hour</label>
@@ -250,8 +250,8 @@
                     <section id="dailyReport-content">
                         <h6>Daily Report Working Days</h6>
 
-                        <input type="hidden" asp-for="FirstTimeSchedule.ReportType" value="@((int)SyncApp.Models.Enums.ReportTypesEnum.DailyReport)" />
-                        <input type="hidden" asp-for="FirstTimeSchedule.TimeOfDay" value="@((int)SyncApp.Models.Enums.TimeOfDayEnum.FirstTime)" />
+                        <input type="hidden" asp-for="FirstTimeSchedule.ReportType" value="@((int)SyncAppEntities.Models.Enums.ReportTypesEnum.DailyReport)" />
+                        <input type="hidden" asp-for="FirstTimeSchedule.TimeOfDay" value="@((int)SyncAppEntities.Models.Enums.TimeOfDayEnum.FirstTime)" />
 
                         <hr />
                         <div class="container">
@@ -305,8 +305,8 @@
                     <section id="dailyReport-content">
                         <h6>Daily Report Working Days</h6>
 
-                        <input type="hidden" asp-for="SecondTimeSchedule.ReportType" value="@((int)SyncApp.Models.Enums.ReportTypesEnum.DailyReport)" />
-                        <input type="hidden" asp-for="SecondTimeSchedule.TimeOfDay" value="@((int)SyncApp.Models.Enums.TimeOfDayEnum.SecondTime)" />
+                        <input type="hidden" asp-for="SecondTimeSchedule.ReportType" value="@((int)SyncAppEntities.Models.Enums.ReportTypesEnum.DailyReport)" />
+                        <input type="hidden" asp-for="SecondTimeSchedule.TimeOfDay" value="@((int)SyncAppEntities.Models.Enums.TimeOfDayEnum.SecondTime)" />
 
                         <hr />
                         <div class="container">

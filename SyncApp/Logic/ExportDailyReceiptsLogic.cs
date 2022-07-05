@@ -1,29 +1,29 @@
 ﻿using Log4NetLibrary;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
-using ShopifyApp2;
-using ShopifySharp;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
-using SyncApp.ViewModel;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ShopifySharp;
+using SyncAppCommon.Helpers;
+using SyncAppCommon;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ExportDailyReceiptsLogic
     {
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
         private static readonly object reciptsFileLock = new object();
 
-        public ExportDailyReceiptsLogic(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
+        public ExportDailyReceiptsLogic(ShopifyAppContext context, IWebHostEnvironment hostingEnvironment)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;

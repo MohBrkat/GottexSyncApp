@@ -1,16 +1,14 @@
 ﻿using Log4NetLibrary;
 using Newtonsoft.Json;
-using RestSharp;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
-using SyncApp.Models.PayPlus;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.Models.PayPlus;
+using SyncAppCommon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class PayPlusLogic
     {

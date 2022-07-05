@@ -33,7 +33,7 @@
 </div>
 
 <div class="container">
-    <form method="post" style="text-align:center" id="frmMain" action="@Url.Action("ExportSalesAsync")">
+    <form method="post" style="text-align:center" id="frmMain" action="@Url.Action("ExportSales")">
         <div class="alert alert-info" style="margin-top:20px">
             <strong>Export</strong> Daily Sales Invoices.
         </div>
@@ -64,8 +64,7 @@
             </div>
 
         }
-        else
-        if (Model.IsNotNullOrEmpty())
+        else if (!string.IsNullOrEmpty(Model))
         {
             <div class="alert alert-success" style="margin-top:30px">
                 <strong>Your file is ready. </strong> <a style="float:right" target="_blank" download href="@Url.Action("DownloadFile", "Home", new {fileToDownload = Model, subFolder = "Data/invoices" })">Click here to download your file</a>

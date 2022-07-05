@@ -1,28 +1,28 @@
 ﻿using Log4NetLibrary;
 using Microsoft.AspNetCore.Hosting;
-using ShopifyApp2;
 using ShopifySharp;
 using ShopifySharp.Filters;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using SyncAppCommon.Helpers;
+using SyncAppCommon;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ExportDailySalesLogic
     {
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
         private static readonly object salesFileLock = new object();
 
-        public ExportDailySalesLogic(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
+        public ExportDailySalesLogic(ShopifyAppContext context, IWebHostEnvironment hostingEnvironment)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
@@ -361,7 +361,12 @@ namespace SyncApp.Logic
                     if (orderItem.ProductId.HasValue)
                     {
                         var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
-                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == orderItem.SKU);
+                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.Id == orderItem.VariantId);
+
+                        if (VariantObj != null && !string.IsNullOrEmpty(VariantObj.SKU))
+                        {
+                            orderItem.SKU = VariantObj.SKU;
+                        }
 
                         var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
                         var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();

@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using SyncApp.Filters;
-using SyncApp.Models.EF;
-using SyncApp.ViewModel;
-using SyncApp.Models.Enums;
-using SyncApp.Logic;
+using SyncAppEntities.Filters;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
+using SyncAppEntities.Models.Enums;
+using SyncAppEntities.Logic;
 using ShopifySharp;
 
-namespace SyncApp.Controllers
+namespace SyncAppEntities.Controllers
 {
     [Auth]
     public class ConfigrationsController : Controller
