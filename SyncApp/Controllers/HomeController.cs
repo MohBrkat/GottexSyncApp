@@ -61,6 +61,24 @@ namespace ShopifyApp2.Controllers
             }
         }
 
+        private string DefaultBranchCode
+        {
+            get
+            {
+                var defaultBranchCodeDB = _countriesLogic.GetDefaultCountry()?.BranchCode;
+                return !string.IsNullOrEmpty(defaultBranchCodeDB) ? defaultBranchCodeDB : Config.BranchcodeSalesInvoices;
+            }
+        }
+
+        private string DefaultCustomerCode
+        {
+            get
+            {
+                var defaultCustomerCodeDB = _countriesLogic.GetDefaultCountry()?.CustomerCode;
+                return !string.IsNullOrEmpty(defaultCustomerCodeDB) ? defaultCustomerCodeDB : Config.CustoemrCode;
+            }
+        }
+
         #region prop
         private int InventoryImportEveryMinute
         {
@@ -204,13 +222,21 @@ namespace ShopifyApp2.Controllers
 
                 var defaultOrders = new List<Order>();
 
+                var franceOrders = lsOfOrders.FirstOrDefault(a => CountryIsDefault(a.Country));
+                if (franceOrders != null)
+                {
+                    lsOfOrders.Remove(franceOrders);
+                    lsOfOrders.Add(franceOrders);
+                }
+
                 foreach (var CountryOrders in lsOfOrders)
                 {
                     var country = CountryOrders.Country;
                     var orders = CountryOrders.Orders;
 
+                    var countryDB = _countriesLogic.GetCountryByName(country);
                     //if it doesn't have values add to the default country orders
-                    if (!_countriesLogic.CheckIfHasValues(country) && !CountryIsDefault(country))
+                    if ((!_countriesLogic.CheckIfHasValues(countryDB) || IsBranchAndCustomerCodesSame(countryDB)) && !CountryIsDefault(country))
                     {
                         defaultOrders.AddRange(orders);
                         continue;
@@ -240,6 +266,12 @@ namespace ShopifyApp2.Controllers
         private bool CountryIsDefault(string country)
         {
             return country.Trim().ToLower() == DefaultCountryName.Trim().ToLower();
+        }
+
+        private bool IsBranchAndCustomerCodesSame(Countries country)
+        {
+            return country.BranchCode.Trim().ToLower() == DefaultBranchCode.Trim().ToLower()
+                && country.CustomerCode.Trim().ToLower() == DefaultCustomerCode.Trim().ToLower();
         }
 
         #endregion

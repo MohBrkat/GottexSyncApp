@@ -47,9 +47,8 @@ namespace SyncApp.Logic
             return country;
         }
 
-        internal bool CheckIfHasValues(string countryName)
+        internal bool CheckIfHasValues(Countries country)
         {
-            var country = GetCountryByName(countryName);
             return !string.IsNullOrEmpty(country?.BranchCode) && !string.IsNullOrEmpty(country?.CustomerCode) && country?.CountryTax != null;
         }
     }
