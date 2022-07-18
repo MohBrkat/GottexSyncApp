@@ -361,7 +361,7 @@ namespace SyncApp.Logic
                     if (orderItem.ProductId.HasValue)
                     {
                         var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
-                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.Id == orderItem.VariantId);
+                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => (a.Id == orderItem.VariantId) || (a.SKU == orderItem.SKU));
 
                         if (VariantObj != null && !string.IsNullOrEmpty(VariantObj.SKU))
                         {
