@@ -26,7 +26,7 @@ namespace SyncApp.Controllers
 
         [Route("GenerateDailyReports")]
         [HttpGet]
-        public async Task GenerateDetaildAndSummaryReportsAsync()
+        public async Task<IActionResult> GenerateDetaildAndSummaryReportsAsync()
         {
             FileModel file = new FileModel();
 
@@ -35,10 +35,13 @@ namespace SyncApp.Controllers
                 List<Order> lsOfOrders = await _exportDailyReportsLogic.ExportDailyReportsAsync(default, default);
 
                 await _exportDailyReportsLogic.GenerateDailyReportFilesAsync(file, lsOfOrders);
+
+                return Ok("Success");
             }
             catch (Exception ex)
             {
                 _log.Error($"Exception While Exporting The Daily Reports using the job: {JsonConvert.SerializeObject(ex)}");
+                return null;
             }
         }
     }
