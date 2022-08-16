@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
 
-namespace SyncApp.Filters
+namespace SyncAppEntities.Filters
 {
     public class Auth : ActionFilterAttribute
     {

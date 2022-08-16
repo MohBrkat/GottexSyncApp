@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SyncApp.Models.EF;
-using SyncApp.Models.Enums;
-using SyncApp.ViewModel;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.Models.Enums;
+using SyncAppEntities.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ReportsScheduleLogic
     {

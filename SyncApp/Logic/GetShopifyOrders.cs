@@ -1,14 +1,14 @@
 ﻿using ShopifySharp;
 using ShopifySharp.Filters;
-using SyncApp.Models;
-using SyncApp.Models.EF;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class GetShopifyOrders
     {

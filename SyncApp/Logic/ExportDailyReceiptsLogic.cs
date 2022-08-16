@@ -1,29 +1,29 @@
 ﻿using Log4NetLibrary;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
-using ShopifyApp2;
-using ShopifySharp;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
-using SyncApp.ViewModel;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ShopifySharp;
+using SyncAppCommon.Helpers;
+using SyncAppCommon;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ExportDailyReceiptsLogic
     {
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
         private static readonly object reciptsFileLock = new object();
 
-        public ExportDailyReceiptsLogic(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
+        public ExportDailyReceiptsLogic(ShopifyAppContext context, IWebHostEnvironment hostingEnvironment)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
@@ -325,7 +325,6 @@ namespace SyncApp.Logic
 
             var InvoiceNumber = GetInvoiceNumber(order);
             var priceWithTaxes = order.TotalPrice;
-            decimal amount = order.TotalPrice ?? 0m;
 
             var invoiceDate = order.CreatedAt.GetValueOrDefault().ToString("dd/MM/yy");
 
@@ -344,7 +343,6 @@ namespace SyncApp.Logic
             if (order.RefundKind != "no_refund")
             {
                 priceWithTaxes *= -1;
-                amount *= -1;
             }
 
             lock (reciptsFileLock)
@@ -353,7 +351,8 @@ namespace SyncApp.Logic
                 {
                     if (transactionsModel.ReceiptTransactions != null)
                     {
-                        if (transactionsModel.ReceiptTransactions.Count() > 0)
+                        if (transactionsModel.ReceiptTransactions.Count() > 0 ||
+                           (transactionsModel.GiftCardTransactions.Count() != 0 && transactionsModel.ReceiptTransactions.Count() == 0))
                         {
                             if (!isSuperPharmOrder)
                             {
@@ -379,6 +378,9 @@ namespace SyncApp.Logic
 
                         foreach (var transaction in transactionsModel.ReceiptTransactions)
                         {
+                            decimal amount = order.TotalPrice ?? 0m;
+                            decimal? payPlusReceiptAmount = 0m;
+
                             int paymentMeanCode = 0;
                             if (transaction.payment_id.IsNotNullOrEmpty() || transaction.more_info.IsNotNullOrEmpty())
                             {
@@ -390,6 +392,7 @@ namespace SyncApp.Logic
                                         if (paymentInfo != null && paymentInfo.data != null)
                                         {
                                             paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
+                                            payPlusReceiptAmount = (decimal)paymentInfo.data.amount;
                                         }
                                     }
                                     else
@@ -397,7 +400,10 @@ namespace SyncApp.Logic
                                         paymentMeanCode = SuperPharmPaymentCode;
                                     }
 
-                                    //amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
+                                    if (amount == 0)
+                                    {
+                                        amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -405,9 +411,14 @@ namespace SyncApp.Logic
                                 }
                             }
 
-                            if (amount == 0)
+                            if (amount == 0 || (transactionsModel.GiftCardTransactions != null && transactionsModel.GiftCardTransactions.Count > 0))
                             {
-                                amount = priceWithTaxes ?? 0m;
+                                amount = payPlusReceiptAmount ?? 0m;
+                            }
+
+                            if (order.RefundKind != "no_refund")
+                            {
+                                amount *= -1;
                             }
 
                             if (isSuperPharmOrder)
@@ -492,14 +503,14 @@ namespace SyncApp.Logic
 
                     if (payplusRefundTransaction != null)
                     {
-                        amount = -1 * (payplusRefundTransaction?.amount ?? 0m);
+                        amount = payplusRefundTransaction?.amount ?? 0m;
                     }
                     else
                     {
                         var refundTransaction = order.Transactions?.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
                                                 && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
 
-                        amount = -1 * (refundTransaction?.Amount ?? 0m);
+                        amount = refundTransaction?.Amount ?? 0m;
                     }
                 }
                 else
@@ -523,39 +534,13 @@ namespace SyncApp.Logic
             return amount;
         }
 
-        private async Task<Receipt> GetTransactionByOrderAsync(Order order)
-        {
-            Receipt r = null;
-            if (order.RefundKind == "no_refund" || !order.Transactions.Any())
-            {
-                var service = new TransactionService(StoreUrl, ApiSecret);
-                var transactions = await service.ListAsync((long)order.Id);
-                if (transactions.FirstOrDefault() != null)
-                {
-
-                    r = JsonConvert.DeserializeObject<Receipt>(transactions.FirstOrDefault().Receipt.ToString());
-
-                    /*
-                     * x_timestamp which is basically from the payment provider(Payplus) and it's inaccurate and wrong
-                     * (it is in 12h UTC format and without AM or PM !)
-                     * So transaction's created_at DateTime value used instead
-                     */
-                    r.x_timestamp = transactions.FirstOrDefault().CreatedAt.ToString();
-                }
-            }
-            else
-            {
-                var transaction = JsonConvert.DeserializeObject<Receipt>(order.Transactions.FirstOrDefault().Receipt.ToString());
-                r = JsonConvert.DeserializeObject<Receipt>(
-                    order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().Receipt.ToString());
-                r.x_timestamp = order.Transactions.Where(t => t.Kind.ToLower() == "refund").FirstOrDefault().CreatedAt.ToString();
-                r.clearing_name = transaction.clearing_name;
-            }
-            return r;
-        }
-
         private async Task<TransactionsModel> GetTransactionModelByOrderAsync(Order order, DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
         {
+            if(order.OrderNumber == 136263)
+            {
+
+            }   
+            
             TransactionsModel transactionsModel = new TransactionsModel()
             {
                 ReceiptTransactions = new List<Receipt>(),
@@ -627,7 +612,7 @@ namespace SyncApp.Logic
             if (company == null)
                 return 0;
 
-            var paymentMean = _context.PaymentMeans.Where(a => company.Equals(a.Name, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            var paymentMean = _context.PaymentMeans.Where(a => a.Name.ToLower() == company.ToLower()).FirstOrDefault();
             if (paymentMean != null)
             {
                 return paymentMean.Code.GetValueOrDefault();

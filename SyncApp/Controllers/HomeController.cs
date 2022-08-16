@@ -7,14 +7,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopifyApp2.ViewModel;
 using ShopifySharp;
-using SyncApp.Models.EF;
-using SyncApp.Filters;
-using SyncApp.ViewModel;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.Filters;
+using SyncAppEntities.ViewModel;
 using System.Threading.Tasks;
-using SyncApp.Logic;
+using SyncAppEntities.Logic;
 using Log4NetLibrary;
 using Newtonsoft.Json;
-using SyncApp.Models.Enums;
+using SyncAppEntities.Models.Enums;
 
 namespace ShopifyApp2.Controllers
 {
@@ -22,7 +22,7 @@ namespace ShopifyApp2.Controllers
     public class HomeController : Controller
     {
         private readonly ShopifyAppContext _context;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
         private static readonly log4net.ILog _log = Logger.GetLogger();
 
         private ImportInventoryFTPLogic _importInventoryFTPLogic;
@@ -31,7 +31,7 @@ namespace ShopifyApp2.Controllers
         private ExportDailyReceiptsLogic _exportDailyReceiptsLogic;
         private ExportDailyReportsLogic _exportDailyReportsLogic;
 
-        public HomeController(ShopifyAppContext context, IHostingEnvironment hostingEnvironment)
+        public HomeController(ShopifyAppContext context, IWebHostEnvironment hostingEnvironment)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
@@ -120,9 +120,9 @@ namespace ShopifyApp2.Controllers
             var ReportsCron = Cron.Daily(DailyReportHour, DailyReportMinute);
 
             var minutes = InventoryImportEveryMinute == 0 ? 30 : InventoryImportEveryMinute;
-            RecurringJob.AddOrUpdate(() => DoImoportAsync(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportSalesAsync(false, default, default), SalesCron, TimeZoneInfo.Local);
-            RecurringJob.AddOrUpdate(() => ExportReceiptsAsync(false, default, default), RecieptsCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => DoImoport(), Cron.MinuteInterval(minutes), TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportSales(false, default, default), SalesCron, TimeZoneInfo.Local);
+            RecurringJob.AddOrUpdate(() => ExportReceipts(false, default, default), RecieptsCron, TimeZoneInfo.Local);
 
             ScheduleReports((int)ReportTypesEnum.DailyReport);
             //RecurringJob.AddOrUpdate(() => ExportReportAsync(false, default, default, string.Empty), ReportsCron, TimeZoneInfo.Local);
@@ -140,7 +140,7 @@ namespace ShopifyApp2.Controllers
         #region Import from FTP
         [DisableConcurrentExecution(120)]
 
-        public async Task DoImoportAsync()
+        public async Task DoImoport()
         {
             try
             {
@@ -183,7 +183,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportSalesAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
+        public async Task<ActionResult> ExportSales(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
             try
             {
@@ -211,7 +211,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
+        public async Task<ActionResult> ExportReceipts(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
             try
             {
@@ -250,7 +250,7 @@ namespace ShopifyApp2.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ExportReportAsync(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, string reportType = "")
+        public async Task<ActionResult> ExportReport(bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, string reportType = "")
         {
             FileModel file = new FileModel();
 
@@ -310,7 +310,7 @@ namespace ShopifyApp2.Controllers
                 if (report.ScheduleHour.HasValue && report.ScheduleMinutes.HasValue)
                 {
                     string cron = Cron.Weekly(dayOfWeek, report.ScheduleHour.Value, report.ScheduleMinutes.Value);
-                    RecurringJob.AddOrUpdate(recurringId, () => ExportReportAsync(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
+                    RecurringJob.AddOrUpdate(recurringId, () => ExportReport(false, default, default, string.Empty), cron, TimeZoneInfo.Local);
                 }
             }
             else

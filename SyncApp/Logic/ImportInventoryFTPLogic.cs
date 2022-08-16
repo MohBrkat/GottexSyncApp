@@ -1,19 +1,17 @@
 ﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
-using ShopifyApp2;
 using ShopifySharp;
 using ShopifySharp.Filters;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ImportInventoryFTPLogic
     {
@@ -333,6 +331,7 @@ namespace SyncApp.Logic
             }
             catch (System.Net.WebException ex)
             {
+                _log.Error(ex.Message);
             }
             catch (Exception ex)
             {
