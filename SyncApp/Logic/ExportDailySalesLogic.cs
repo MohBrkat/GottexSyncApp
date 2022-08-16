@@ -5,6 +5,7 @@ using ShopifySharp;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
+using SyncApp.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +36,23 @@ namespace SyncApp.Logic
             }
         }
 
+        private CountriesLogic countriesLogic
+        {
+            get
+            {
+                return new CountriesLogic(_context);
+            }
+        }
+
+        private Countries DefaultCountry
+        {
+            get
+            {
+                var defaultCountry = countriesLogic.GetDefaultCountry();
+                return defaultCountry;
+            }
+        }
+
         #region prop
         private string Host
         {
@@ -61,7 +79,7 @@ namespace SyncApp.Logic
         {
             get
             {
-                return "Sales-Web-" + ShortBranchCodeSales + "-" + DateTime.Now.ToString("yyMMdd") + ".dat";
+                return "Sales-Web-{branchCode}-" + DateTime.Now.ToString("yyMMdd") + ".dat";
             }
         }
         private string ShortBranchCodeSales
@@ -164,7 +182,7 @@ namespace SyncApp.Logic
         }
         #endregion
 
-        public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
+        public async Task<List<CountryOrders>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
         {
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
@@ -196,41 +214,51 @@ namespace SyncApp.Logic
                 lsOfOrders.AddRange(refunded?.Orders);
             }
 
-            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-            return lsOfOrders;
+            var countryOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).GroupBy(o => o.ShippingAddress.Country)
+                        .Select(g => new CountryOrders { Country = g.Key, Orders = g.ToList() }).ToList();
+
+            //lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            return countryOrders;
         }
 
-        public string GenerateSalesFile(List<Order> orders, bool fromWeb)
+        public string GenerateSalesFile(string country, List<Order> orders, bool fromWeb)
         {
-            var FileName = InvoiceFileName.Clone().ToString();
-            var FolderDirectory = "/Data/invoices/";
+            //Get Country By Name from DB
+            var countryDB = GetCountryByName(country);
 
+            //Get Country needed information
+            string customerCode = GetCustomerCode(countryDB);
+            string branchCode = GetBranchCode(countryDB);
+
+            //Get FileName and Replace with Coutnry Branch Code
+            var FileName = InvoiceFileName.Clone().ToString();
+            FileName = FileName.Replace("{branchCode}", branchCode);
+
+            var FolderDirectory = "/Data/invoices/";
             var path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + FileName;
 
-            var ordersGroupedByDate = orders
-        .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
-        .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
+            var ordersGroupedByDate = orders.GroupBy(o => o.CreatedAt.GetValueOrDefault().Date).Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
 
             using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(fileStream))
             {
                 foreach (var DayOrders in ordersGroupedByDate)
                 {
-                    decimal taxPercentage = TaxPercentage;
+                    decimal taxPercentage = countryDB?.CountryTax ?? TaxPercentage;
                     var InvoiceDate = DayOrders.OrdersDate;
                     decimal vatTax = taxPercentage + 0.0m;
 
-                    var BookNum = ShortBranchCodeSales + InvoiceDate.ToString("ddMMyy");
+                    var BookNum = branchCode + InvoiceDate.ToString("ddMMyy");
 
                     lock (salesFileLock)
                     {
                         file.WriteLine(
                        "0" +
-                       "\t" + CustomerCodeWithLeadingSpaces +
+                       "\t" + customerCode +
                        "\t" + InvoiceDate.ToString("dd/MM/y") + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
                        "\t" + BookNum +
                        "\t" + "".InsertLeadingSpaces(4) + "\t" + WareHouseCode +
-                       "\t" + ShortBranchCodeSales
+                       "\t" + branchCode
                        );
 
                     }
@@ -240,7 +268,6 @@ namespace SyncApp.Logic
                         var shipRefOrder = order;
                         foreach (var orderItem in order.LineItems)
                         {
-
                             var discountPercentage = 0;
 
                             decimal? price;
@@ -369,8 +396,8 @@ namespace SyncApp.Logic
             if (!fromWeb)
             {
                 FtpSuccesfully = FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), Host, FTPPathConsts.IN_PATH, UserName, Password);
-                string subject = "Generate Sales File Status";
-                var body = EmailMessages.messageBody("Generate Sales File", "Success", "Invoices and Receipts/" + FileName);
+                string subject = $"Generate Sales File Status for {country}";
+                var body = EmailMessages.messageBody($"Generate Sales File for Country: {country}", "Success", "Invoices and Receipts/" + FileName);
                 Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
             }
 
@@ -378,18 +405,46 @@ namespace SyncApp.Logic
             {
                 if (!fromWeb)
                 {
-                    _log.Info(FileName + "[sales] Uploaded sucesfully - the time is : " + DateTime.Now);
+                    _log.Info($"{FileName} [sales] for country {country} Uploaded sucesfully - the time is : {DateTime.Now}");
                 }
             }
             else
             {
-                _log.Error($"[sales] : Error during upload {FileName} to ftp");
-                string subject = "Generate Sales File Status";
-                var body = EmailMessages.messageBody("Generate Sales File", "Failed", "Invoices and Receipts/" + FileName);
+                _log.Error($"[sales] : Error during upload {FileName} for country {country} to ftp");
+                string subject = $"Generate Sales File Status for {country}";
+                var body = EmailMessages.messageBody($"Generate Sales File for Country: {country}", "Failed", "Invoices and Receipts/" + FileName);
                 Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
             }
 
             return FileName;
+        }
+
+        private string GetBranchCode(Countries countryDB)
+        {
+            if (string.IsNullOrEmpty(countryDB?.BranchCode))
+                return ShortBranchCodeSales;
+
+            return countryDB.BranchCode.Trim();
+        }
+
+        private string GetCustomerCode(Countries countryDB)
+        {
+            if (string.IsNullOrEmpty(countryDB?.CustomerCode))
+                return CustomerCodeWithLeadingSpaces;
+
+            return countryDB.CustomerCode.InsertLeadingSpaces(16);
+        }
+
+        private Countries GetCountryByName(string countryName)
+        {
+            var country = DefaultCountry;
+
+            if (!string.IsNullOrEmpty(countryName))
+            {
+                country = countriesLogic.GetCountryByName(countryName);
+            }
+
+            return country;
         }
     }
 }

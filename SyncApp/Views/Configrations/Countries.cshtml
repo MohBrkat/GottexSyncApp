@@ -1,0 +1,115 @@
+﻿@model SyncApp.ViewModel.CountriesModel
+
+@{
+    ViewData["Title"] = "Countries";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width" />
+    <title>Countries</title>
+
+    <script>
+        $(document).on('click', 'input[type="checkbox"]', function () {
+            $('input[type="checkbox"]').not(this).prop('checked', false);
+        });
+    </script>
+
+    <style>
+        .submit-button-container {
+            max-width: 100%;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .submit-button {
+            width: 150px;
+            height: 50px;
+            font-size: 20px;
+        }
+
+        .alert-success,
+        .alert-danger {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h4>Countries</h4>
+    <hr />
+    <form action="Countries" method="post">
+        <div class="container">
+            <div class="row">
+                <div class="form-group col-sm-2">
+                    <label class="control-label"><b>Country Name</b></label>
+                </div>
+                <div class="form-group col-sm-2">
+                    <label class="control-label"><b>Country Id</b></label>
+                </div>
+                <div class="form-group col-sm-2">
+                    <label class="control-label"><b>Country Tax</b></label>
+                </div>
+                <div class="form-group col-sm-2">
+                    <label class="control-label"><b>Branch Code</b></label>
+                </div>
+                <div class="form-group col-sm-2">
+                    <label class="control-label"><b>Customer Code</b></label>
+                </div>
+                <div class="form-group col-sm-2">
+                    <label class="control-label"><b>Set As Default</b></label>
+                </div>
+            </div>
+            @for (int i = 0; i < Model.CountriesList.Count; i++)
+            {
+                <div class="row">
+                    <input type="hidden" asp-for="CountriesList[i].Id" />
+                    <div class="form-group col-sm-2">
+                        <label asp-for="CountriesList[i].CountryName" class="control-label">@Model.CountriesList[i].CountryName</label>
+                        <input type="hidden" asp-for="CountriesList[i].CountryName" value="@Model.CountriesList[i].CountryName" id="countryName" />
+                    </div>
+                    <div class="form-group col-sm-2">
+                        <label asp-for="CountriesList[i].CountryId" class="control-label">@Model.CountriesList[i].CountryId</label>
+                        <input type="hidden" asp-for="CountriesList[i].CountryId" value="@Model.CountriesList[i].CountryId" id="countryId" />
+                    </div>
+                    <div class="form-group col-sm-2">
+                        <input asp-for="CountriesList[i].CountryTax" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-2">
+                        <input asp-for="CountriesList[i].BranchCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-2">
+                        <input asp-for="CountriesList[i].CustomerCode" class="form-control" />
+                    </div>
+                    <div class="form-group col-sm-2">
+                        @Html.CheckBoxFor(m => Model.CountriesList[i].IsDefault)
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            @if (Model.Message.Contains("Changes Saved Successfully"))
+            {
+                <div class="alert alert-success" style="margin-top:30px">
+                    <strong>@Model.Message</strong>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger" style="margin-top:30px">
+                    <strong>@Model.Message</strong>
+                </div>
+            }
+        }
+
+
+        <div class="submit-button-container form-group col-sm-6">
+            <input type="submit" value="Save" class="submit-button btn btn-primary" />
+        </div>
+
+    </form>
+</body>
+</html>
