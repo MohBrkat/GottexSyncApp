@@ -522,7 +522,7 @@ namespace SyncAppCommon
                 cell.CellStyle.SetFont(font);
                 cell.CellStyle.FillPattern = FillPattern.SolidForeground;
                 cell.CellStyle.BorderRight = BorderStyle.Thin;
-                sheet1.SetColumnWidth(j,30);
+                sheet1.SetColumnWidth(j, 30);
 
                 cell.SetCellValue(Regex.Replace(Regex.Replace(properties[j].Name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2"), @"(\p{Ll})(\P{Ll})", "$1 $2"));
             }
@@ -600,6 +600,7 @@ namespace SyncAppCommon
     public class FtpHandler
     {
         private static readonly log4net.ILog _log = Logger.GetLogger();
+        public const int MAX_RETRY_COUNT = 5;
 
         private static string GetLastFileName(string Host, string UserName, string Password)
         {
@@ -838,31 +839,42 @@ namespace SyncAppCommon
             FtpWebRequest reqFTP = null;
 
             Stream ftpStream = null;
-            try
+
+            for (int i = 0; i < MAX_RETRY_COUNT;)
             {
-                reqFTP = (FtpWebRequest)FtpWebRequest.Create(ServerUrl + "/" + path + "/" + fileName);
-
-                reqFTP.Method = WebRequestMethods.Ftp.DeleteFile;
-
-                reqFTP.Credentials = new NetworkCredential(userName, password);
-
-                FtpWebResponse response = (FtpWebResponse)reqFTP.GetResponse();
-
-                ftpStream = response.GetResponseStream();
-
-                ftpStream.Close();
-
-                response.Close();
-            }
-            catch (Exception ex)
-            {
-                if (ftpStream != null)
+                try
                 {
-                    ftpStream.Close();
-                    ftpStream.Dispose();
-                }
+                    reqFTP = (FtpWebRequest)FtpWebRequest.Create(ServerUrl + "/" + path + "/" + fileName);
 
-                throw new Exception(ex.Message.ToString());
+                    reqFTP.Method = WebRequestMethods.Ftp.DeleteFile;
+
+                    reqFTP.Credentials = new NetworkCredential(userName, password);
+
+                    FtpWebResponse response = (FtpWebResponse)reqFTP.GetResponse();
+
+                    ftpStream = response.GetResponseStream();
+
+                    ftpStream.Close();
+
+                    response.Close();
+
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    i++;
+
+                    if (i >= MAX_RETRY_COUNT)
+                    {
+                        if (ftpStream != null)
+                        {
+                            ftpStream.Close();
+                            ftpStream.Dispose();
+                        }
+
+                        throw new Exception(ex.Message.ToString());
+                    }
+                }
             }
         }
     }

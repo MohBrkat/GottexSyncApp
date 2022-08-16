@@ -29,8 +29,8 @@ namespace SyncAppEntities.Models.PayPlus
         public string currency { get; set; }
         public string credit_terms { get; set; }
         public int number_of_payments { get; set; }
-        public bool secure3D_status { get; set; }
-        public bool secure3D_tracking { get; set; }
+        public bool? secure3D_status { get; set; }
+        public bool? secure3D_tracking { get; set; }
         public string approval_num { get; set; }
         public string card_foreign { get; set; }
         public string voucher_num { get; set; }
@@ -47,7 +47,7 @@ namespace SyncAppEntities.Models.PayPlus
         public string four_digits { get; set; }
         public string expiry_month { get; set; }
         public string expiry_year { get; set; }
-        public bool alternative_method { get; set; }
+        public bool? alternative_method { get; set; }
         public string customer_name { get; set; }
         public string customer_name_invoice { get; set; }
         public string identification_number { get; set; }

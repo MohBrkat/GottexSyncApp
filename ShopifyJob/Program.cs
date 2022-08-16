@@ -27,6 +27,8 @@ namespace ShopifyJob
 
                 string reportTriggerKey = _configuration.GetConfig("AppSettings", "ReportTriggerKey");
 
+                _log.Info($"Report trigger Key found: {reportTriggerKey}");
+
                 if (!string.IsNullOrEmpty(reportTriggerKey))
                 {
                     var context = GetShopifyContext();

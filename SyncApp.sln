@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncAppJob", "ShopifyJob\Sy
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncAppCommon", "SyncAppCommon\SyncAppCommon.csproj", "{A6765801-CA58-4FD0-9A8F-39D39E8F9F85}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncAppEntities", "SyncAppEntities\SyncAppEntities.csproj", "{A82DEEB2-608A-4F88-90E2-9718E5CA79D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncAppEntities", "SyncAppEntities\SyncAppEntities.csproj", "{A82DEEB2-608A-4F88-90E2-9718E5CA79D5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

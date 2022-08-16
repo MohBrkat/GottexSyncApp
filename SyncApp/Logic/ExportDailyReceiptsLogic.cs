@@ -536,6 +536,11 @@ namespace SyncAppEntities.Logic
 
         private async Task<TransactionsModel> GetTransactionModelByOrderAsync(Order order, DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
         {
+            if(order.OrderNumber == 136263)
+            {
+
+            }   
+            
             TransactionsModel transactionsModel = new TransactionsModel()
             {
                 ReceiptTransactions = new List<Receipt>(),
@@ -607,7 +612,7 @@ namespace SyncAppEntities.Logic
             if (company == null)
                 return 0;
 
-            var paymentMean = _context.PaymentMeans.Where(a => company.Equals(a.Name, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            var paymentMean = _context.PaymentMeans.Where(a => a.Name.ToLower() == company.ToLower()).FirstOrDefault();
             if (paymentMean != null)
             {
                 return paymentMean.Code.GetValueOrDefault();

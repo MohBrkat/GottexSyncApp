@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Log4NetLibrary;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using SyncAppCommon;
 using SyncAppCommon.Helpers;
 using SyncAppEntities.Models;
@@ -13,6 +15,7 @@ namespace SyncAppJob
     public class SyncAppJobLogic
     {
         private static readonly object syncAppJobLock = new object();
+        private static readonly log4net.ILog _log = Logger.GetLogger();
 
         private Configrations Config
         {
@@ -56,15 +59,20 @@ namespace SyncAppJob
 
         internal void GenerateReport(string reportTriggerKey)
         {
+            _log.Info($"job is starting");
+
             lock (syncAppJobLock)
             {
                 if (FtpHandler.CheckIfFileExistsOnServer(Host, UserName, Password, FTPPathConsts.OUT_PATH, reportTriggerKey))
                 {
+                    _log.Info($"File {reportTriggerKey} found, Report in progress");
+
                     string baseAPIUrl = _configuration.GetConfig("AppSettings", "APIBaseUrl");
                     var result = new RestSharpClient(baseAPIUrl).Get<object>("api/SyncApp/GenerateDailyReports", null);
 
                     if (result != null)
                     {
+                        _log.Info($"Job Completed, Result: {JsonConvert.SerializeObject(result)}, Deleting file from FTP");
                         FtpHandler.DeleteFile(reportTriggerKey, Host, FTPPathConsts.OUT_PATH, UserName, Password);
                     }
                 }
