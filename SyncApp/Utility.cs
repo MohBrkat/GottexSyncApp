@@ -38,6 +38,7 @@ namespace SyncApp
             }
             catch (WebException e)
             {
+                _log.Error(e.Message);
                 throw e;
             }
         }
@@ -98,6 +99,7 @@ namespace SyncApp
             }
             catch (Exception ex)
             {
+                _log.Error(ex.Message);
                 return "";
             }
         }
@@ -314,6 +316,7 @@ namespace SyncApp
             }
             catch (Exception e)
             {
+                _log.Error(e.Message);
                 return false;
             }
 
@@ -586,6 +589,8 @@ namespace SyncApp
 
     public class FtpHandler
     {
+        private static readonly log4net.ILog _log = Logger.GetLogger();
+
         private static string GetLastFileName(string Host, string UserName, string Password)
         {
             FtpWebRequest ftpRequest = (FtpWebRequest)FtpWebRequest.Create(Host);
@@ -650,6 +655,7 @@ namespace SyncApp
             }
             catch (Exception ex)
             {
+                _log.Error(ex.Message);
                 return "";
             }
             finally
@@ -679,6 +685,7 @@ namespace SyncApp
             }
             catch (WebException e)
             {
+                _log.Error(e.Message);
                 throw e;
             }
         }
@@ -698,6 +705,7 @@ namespace SyncApp
             }
             catch (WebException e)
             {
+                _log.Error(e.Message);
                 throw;
             }
         }
@@ -783,7 +791,8 @@ namespace SyncApp
             }
             catch (Exception ex)
             {
-                return false;
+                _log.Error($"Error while uploading file to FTP: {ex.Message}", ex);
+                return false; 
             }
         }
 
