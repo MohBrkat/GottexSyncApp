@@ -1,6 +1,7 @@
 ﻿using Log4NetLibrary;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
+using Polly;
 using ShopifyApp2;
 using ShopifySharp;
 using SyncApp.Helpers;
@@ -284,8 +285,25 @@ namespace SyncApp.Logic
 
             if (!fromWeb)
             {
+                const int maxDelayInMilliseconds = 60 * 1000;
 
-                FtpSuccesfully = FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), Host, FTPPathConsts.IN_PATH, UserName, Password);
+                var polly = Policy<bool>
+                        .HandleResult(r => r == false)
+                        .WaitAndRetryForever(
+                          retryAttempt =>
+                          {
+                              var jitterInMilliseconds = new Random().Next(0, 1000);
+
+                              var actualDelay = maxDelayInMilliseconds + jitterInMilliseconds;
+                              return TimeSpan.FromMilliseconds(actualDelay);
+                          }
+                      );
+
+                FtpSuccesfully = polly.Execute(() =>
+                {
+                    return FtpHandler.UploadFile(FileName, System.IO.File.ReadAllBytes(path), Host, FTPPathConsts.IN_PATH, UserName, Password);
+                });
+
                 string subject = "Generate Receipt File Status";
                 var body = EmailMessages.messageBody("Generate Receipt File", "Success", "Invoices and Receipts/" + FileName);
                 Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
