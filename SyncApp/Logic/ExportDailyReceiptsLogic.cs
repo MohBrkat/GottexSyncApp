@@ -289,7 +289,7 @@ namespace SyncApp.Logic
 
                 var polly = Policy<bool>
                         .HandleResult(r => r == false)
-                        .WaitAndRetryForever(
+                        .WaitAndRetry(30,
                           retryAttempt =>
                           {
                               var jitterInMilliseconds = new Random().Next(0, 1000);
