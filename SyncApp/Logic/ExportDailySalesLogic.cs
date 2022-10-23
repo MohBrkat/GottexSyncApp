@@ -372,9 +372,16 @@ namespace SyncAppEntities.Logic
                         var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
                         var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
-                        var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
-
-                        warehouseCode = GetWarehouseCodeByLocationId(LocationId);
+                        if (orderItem.FulfillmentStatus == "fulfilled" && order.RefundKind == "no_refund"
+                            && LocationQuery.Items.Count() > 1)
+                        {
+                            warehouseCode = "ON01";
+                        }
+                        else
+                        {
+                            var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                            warehouseCode = GetWarehouseCodeByLocationId(LocationId);
+                        }
                     }
                 }
 
