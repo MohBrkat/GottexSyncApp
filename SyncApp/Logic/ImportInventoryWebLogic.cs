@@ -1,13 +1,12 @@
 ﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using ShopifyApp2;
 using ShopifyApp2.ViewModel;
 using ShopifySharp;
 using ShopifySharp.Filters;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ImportInventoryWebLogic
     {

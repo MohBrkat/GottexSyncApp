@@ -4,10 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SyncApp.Filters;
-using SyncApp.Models.EF;
+using SyncAppEntities.Filters;
+using SyncAppEntities.Models.EF;
 
-namespace SyncApp.Controllers
+namespace SyncAppEntities.Controllers
 {
     public class AccountController : Controller
     {

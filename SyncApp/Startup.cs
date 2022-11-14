@@ -12,7 +12,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SyncApp.Models.EF;
+using Microsoft.Extensions.Hosting;
+using SyncAppEntities.Models.EF;
 
 namespace ShopifyApp2
 {
@@ -76,11 +77,11 @@ namespace ShopifyApp2
                 options => options.UseSqlServer(connectionString)
             );
 
-            services.AddMvc();
+            services.AddMvc(a => a.EnableEndpointRouting = false);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -98,18 +99,12 @@ namespace ShopifyApp2
             app.UseCookiePolicy();
             app.UseSession();
 
-
-
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
-
-
-
-
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@model SyncApp.ViewModel.FileModel
+﻿@model SyncAppEntities.ViewModel.FileModel
 
 @{
     ViewData["Title"] = "Daily Report";
@@ -38,7 +38,7 @@
 
 
 <div class="container">
-    <form method="post" style="text-align:center" id="frmMain" action="@Url.Action("ExportReportAsync")">
+    <form method="post" style="text-align:center" id="frmMain" action="@Url.Action("ExportReport")">
         <div class="alert alert-info" style="margin-top:20px">
             <strong>Export</strong> Daily Report.
         </div>

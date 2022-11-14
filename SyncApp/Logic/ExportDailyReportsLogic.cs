@@ -1,17 +1,16 @@
 ﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
-using ShopifyApp2;
 using ShopifySharp;
-using SyncApp.Helpers;
-using SyncApp.Models;
-using SyncApp.Models.EF;
-using SyncApp.ViewModel;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SyncApp.Logic
+namespace SyncAppEntities.Logic
 {
     public class ExportDailyReportsLogic
     {

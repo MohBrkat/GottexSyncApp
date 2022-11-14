@@ -177,10 +177,8 @@ namespace Log4NetLibrary
                 }
                 catch (Exception ex)
                 {
-                    log.Error("Error while logging object :" + message);
+                    log.Error("Error while logging object :" + message, ex);
                 }
-
-
             }
         }
         public static void LogFunctionParameters(MethodBase method,params object[] values)

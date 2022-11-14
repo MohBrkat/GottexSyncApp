@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using SyncApp.Filters;
-using SyncApp.Models.EF;
-using SyncApp.ViewModel;
-using SyncApp.Models.Enums;
-using SyncApp.Logic;
+using SyncAppEntities.Filters;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
+using SyncAppEntities.Models.Enums;
+using SyncAppEntities.Logic;
 using ShopifySharp;
 
-namespace SyncApp.Controllers
+namespace SyncAppEntities.Controllers
 {
     [Auth]
     public class ConfigrationsController : Controller
@@ -91,7 +89,7 @@ namespace SyncApp.Controllers
                     _context.Update(configs.Configurations);
                     if (!configs.Configurations.UseRecurringJob.GetValueOrDefault())
                     {
-                        _context.Database.ExecuteSqlCommand("DELETE FROM [Hangfire].[Hash];DELETE FROM [Hangfire].[JOB];DELETE FROM [Hangfire].[Set]");
+                        _context.Database.ExecuteSqlRaw("DELETE FROM [Hangfire].[Hash];DELETE FROM [Hangfire].[JOB];DELETE FROM [Hangfire].[Set]");
                     }
 
                     await new ReportsScheduleLogic(_context, (int)ReportTypesEnum.DailyReport).UpdateScheduleReportsAsync(configs);

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ShopifyApp2.Controllers;
-using SyncApp;
+using SyncAppEntities;
 
 namespace ShopifyApp2
 {
