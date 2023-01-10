@@ -273,33 +273,51 @@ namespace SyncAppEntities.Logic
                     var ProductObj = Products.Items.FirstOrDefault();
                     var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
+                    List<long> InventoryItemIds = new List<long>();
                     if (LocationId != null && LocationId != 0)
                     {
-                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
                         InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
                     }
                     else
                     {
-                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
+                        InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
                         InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
                         var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
                         LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
                     }
 
+                    var inventoryItemLocations = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter
+                    {
+                        InventoryItemIds = InventoryItemIds,
+                        LocationIds = new List<long> { LocationId.GetValueOrDefault() }
+                    });
+
+                    int quantityAdjustment = Convert.ToInt32(Quantity);
+                    if (inventoryItemLocations == null || (inventoryItemLocations != null && inventoryItemLocations.Items.Count() == 0))
+                    {
+                        if (Method.ToLower().Trim() == "out")
+                        {
+                            quantityAdjustment *= -1;
+                        }
+
+                        Method = "set";
+                    }
+
                     if (Method.ToLower().Trim() == "set")
                     {
-                        var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
+                        var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = quantityAdjustment });
                         LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "in")
                     {
-                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
+                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = quantityAdjustment });
                         LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "out")
                     {
-                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
+                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = -1 * quantityAdjustment });
                         LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
                     }
 
