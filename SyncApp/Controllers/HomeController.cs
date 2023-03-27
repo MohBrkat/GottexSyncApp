@@ -221,7 +221,7 @@ namespace ShopifyApp2.Controllers
                 List<CountryOrders> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
 
                 var defaultCountryOrders = GetOrCreateDefaultCountryOrders(lsOfOrders, DefaultCountryName);
-                var defaultOrders = defaultCountryOrders.Orders;
+                var defaultOrders = defaultCountryOrders.Orders.ToList();
 
                 foreach (var CountryOrders in lsOfOrders)
                 {
