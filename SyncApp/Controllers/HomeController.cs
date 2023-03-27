@@ -220,14 +220,8 @@ namespace ShopifyApp2.Controllers
             {
                 List<CountryOrders> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
 
-                var defaultOrders = new List<Order>();
-
-                var franceOrders = lsOfOrders.FirstOrDefault(a => CountryIsDefault(a.Country));
-                if (franceOrders != null)
-                {
-                    lsOfOrders.Remove(franceOrders);
-                    lsOfOrders.Add(franceOrders);
-                }
+                var defaultCountryOrders = GetOrCreateDefaultCountryOrders(lsOfOrders, DefaultCountryName);
+                var defaultOrders = defaultCountryOrders.Orders;
 
                 foreach (var CountryOrders in lsOfOrders)
                 {
@@ -261,6 +255,24 @@ namespace ShopifyApp2.Controllers
             }
 
             return View("~/Views/Home/ExportDailySales.cshtml", "N/A");
+        }
+
+        private CountryOrders GetOrCreateDefaultCountryOrders(List<CountryOrders> orders, string defaultCountryName)
+        {
+            var defaultCountryOrders = orders.FirstOrDefault(o => CountryIsDefault(o.Country));
+
+            if (defaultCountryOrders == null)
+            {
+                defaultCountryOrders = new CountryOrders
+                {
+                    Country = DefaultCountryName.Trim().ToLower(),
+                    Orders = new List<Order>()
+                };
+
+                orders.Add(defaultCountryOrders);
+            }
+
+            return defaultCountryOrders;
         }
 
         private bool CountryIsDefault(string country)

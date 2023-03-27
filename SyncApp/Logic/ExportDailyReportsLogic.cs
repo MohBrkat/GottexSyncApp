@@ -332,10 +332,10 @@ namespace SyncApp.Logic
                 throw e;
             }
         }
-        private int GetOrderId(string orderName)
+        private string GetOrderId(string orderName)
         {
             var orderSplitted = orderName.Split('#');
-            var order = int.Parse(orderSplitted[1]);
+            var order = orderSplitted[1];
             return order;
         }
         public bool CheckWorkingDays()
