@@ -234,12 +234,12 @@ namespace SyncApp.Logic
                     localDetailReportList.Add(detailedReportModel);
                 }
 
-                localDetailReportList = localDetailReportList.OrderBy(r => GetOrderId(r.OrderName)).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
+                localDetailReportList = localDetailReportList.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
                 localDetailReportList.FirstOrDefault().CustomerNotes = order.Note;
                 detailedAutomaticReport.AddRange(localDetailReportList);
             }
 
-            detailedAutomaticReport = detailedAutomaticReport.OrderBy(r => GetOrderId(r.OrderName)).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
+            detailedAutomaticReport = detailedAutomaticReport.OrderBy(r => r.OrderName).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
 
             string extension = "xlsx";
 
@@ -332,12 +332,14 @@ namespace SyncApp.Logic
                 throw e;
             }
         }
+
         private string GetOrderId(string orderName)
         {
             var orderSplitted = orderName.Split('#');
             var order = orderSplitted[1];
             return order;
         }
+
         public bool CheckWorkingDays()
         {
             var culture = new System.Globalization.CultureInfo("en-US");
