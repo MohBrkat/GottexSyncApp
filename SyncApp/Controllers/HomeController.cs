@@ -271,7 +271,17 @@ namespace ShopifyApp2.Controllers
 
                 orders.Add(defaultCountryOrders);
             }
+            else
+            {
+                orders.Remove(defaultCountryOrders);
+                orders.Add(new CountryOrders
+                {
+                    Country = defaultCountryOrders.Country,
+                    Orders = defaultCountryOrders.Orders
+                });
+            }
 
+            defaultCountryOrders.Orders = new List<Order>();
             return defaultCountryOrders;
         }
 
