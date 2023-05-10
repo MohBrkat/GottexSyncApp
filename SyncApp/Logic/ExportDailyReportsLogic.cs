@@ -163,7 +163,7 @@ namespace SyncAppEntities.Logic
                     FileData = summarizedFile
                 };
 
-                string subject = $"{ Config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
+                string subject = $"{Config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                 string body = EmailMessages.ReportEmailMessageBody();
 
                 if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
@@ -204,6 +204,13 @@ namespace SyncAppEntities.Logic
                 var localDetailReportList = new List<DetailedAutomaticReportModel>();
                 string customerName = $"{order.Customer?.FirstName} {order.Customer?.LastName}";
 
+                string shipping = string.Empty;
+                if (order.ShippingLines.Any())
+                {
+                    var shippingLine = order.ShippingLines.First();
+                    shipping = shippingLine.Code;
+                }
+
                 foreach (var lineItem in order.LineItems)
                 {
                     string productVendor = string.Empty;
@@ -229,7 +236,8 @@ namespace SyncAppEntities.Logic
                         ProductVendor = !string.IsNullOrWhiteSpace(productVendor) ? productVendor : !string.IsNullOrWhiteSpace(lineItem.Vendor) ? lineItem.Vendor : "N/A",
                         VariantSKU = !string.IsNullOrWhiteSpace(variantSKU) ? variantSKU : !string.IsNullOrWhiteSpace(lineItem.SKU) ? lineItem.SKU : "N/A",
                         OrderedQuantity = lineItem.Quantity.Value,
-                        ProductBarcode = !string.IsNullOrWhiteSpace(productBarcode) ? productBarcode : "N/A"
+                        ProductBarcode = !string.IsNullOrWhiteSpace(productBarcode) ? productBarcode : "N/A",
+                        Shipping = shipping
                     };
 
                     localDetailReportList.Add(detailedReportModel);

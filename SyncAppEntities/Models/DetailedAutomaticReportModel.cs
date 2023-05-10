@@ -15,5 +15,6 @@ namespace SyncAppEntities.Models
         public string ProductBarcode { get; set; }
         public int OrderedQuantity { get; set; }
         public string CustomerNotes { get; set; }
+        public string Shipping { get; set; }
     }
 }
