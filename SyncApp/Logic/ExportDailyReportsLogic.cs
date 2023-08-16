@@ -209,6 +209,10 @@ namespace SyncAppEntities.Logic
                 {
                     var shippingLine = order.ShippingLines.First();
                     shipping = shippingLine.Code;
+                    if(shipping == "custom")
+                    {
+                        shipping = shippingLine.Title;
+                    }
                 }
 
                 foreach (var lineItem in order.LineItems)
