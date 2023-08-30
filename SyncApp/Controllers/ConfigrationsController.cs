@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using ShopifySharp;
 using ShopifySharp.Filters;
 using SyncApp.Filters;
 using SyncApp.Logic;
 using SyncApp.Models.EF;
 using SyncApp.ViewModel;
+using Log4NetLibrary;
 
 namespace SyncApp.Controllers
 {
@@ -19,7 +22,7 @@ namespace SyncApp.Controllers
     {
         private readonly ShopifyAppContext _context;
         private readonly CountriesLogic _countriesLogic;
-
+        private static readonly log4net.ILog _log = Logger.GetLogger();
         public ConfigrationsController(ShopifyAppContext context)
         {
             _context = context;
@@ -95,6 +98,29 @@ namespace SyncApp.Controllers
             }
             return View(configrations);
         }
+ 
+        public async Task<decimal?> GetTaxFromShopify(long id)
+        {
+            try
+            { 
+                var countryService = new CountryService(StoreUrl, ApiSecret);
+                Country country = await countryService.GetAsync(id);
+                var tax = country.Tax;
+                var countryDB = _countriesLogic.GetCountry(id);
+                if (countryDB != null)
+                {
+                    countryDB.CountryTax = tax;
+                    _context.Update(countryDB); 
+                    await _context.SaveChangesAsync();     
+                }
+                return tax;
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Exception While Getting Taxes From Shopify: {JsonConvert.SerializeObject(ex)}");
+                throw ex;
+            }
+        }
 
         public async Task<IActionResult> Countries()
         {
@@ -103,7 +129,7 @@ namespace SyncApp.Controllers
                 CountriesList = new List<Countries>()
             };
 
-            var shopifyCountries = await GetCountriesAsync();
+            var shopifyCountries = await _countriesLogic.GetCountriesAsync();
 
             foreach (var country in shopifyCountries)
             {
@@ -125,39 +151,7 @@ namespace SyncApp.Controllers
 
             return View(countriesModel);
         }
-
-        private async Task<List<Country>> GetCountriesAsync()
-        {
-            List<Country> countries = new List<Country>();
-
-            var countryService = new CountryService(StoreUrl, ApiSecret);
-
-            var page = await countryService.ListAsync(new CountryListFilter { Limit = 250 });
-
-            while (true)
-            {
-                countries.AddRange(page.Items);
-
-                if (!page.HasNextPage)
-                {
-                    break;
-                }
-
-                try
-                {
-                    page = await countryService.ListAsync(page.GetNextPageFilter());
-                }
-                catch (ShopifyRateLimitException)
-                {
-                    await Task.Delay(10000);
-
-                    page = await countryService.ListAsync(page.GetNextPageFilter());
-                }
-            }
-
-            return countries;
-        }
-
+    
         [HttpPost]
         public async Task<IActionResult> Countries(CountriesModel countries)
         {

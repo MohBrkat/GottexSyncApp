@@ -263,6 +263,12 @@
                         <input asp-for="TaxPercentage" class="form-control" />
                     </div>
                 </div>
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                       <label asp-for="GetTaxFromShopify" class="control-label">Get Tax Percentage For Countries From Shopify</label>
+                       <input type="checkbox" class="" name="GetTaxFromShopify" value="true" checked="@Model.GetTaxFromShopify" />
+                    </div>
+                </div>
             </div>
         </section>
 
