@@ -77,7 +77,7 @@ namespace SyncApp.Logic
             return !string.IsNullOrEmpty(country?.BranchCode) && !string.IsNullOrEmpty(country?.CustomerCode) && country?.CountryTax != null;
         }
 
-        public async Task<List<Country>> GetCountriesAsync()
+        public async Task<List<Country>> GetShopifyCountries()
         {
             List<Country> countries = new List<Country>();
 
@@ -108,5 +108,43 @@ namespace SyncApp.Logic
 
             return countries;
         }
+
+        public async void UpdateOrAddCountries()
+        {
+            var shopifyCountries = await GetShopifyCountries();
+
+            foreach (var country in shopifyCountries)
+            {
+                var countryDB = GetCountry(country.Id ?? 0);
+                if (countryDB != null)
+                {
+                    if (Config.GetTaxFromShopify.GetValueOrDefault())
+                    {
+                        countryDB.CountryTax = country.Tax;
+                        _context.Update(countryDB);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    Countries countryModel = new Countries
+                    {
+                        Id = 0,
+                        CountryId = country.Id,
+                        CountryName = country.Name,
+                        CountryCode = country.Code,
+                    };
+                    if (Config.GetTaxFromShopify.GetValueOrDefault())
+                    {
+                        countryModel.CountryTax = country.Tax;
+                    }
+                    _context.Add(countryModel);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+        }
+
     }
 }

@@ -17,21 +17,23 @@
             $('input[type="checkbox"]').not(this).prop('checked', false);
         });
         function getTaxFromShopify(countryId) {
-        // Make an AJAX request to Configrations controller action
-        $.ajax({
-            type: "GET",
-            url: "@Url.Action("getTaxFromShopify", "Configrations")",
-            data: { id: countryId },
-            success: function(result) {
+            document.getElementById('error-Message').style.display = "none";
+            // Make an AJAX request to Configrations controller action
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("getTaxFromShopify", "Configrations")",
+                data: { id: countryId },
+                success: function(result) {
                 
-               var taxInput = 'Tax_' + countryId;
-               document.getElementById(taxInput).value = result;
-            },
-            error: function(error) {
-
-            }
-        });
-    }
+                   var taxInput = 'Tax_' + countryId;
+                   document.getElementById(taxInput).value = result.toFixed(2);
+                },
+                error: function(error) {
+                    document.getElementById('error-Message').style.display = "block";
+               
+                }
+            });
+        }
     </script>
 
     <style>
@@ -54,6 +56,9 @@
     </style>
 </head>
 <body>
+    <div id="error-Message" class="alert alert-danger" style="margin-top:30px; display:none">
+        <strong>Unable to handle the request, Please try again</strong>
+    </div>
     <h4>Countries</h4>
     <hr />
     <form action="Countries" method="post">

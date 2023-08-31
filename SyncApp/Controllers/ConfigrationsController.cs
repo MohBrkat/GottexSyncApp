@@ -105,7 +105,7 @@ namespace SyncApp.Controllers
             { 
                 var countryService = new CountryService(StoreUrl, ApiSecret);
                 Country country = await countryService.GetAsync(id);
-                var tax = country.Tax;
+                var tax = country.Tax ?? 0;
                 var countryDB = _countriesLogic.GetCountry(id);
                 if (countryDB != null)
                 {
@@ -113,11 +113,11 @@ namespace SyncApp.Controllers
                     _context.Update(countryDB); 
                     await _context.SaveChangesAsync();     
                 }
-                return tax;
+                return Math.Round(tax , 2);
             }
             catch (Exception ex)
             {
-                _log.Error($"Exception While Getting Taxes From Shopify: {JsonConvert.SerializeObject(ex)}");
+                _log.Error($"Exception While Getting Taxes From Shopify: {ex.Message}");
                 throw ex;
             }
         }
@@ -129,7 +129,7 @@ namespace SyncApp.Controllers
                 CountriesList = new List<Countries>()
             };
 
-            var shopifyCountries = await _countriesLogic.GetCountriesAsync();
+            var shopifyCountries = await _countriesLogic.GetShopifyCountries();
 
             foreach (var country in shopifyCountries)
             {

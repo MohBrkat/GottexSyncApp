@@ -218,10 +218,7 @@ namespace ShopifyApp2.Controllers
 
             try
             {
-                GetCountriesFromShopify();
-                
-                var shopifyCountries = await _countriesLogic.GetCountriesAsync();
-
+                _countriesLogic.UpdateOrAddCountries();
                 List<CountryOrders> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
 
                 var defaultCountryOrders = GetOrCreateDefaultCountryOrders(lsOfOrders, DefaultCountryName);
@@ -259,43 +256,6 @@ namespace ShopifyApp2.Controllers
             }
 
             return View("~/Views/Home/ExportDailySales.cshtml", "N/A");
-        }
-
-        private async void GetCountriesFromShopify()
-        {
-            var shopifyCountries = await _countriesLogic.GetCountriesAsync();
-            
-            foreach (var country in shopifyCountries)
-            {
-                var countryDB = _countriesLogic.GetCountry(country.Id ?? 0);
-                if (countryDB != null)
-                {
-                    if (Config.GetTaxFromShopify.GetValueOrDefault())
-                    {  
-                        countryDB.CountryTax = country.Tax;
-                        _context.Update(countryDB);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-                else
-                {
-                    Countries countryModel = new Countries
-                    {
-                        Id = 0,
-                        CountryId = country.Id,
-                        CountryName = country.Name,
-                        CountryCode = country.Code,                     
-                    };
-                    if (Config.GetTaxFromShopify.GetValueOrDefault())
-                    {
-                        countryModel.CountryTax = country.Tax;
-                    }
-                    _context.Add(countryModel);
-                }
-            }
-
-            await _context.SaveChangesAsync();
-
         }
 
         private CountryOrders GetOrCreateDefaultCountryOrders(List<CountryOrders> orders, string defaultCountryName)
