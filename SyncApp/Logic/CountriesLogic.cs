@@ -1,4 +1,7 @@
-﻿using SyncApp.Models.EF;
+﻿using Microsoft.AspNetCore.DataProtection;
+using ShopifySharp.Filters;
+using ShopifySharp;
+using SyncApp.Models.EF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +17,28 @@ namespace SyncApp.Logic
             _context = context;
         }
 
+        private Configrations Config
+        {
+            get
+            {
+                return _context.Configrations.First();
+            }
+        }
+
+        private string StoreUrl
+        {
+            get
+            {
+                return Config.StoreUrl ?? string.Empty;
+            }
+        }
+        private string ApiSecret
+        {
+            get
+            {
+                return Config.ApiSecret ?? string.Empty;
+            }
+        }
         public Countries GetCountry(long countryId)
         {
             if (countryId != 0)
@@ -51,5 +76,75 @@ namespace SyncApp.Logic
         {
             return !string.IsNullOrEmpty(country?.BranchCode) && !string.IsNullOrEmpty(country?.CustomerCode) && country?.CountryTax != null;
         }
+
+        public async Task<List<Country>> GetShopifyCountries()
+        {
+            List<Country> countries = new List<Country>();
+
+            var countryService = new CountryService(StoreUrl, ApiSecret);
+
+            var page = await countryService.ListAsync(new CountryListFilter { Limit = 250 });
+
+            while (true)
+            {
+                countries.AddRange(page.Items);
+
+                if (!page.HasNextPage)
+                {
+                    break;
+                }
+
+                try
+                {
+                    page = await countryService.ListAsync(page.GetNextPageFilter());
+                }
+                catch (ShopifyRateLimitException)
+                {
+                    await Task.Delay(10000);
+
+                    page = await countryService.ListAsync(page.GetNextPageFilter());
+                }
+            }
+
+            return countries;
+        }
+
+        public async void UpdateOrAddCountries()
+        {
+            var shopifyCountries = await GetShopifyCountries();
+
+            foreach (var country in shopifyCountries)
+            {
+                var countryDB = GetCountry(country.Id ?? 0);
+                if (countryDB != null)
+                {
+                    if (Config.GetTaxFromShopify.GetValueOrDefault())
+                    {
+                        countryDB.CountryTax = country.Tax;
+                        _context.Update(countryDB);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    Countries countryModel = new Countries
+                    {
+                        Id = 0,
+                        CountryId = country.Id,
+                        CountryName = country.Name,
+                        CountryCode = country.Code,
+                    };
+                    if (Config.GetTaxFromShopify.GetValueOrDefault())
+                    {
+                        countryModel.CountryTax = country.Tax;
+                    }
+                    _context.Add(countryModel);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+        }
+
     }
 }

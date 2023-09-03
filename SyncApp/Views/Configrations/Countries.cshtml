@@ -1,4 +1,5 @@
-﻿@model SyncApp.ViewModel.CountriesModel
+﻿@using SyncApp.Controllers;
+@model SyncApp.ViewModel.CountriesModel
 
 @{
     ViewData["Title"] = "Countries";
@@ -15,6 +16,24 @@
         $(document).on('click', 'input[type="checkbox"]', function () {
             $('input[type="checkbox"]').not(this).prop('checked', false);
         });
+        function getTaxFromShopify(countryId) {
+            document.getElementById('error-Message').style.display = "none";
+            // Make an AJAX request to Configrations controller action
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("getTaxFromShopify", "Configrations")",
+                data: { id: countryId },
+                success: function(result) {
+                
+                   var taxInput = 'Tax_' + countryId;
+                   document.getElementById(taxInput).value = result.toFixed(2);
+                },
+                error: function(error) {
+                    document.getElementById('error-Message').style.display = "block";
+               
+                }
+            });
+        }
     </script>
 
     <style>
@@ -37,6 +56,9 @@
     </style>
 </head>
 <body>
+    <div id="error-Message" class="alert alert-danger" style="margin-top:30px; display:none">
+        <strong>Unable to handle the request, Please try again</strong>
+    </div>
     <h4>Countries</h4>
     <hr />
     <form action="Countries" method="post">
@@ -57,8 +79,11 @@
                 <div class="form-group col-sm-2">
                     <label class="control-label"><b>Customer Code</b></label>
                 </div>
-                <div class="form-group col-sm-2">
+                <div class="form-group col-sm-1">
                     <label class="control-label"><b>Set As Default</b></label>
+                </div>
+                <div class="form-group col-sm-1">
+                    <label class="control-label"><b>Get Tax From Shopify</b></label>
                 </div>
             </div>
             @for (int i = 0; i < Model.CountriesList.Count; i++)
@@ -74,7 +99,7 @@
                         <input type="hidden" asp-for="CountriesList[i].CountryId" value="@Model.CountriesList[i].CountryId" id="countryId" />
                     </div>
                     <div class="form-group col-sm-2">
-                        <input asp-for="CountriesList[i].CountryTax" class="form-control" />
+                            <input asp-for="CountriesList[i].CountryTax" id= "Tax_@Model.CountriesList[i].CountryId" class="form-control" />
                     </div>
                     <div class="form-group col-sm-2">
                         <input asp-for="CountriesList[i].BranchCode" class="form-control" />
@@ -82,9 +107,13 @@
                     <div class="form-group col-sm-2">
                         <input asp-for="CountriesList[i].CustomerCode" class="form-control" />
                     </div>
-                    <div class="form-group col-sm-2">
+                    <div class="form-group col-sm-1">
                         @Html.CheckBoxFor(m => Model.CountriesList[i].IsDefault)
                     </div>
+                    <div class="form-group col-sm-1">
+                        <input type="button" value="Get Tax" class="btn btn-primary" onclick="getTaxFromShopify('@Model.CountriesList[i].CountryId')" > </input>
+                 </div>
+                        
                 </div>
             }
         </div>

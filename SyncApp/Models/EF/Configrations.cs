@@ -43,6 +43,7 @@ namespace SyncApp.Models.EF
         public bool? Wednesday { get; set; }
         public bool? Thursday { get; set; }
         public bool? Friday { get; set; }
+        public bool? GetTaxFromShopify { get; set; }
         public string SiteName { get; set; }
         public bool? ExcludeShippingFeesInSales { get; set; }
         public int? RefundOrdersHistoryDays { get; set; }
