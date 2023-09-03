@@ -98,11 +98,11 @@ namespace SyncApp.Controllers
             }
             return View(configrations);
         }
- 
+
         public async Task<decimal?> GetTaxFromShopify(long id)
         {
             try
-            { 
+            {
                 var countryService = new CountryService(StoreUrl, ApiSecret);
                 Country country = await countryService.GetAsync(id);
                 var tax = country.Tax ?? 0;
@@ -110,14 +110,14 @@ namespace SyncApp.Controllers
                 if (countryDB != null)
                 {
                     countryDB.CountryTax = tax;
-                    _context.Update(countryDB); 
-                    await _context.SaveChangesAsync();     
+                    _context.Update(countryDB);
+                    await _context.SaveChangesAsync();
                 }
-                return Math.Round(tax , 2);
+                return Math.Round(tax, 2);
             }
             catch (Exception ex)
             {
-                _log.Error($"Exception While Getting Taxes From Shopify: {ex.Message}");
+                _log.Error($"Exception While Getting Taxes From Shopify: {ex.Message}", ex);
                 throw ex;
             }
         }
@@ -151,7 +151,7 @@ namespace SyncApp.Controllers
 
             return View(countriesModel);
         }
-    
+
         [HttpPost]
         public async Task<IActionResult> Countries(CountriesModel countries)
         {
