@@ -415,7 +415,7 @@ namespace SyncAppEntities.Logic
                             {
                                 amount = payPlusReceiptAmount ?? 0m;
                             }
-
+                            
                             if (order.RefundKind != "no_refund")
                             {
                                 amount *= -1;
@@ -430,6 +430,8 @@ namespace SyncAppEntities.Logic
                             {
                                 invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
                             }
+                            if (order.Restock == true)
+                                amount = (order.TotalPrice ?? 0m) * -1;
 
                             file.WriteLine(
                             "2" +
@@ -449,6 +451,10 @@ namespace SyncAppEntities.Logic
                                     var giftCardAmount = (giftCardItem.Price * giftCardQuantity) * -1;
 
                                     int giftCardPaymentMeanCode = GetPaymentMeanCode("ReceiptGiftCard");
+
+                                    if (order.Restock == true)
+                                        giftCardAmount = (order.TotalPrice ?? 0m) * -1;
+
                                     file.WriteLine(
                                     "2" +
                                     " " + giftCardPaymentMeanCode.ToString().InsertLeadingZeros(2) +
@@ -475,6 +481,9 @@ namespace SyncAppEntities.Logic
                             {
                                 giftCardBalance *= -1;
                             }
+
+                            if (order.Restock == true)
+                                giftCardBalance = (order.TotalPrice ?? 0m) * -1;
 
                             file.WriteLine(
                             "2" +

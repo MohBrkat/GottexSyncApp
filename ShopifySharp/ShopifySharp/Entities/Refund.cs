@@ -94,7 +94,13 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("refund_duties")]
         public IEnumerable<RefundDutyType> RefundDuties { get; set; }
-        
+
+        ///<summary>
+        /// Whether to send a refund notification to the customer
+        /// </summary>
+        [JsonProperty("restock")]
+        public bool? Restock { get; set; }
+
     }
 
     public class Shipping

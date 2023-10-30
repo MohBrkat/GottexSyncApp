@@ -150,7 +150,8 @@ a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
 
                         SubtotalPrice = order.SubtotalPrice,
                         FinancialStatus = order.FinancialStatus,
-                        ShippingLines = order.ShippingLines
+                        ShippingLines = order.ShippingLines,
+                        Restock = refund.Restock
                     };
 
                     var refundLineItems = refund.RefundLineItems;
