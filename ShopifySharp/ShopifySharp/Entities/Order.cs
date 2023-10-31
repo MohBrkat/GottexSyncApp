@@ -400,5 +400,6 @@ namespace ShopifySharp
 
         public decimal RefundAmount { set; get; } = 0.0m;
         public string RefundKind { set; get; } = "no_refund";
+        public bool? Restock { set; get; } = false;
     }
 }
