@@ -430,6 +430,7 @@ namespace SyncAppEntities.Logic
                             {
                                 invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
                             }
+
                             if (order.Restock == true)
                                 amount = (order.TotalPrice ?? 0m) * -1;
 
@@ -544,12 +545,7 @@ namespace SyncAppEntities.Logic
         }
 
         private async Task<TransactionsModel> GetTransactionModelByOrderAsync(Order order, DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
-        {
-            if(order.OrderNumber == 136263)
-            {
-
-            }   
-            
+        {            
             TransactionsModel transactionsModel = new TransactionsModel()
             {
                 ReceiptTransactions = new List<Receipt>(),
