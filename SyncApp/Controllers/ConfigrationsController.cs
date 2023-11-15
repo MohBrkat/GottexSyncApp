@@ -106,7 +106,7 @@ namespace SyncApp.Controllers
                 var countryService = new CountryService(StoreUrl, ApiSecret);
                 Country country = await countryService.GetAsync(id);
                 var tax = country.Tax ?? 0;
-                var countryDB = _countriesLogic.GetCountry(id);
+                var countryDB = await _countriesLogic.GetCountry(id);
                 if (countryDB != null)
                 {
                     countryDB.CountryTax = tax;
@@ -133,7 +133,7 @@ namespace SyncApp.Controllers
 
             foreach (var country in shopifyCountries)
             {
-                var countryDB = _countriesLogic.GetCountry(country.Id ?? 0);
+                var countryDB = await _countriesLogic.GetCountry(country.Id ?? 0);
                 Countries countryModel = new Countries
                 {
                     Id = countryDB?.Id ?? 0,
@@ -162,7 +162,7 @@ namespace SyncApp.Controllers
                 {
                     foreach (var country in countries.CountriesList)
                     {
-                        var warehouseDB = _countriesLogic.GetCountry(country.CountryId ?? 0);
+                        var warehouseDB = await _countriesLogic.GetCountry(country.CountryId ?? 0);
                         if (warehouseDB != null)
                         {
                             warehouseDB.CountryTax = country.CountryTax ?? 0m;

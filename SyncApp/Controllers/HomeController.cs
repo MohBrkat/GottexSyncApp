@@ -218,7 +218,7 @@ namespace ShopifyApp2.Controllers
 
             try
             {
-                _countriesLogic.UpdateOrAddCountries();
+                await _countriesLogic.UpdateOrAddCountries();
                 List<CountryOrders> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
 
                 var defaultCountryOrders = GetOrCreateDefaultCountryOrders(lsOfOrders, DefaultCountryName);
@@ -229,7 +229,7 @@ namespace ShopifyApp2.Controllers
                     var country = CountryOrders.Country;
                     var orders = CountryOrders.Orders;
 
-                    var countryDB = _countriesLogic.GetCountryByName(country);
+                    var countryDB = await _countriesLogic.GetCountryByName(country);
                     //if it doesn't have values add to the default country orders
                     if ((!_countriesLogic.CheckIfHasValues(countryDB) || IsBranchAndCustomerCodesSame(countryDB)) && !CountryIsDefault(country))
                     {
@@ -241,7 +241,7 @@ namespace ShopifyApp2.Controllers
                     if (CountryIsDefault(country))
                         orders.AddRange(defaultOrders);
 
-                    var file = _exportDailySalesLogic.GenerateSalesFile(country, orders, fromWeb);
+                    var file = await _exportDailySalesLogic.GenerateSalesFile(country, orders, fromWeb);
                     files.Add(new CountryFiles
                     {
                         Country = country,

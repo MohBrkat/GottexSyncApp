@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace SyncApp.Logic
 {
@@ -39,31 +40,26 @@ namespace SyncApp.Logic
                 return Config.ApiSecret ?? string.Empty;
             }
         }
-        public Countries GetCountry(long countryId)
+        public async Task<Countries> GetCountry(long countryId)
         {
             if (countryId != 0)
             {
-                var country = _context.Countries.FirstOrDefault(w => w.CountryId == countryId);
+                var country = await _context.Countries.FirstOrDefaultAsync(w => w.CountryId == countryId);
                 return country;
             }
 
             return null;
         }
-        
-        public Countries GetCountryByName(string country)
+
+        public async Task<Countries> GetCountryByName(string country)
         {
             if (!string.IsNullOrEmpty(country))
             {
-                var countryDB = _context.Countries.FirstOrDefault(w => w.CountryName == country);
+                var countryDB = await _context.Countries.FirstOrDefaultAsync(w => w.CountryName == country);
                 return countryDB;
             }
 
             return null;
-        }
-
-        public List<Countries> GetWarehouses()
-        {
-            return _context.Countries.ToList();
         }
 
         public Countries GetDefaultCountry()
@@ -109,17 +105,18 @@ namespace SyncApp.Logic
             return countries;
         }
 
-        public async void UpdateOrAddCountries()
+        public async Task UpdateOrAddCountries()
         {
             var shopifyCountries = await GetShopifyCountries();
 
             foreach (var country in shopifyCountries)
             {
-                var countryDB = GetCountry(country.Id ?? 0);
+                var countryDB = await GetCountryByName(country.Name);
                 if (countryDB != null)
                 {
                     if (Config.GetTaxFromShopify.GetValueOrDefault())
                     {
+                        countryDB.CountryId = country.Id;
                         countryDB.CountryTax = country.Tax;
                         _context.Update(countryDB);
                         await _context.SaveChangesAsync();
@@ -138,13 +135,12 @@ namespace SyncApp.Logic
                     {
                         countryModel.CountryTax = country.Tax;
                     }
-                    _context.Add(countryModel);
+                    await _context.AddAsync(countryModel);
                 }
             }
 
             await _context.SaveChangesAsync();
 
         }
-
     }
 }

@@ -223,10 +223,10 @@ namespace SyncApp.Logic
             return countryOrders;
         }
 
-        public string GenerateSalesFile(string country, List<Order> orders, bool fromWeb)
+        public async Task<string> GenerateSalesFile(string country, List<Order> orders, bool fromWeb)
         {
             //Get Country By Name from DB
-            var countryDB = GetCountryByName(country);
+            var countryDB = await GetCountryByName(country);
 
             //Get Country needed information
             string customerCode = GetCustomerCode(countryDB);
@@ -455,13 +455,13 @@ namespace SyncApp.Logic
             return countryDB.CustomerCode.InsertLeadingSpaces(16);
         }
 
-        private Countries GetCountryByName(string countryName)
+        private async Task<Countries> GetCountryByName(string countryName)
         {
             var country = DefaultCountry;
 
             if (!string.IsNullOrEmpty(countryName))
             {
-                country = countriesLogic.GetCountryByName(countryName);
+                country = await countriesLogic.GetCountryByName(countryName);
             }
 
             return country;
