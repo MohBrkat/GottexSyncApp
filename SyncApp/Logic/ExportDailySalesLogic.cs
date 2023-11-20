@@ -344,15 +344,13 @@ namespace SyncApp.Logic
                             if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
                             {
                                 mQuant = "-1";
-                                //Calculate refunded shipping
-                                shippingAmount = Math.Abs(shipOrder.RefundAmount / ((taxPercentage / 100.0m) + 1.0m));
                             }
 
                             lock (salesFileLock)
                             {
                                 file.WriteLine(
                                 "1" + "\t" +
-                                "921".InsertLeadingSpaces(15) + "\t" +
+                                "923".InsertLeadingSpaces(15) + "\t" +
                                 mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
                                 shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                                 "".InsertLeadingSpaces(4) + "\t" + // agent code
