@@ -202,6 +202,17 @@ namespace SyncApp.Logic
             {
                 var localDetailReportList = new List<DetailedAutomaticReportModel>();
                 string customerName = $"{order.Customer?.FirstName} {order.Customer?.LastName}";
+                var GEOrderId = "";
+                if (order.NoteAttributes.Any())
+                {
+                    foreach (var NoteAttribute in order.NoteAttributes)
+                    {
+                        if (NoteAttribute.Name == "GEOrderId")
+                        {
+                            GEOrderId = (string)NoteAttribute.Value;
+                        }
+                    }
+                }
 
                 foreach (var lineItem in order.LineItems)
                 {
@@ -228,6 +239,7 @@ namespace SyncApp.Logic
                         ProductVendor = !string.IsNullOrWhiteSpace(productVendor) ? productVendor : !string.IsNullOrWhiteSpace(lineItem.Vendor) ? lineItem.Vendor : "N/A",
                         VariantSKU = !string.IsNullOrWhiteSpace(variantSKU) ? variantSKU : !string.IsNullOrWhiteSpace(lineItem.SKU) ? lineItem.SKU : "N/A",
                         OrderedQuantity = lineItem.Quantity.Value,
+                        GlobalEOrderId = GEOrderId,
                         ProductBarcode = !string.IsNullOrWhiteSpace(productBarcode) ? productBarcode : "N/A"
                     };
 
