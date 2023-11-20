@@ -209,11 +209,11 @@ namespace SyncApp.Logic
                     {
                         if (NoteAttribute.Name == "GEOrderId")
                         {
-                            GEOrderId = (String)NoteAttribute.Value;
+                            GEOrderId = (string)NoteAttribute.Value;
                         }
                     }
-
                 }
+
                 foreach (var lineItem in order.LineItems)
                 {
                     string productVendor = string.Empty;
