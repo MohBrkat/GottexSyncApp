@@ -39,7 +39,7 @@ namespace SyncApp
             catch (WebException e)
             {
                 _log.Error(e.Message);
-                throw e;
+                throw e;          
             }
         }
 
@@ -593,6 +593,7 @@ namespace SyncApp
 
         private static string GetLastFileName(string Host, string UserName, string Password)
         {
+            _log.Info($"Start GetLastFileName");
             FtpWebRequest ftpRequest = (FtpWebRequest)FtpWebRequest.Create(Host);
 
             ftpRequest.Credentials = new NetworkCredential(UserName, Password);
@@ -604,6 +605,7 @@ namespace SyncApp
             ftpRequest.Method = WebRequestMethods.Ftp.ListDirectory;
 
             FtpWebResponse ftpResponse = (FtpWebResponse)ftpRequest.GetResponse();
+            _log.Info($"ftpResponse : " + ftpResponse);
 
             Stream ftpStream = ftpResponse.GetResponseStream();
 
@@ -618,6 +620,7 @@ namespace SyncApp
                     ls.Add(ftpReader.ReadLine());
                 }
 
+                _log.Info($"list on the ftp : " + ls.Count);
                 var lsOfValid = new List<string>();
 
                 if (ls.Count > 0)
@@ -625,6 +628,7 @@ namespace SyncApp
                     foreach (var item in ls)
                     {
                         string current = item;
+                        _log.Info($"files : " + current);
                         if (current.EndsWith(".dat"))
                         {
                             current = current.Replace(".dat", "");
@@ -641,14 +645,17 @@ namespace SyncApp
                         }
                     }
 
+                    _log.Info($"Valid list on the ftp : " + lsOfValid.Count);
                     if (lsOfValid.Count > 0)
                     {
                         var result = lsOfValid.ToArray();
                         Array.Sort(result);
+                        _log.Info($"End GetLastFileName");
                         return result.First() + ".dat";
                     }
                     else
                     {
+                        _log.Info($"End GetLastFileName");
                         return "";
                     }
                 }
@@ -665,31 +672,36 @@ namespace SyncApp
                 ftpResponse.Close();
                 ftpRequest = null;
             }
+            _log.Info($"End GetLastFileName");
             return "";
         }
 
         public static string ReadLatestFileFromFtp(string Host, string UserName, string Password, string FolderPath, out string fileName)
         {
+            _log.Info($"Start ReadLatestFileFromFtp");
             WebClient request = new WebClient();
             string url = Host + "/" + FolderPath + "/";
             request.Credentials = new NetworkCredential(UserName, Password);
             try
             {
+                _log.Info($"file url : " + url);
                 var _fileName = GetLastFileName(Host + "/" + FolderPath, UserName, Password);
                 url = url + _fileName;
-
+                _log.Info($"file Name : " + _fileName);
+               
                 byte[] newFileData = request.DownloadData(url);
                 string fileString = System.Text.Encoding.UTF8.GetString(newFileData);
                 fileName = _fileName;
+                _log.Info($"End ReadLatestFileFromFtp");
                 return fileString;
             }
             catch (WebException e)
             {
-                _log.Error(e.Message);
+                _log.Error($"Exception While Read Latest File From Ftp: " + e.Message);
                 throw e;
             }
         }
-
+  
         public static string DwonloadFile(string fileName, string ServerUrl, string path, string userName, string password)
         {
             WebClient request = new WebClient();
@@ -792,7 +804,7 @@ namespace SyncApp
             catch (Exception ex)
             {
                 _log.Error($"Error while uploading file to FTP: {ex.Message}", ex);
-                return false; 
+                return false;
             }
         }
 
@@ -800,31 +812,32 @@ namespace SyncApp
         {
             FtpWebRequest reqFTP = null;
             Stream ftpStream = null;
-            try
-            {
-                reqFTP = (FtpWebRequest)FtpWebRequest.Create(ServerUrl + "/" + path + "/" + fileName);
-
-                reqFTP.Method = WebRequestMethods.Ftp.DeleteFile;
-
-                reqFTP.Credentials = new NetworkCredential(userName, password);
-
-                FtpWebResponse response = (FtpWebResponse)reqFTP.GetResponse();
-
-                ftpStream = response.GetResponseStream();
-
-                ftpStream.Close();
-
-                response.Close();
-            }
-            catch (Exception ex)
-            {
-                if (ftpStream != null)
+                try
                 {
+                    reqFTP = (FtpWebRequest)FtpWebRequest.Create(ServerUrl + "/" + path + "/" + fileName);
+
+                    reqFTP.Method = WebRequestMethods.Ftp.DeleteFile;
+
+                    reqFTP.Credentials = new NetworkCredential(userName, password);
+
+                    FtpWebResponse response = (FtpWebResponse)reqFTP.GetResponse();
+
+                    ftpStream = response.GetResponseStream();
+
                     ftpStream.Close();
-                    ftpStream.Dispose();
+
+                    response.Close();
                 }
-                throw new Exception(ex.Message.ToString());
+                catch (Exception ex)
+                {   
+                        if (ftpStream != null)
+                        {
+                            ftpStream.Close();
+                            ftpStream.Dispose();
+                        }
+                        throw new Exception(ex.Message.ToString());
+                    }
+                }
             }
         }
-    }
-}
+ 
