@@ -604,6 +604,8 @@ namespace SyncAppCommon
 
         private static string GetLastFileName(string Host, string UserName, string Password)
         {
+            _log.Info($"Start GetLastFileName");
+
             FtpWebRequest ftpRequest = (FtpWebRequest)FtpWebRequest.Create(Host);
 
             ftpRequest.Credentials = new NetworkCredential(UserName, Password);
@@ -615,6 +617,7 @@ namespace SyncAppCommon
             ftpRequest.Method = WebRequestMethods.Ftp.ListDirectory;
 
             FtpWebResponse ftpResponse = (FtpWebResponse)ftpRequest.GetResponse();
+            _log.Info($"ftpResponse : " + ftpResponse);
 
             Stream ftpStream = ftpResponse.GetResponseStream();
 
@@ -629,6 +632,7 @@ namespace SyncAppCommon
                     ls.Add(ftpReader.ReadLine());
                 }
 
+                _log.Info($"list on the ftp : " + ls.Count);
                 var lsOfValid = new List<string>();
 
                 if (ls.Count > 0)
@@ -636,6 +640,7 @@ namespace SyncAppCommon
                     foreach (var item in ls)
                     {
                         string current = item;
+                        _log.Info($"files : " + current);
                         if (current.EndsWith(".dat"))
                         {
                             current = current.Replace(".dat", "");
@@ -652,15 +657,17 @@ namespace SyncAppCommon
                         }
 
                     }
-
+                    _log.Info($"Valid list on the ftp : " + lsOfValid.Count);
                     if (lsOfValid.Count > 0)
                     {
                         var result = lsOfValid.ToArray();
                         Array.Sort(result);
+                        _log.Info($"End GetLastFileName");
                         return result.First() + ".dat";
                     }
                     else
                     {
+                        _log.Info($"End GetLastFileName");
                         return "";
                     }
                 }
@@ -677,27 +684,31 @@ namespace SyncAppCommon
                 ftpResponse.Close();
                 ftpRequest = null;
             }
-
+            _log.Info($"End GetLastFileName");
             return "";
         }
 
         public static string ReadLatestFileFromFtp(string Host, string UserName, string Password, string FolderPath, out string fileName)
         {
+            _log.Info($"Start ReadLatestFileFromFtp");
             WebClient request = new WebClient();
             string url = Host + "/" + FolderPath + "/";
             request.Credentials = new NetworkCredential(UserName, Password);
             try
             {
+                _log.Info($"file url : " + url);
                 var _fileName = GetLastFileName(Host + "/" + FolderPath, UserName, Password);
                 url = url + _fileName;
-
+                _log.Info($"file Name : " + _fileName);
                 byte[] newFileData = request.DownloadData(url);
                 string fileString = System.Text.Encoding.UTF8.GetString(newFileData);
                 fileName = _fileName;
+                _log.Info($"End ReadLatestFileFromFtp");
                 return fileString;
             }
             catch (WebException e)
             {
+                _log.Error($"Exception While Read Latest File From Ftp: "+ e.Message);
                 throw e;
                 // Do something such as log error, but this is based on OP's original code
                 // so for now we do nothing.

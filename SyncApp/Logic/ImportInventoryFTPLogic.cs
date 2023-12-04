@@ -117,7 +117,7 @@ namespace SyncAppEntities.Logic
         public async Task ImportInventoryFileAsync()
         {
             bool importSuccess = false;
-
+            _log.Info($"Start ImportInventoryFileAsync");
             FileInformation info = await ValidateInventoryUpdatesFromCSVAsync();
 
             if (info != null && !string.IsNullOrEmpty(info.fileName))
@@ -130,6 +130,7 @@ namespace SyncAppEntities.Logic
                     {
                         if (fileImportStatus.IsImportSuccess == true || fileImportStatus.IsCompleted == false)
                         {
+                            _log.Info($"ImportInventoryFileAsync - fileImportStatus.IsImportSuccess :" + fileImportStatus.IsImportSuccess);
                             return;
                         }
                     }
@@ -151,27 +152,33 @@ namespace SyncAppEntities.Logic
 
                 if (importSuccess)
                 {
+                    _log.Info($"ImportInventoryFileAsync - importSuccess - Delete File");
                     FtpHandler.DeleteFile(info.fileName, Host, FTPPathConsts.OUT_PATH, UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "success", info.fileName + ".log");
+                    _log.Info($"ImportInventoryFileAsync - importSuccess - Send Email");
                     Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject);
                 }
                 else
                 {
                     var successLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfSucess.ToArray()));
                     var failedLogFile = Encoding.ASCII.GetBytes(String.Join(Environment.NewLine, info.LsOfErrors.ToArray()));
+                    _log.Info($"ImportInventoryFileAsync - Delete File");
                     FtpHandler.DeleteFile(info.fileName, Host, FTPPathConsts.OUT_PATH, UserName, Password);
                     var body = EmailMessages.messageBody("Import inventory File", "failed", info.fileName + ".log");
+                    _log.Info($"ImportInventoryFileAsync - Send Email");
                     Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, body, subject, successLogFile, failedLogFile);
                 }
 
                 UpdateFileImportStatus(importSuccess, true, info);
             }
+            _log.Info($"End ImportInventoryFileAsync");
         }
 
         private void InsertFileImportStatus(bool importSuccess, bool isCompleted, FileInformation info)
         {
             try
             {
+                _log.Info($"Start InsertFileImportStatus");
                 FilesImportStatus importStatus = new FilesImportStatus()
                 {
                     FileName = info.fileName,
@@ -183,17 +190,19 @@ namespace SyncAppEntities.Logic
 
                 _context.Add(importStatus);
                 _context.SaveChanges();
+                _log.Info($"End InsertFileImportStatus");
             }
             catch (Exception e)
             {
                 _log.Error(e.Message);
-            }
+            }  
         }
 
         private void UpdateFileImportStatus(bool importSuccess, bool isCompleted, FileInformation info)
         {
             try
             {
+                _log.Info($"Start UpdateFileImportStatus");
                 FilesImportStatus importStatus = _context.FilesImportStatus.FirstOrDefault(f => f.FileName.Trim() == info.fileName.Trim());
 
                 if (importStatus != null)
@@ -203,17 +212,18 @@ namespace SyncAppEntities.Logic
                     importStatus.UpdateDate = DateTime.Now;
 
                     _context.SaveChanges();
+                    _log.Info($"End UpdateFileImportStatus");
                 }
             }
             catch (Exception e)
             {
                 _log.Error(e.Message);
-            }
+            }           
         }
 
         public async Task<FileInformation> ValidateInventoryUpdatesFromCSVAsync()
         {
-
+            _log.Info($"Start ValidateInventoryUpdatesFromCSVAsync");
             List<string> LsOfSuccess = new List<string>();
             List<string> LsOfErrors = new List<string>();
 
@@ -233,6 +243,7 @@ namespace SyncAppEntities.Logic
 
                 if (!string.IsNullOrEmpty(fileContent))
                 {
+                    _log.Info($"ValidateInventoryUpdatesFromCSVAsync - Send Email");
                     Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
@@ -355,11 +366,13 @@ namespace SyncAppEntities.Logic
             info.lsErrorCount = LsOfErrors.Count();
             info.isValid = validFile;
             info.LsOfErrors = LsOfErrors;
+            _log.Info($"End ValidateInventoryUpdatesFromCSVAsync");
             return info;
         }
 
         private async Task<bool> ImportValidInvenotryUpdatesFromCSVAsync(FileInformation info, int retryCount = 0)
         {
+            _log.Info($"Start ImportValidInvenotryUpdatesFromCSVAsync");
             List<string> RowsWithoutHeader = info.fileRows;
 
             var ProductServices = new ProductService(StoreUrl, ApiSecret);
@@ -460,7 +473,7 @@ namespace SyncAppEntities.Logic
             _log.Info("file processed sucesfully");
 
             info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
-
+            _log.Info($"End ImportValidInvenotryUpdatesFromCSVAsync");
             return true;
         }
     }
