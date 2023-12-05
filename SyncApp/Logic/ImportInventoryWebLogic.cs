@@ -8,6 +8,7 @@ using ShopifySharp.Filters;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
+using SyncApp.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -150,13 +151,20 @@ namespace SyncApp.Logic
                 {
                     var FileContent = reader.ReadToEnd();
 
-                    var Rows = FileContent.Split(Environment.NewLine).SkipLast(1).ToArray(); // skip the header
+                    // Define an array of newline strings
+                    string[] newLineSeparators = { Environment.NewLine, "\r", "\n"};
+
+                    // Split the file content using the array of newline strings
+                    var Rows = FileContent.Split(newLineSeparators, StringSplitOptions.None).SkipLast(1).ToArray(); // skip the header
 
                     var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
                     var Headers = Rows[0];
                     if (ValidateCSV.IsValidHeaders(Headers))
                     {
+                        Rows = Rows.Last().Equals("") ? Rows.SkipLast(1).ToArray() : Rows;
+                        Rows = Rows.Last().Contains("\0") ? Rows.SkipLast(1).ToArray() : Rows;
+
                         Rows = Rows.Skip(1).ToArray();// skip headers
 
                         fileRows = Rows.ToList();

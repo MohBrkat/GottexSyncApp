@@ -6,6 +6,7 @@ using ShopifySharp.Filters;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
+using SyncApp.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -245,7 +246,11 @@ namespace SyncApp.Logic
                     _log.Info($"ValidateInventoryUpdatesFromCSVAsync - Send Email");
                     Utility.SendEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ToEmail, $"Inventory update starting with the file {info.fileName}", "processing " + info.fileName + " has been satrted.");
 
-                    var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
+                    // Define an array of newline strings
+                    string[] newLineSeparators = { Environment.NewLine, "\r", "\n" };
+
+                    // Split the file content using the array of newline strings
+                    var Rows = fileContent.Split(newLineSeparators, StringSplitOptions.None).SkipLast(1).ToArray(); // skip the header
 
                     var ProductServices = new ProductService(StoreUrl, ApiSecret);
                     var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
