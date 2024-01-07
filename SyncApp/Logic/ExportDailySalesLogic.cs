@@ -208,6 +208,7 @@ namespace SyncAppEntities.Logic
 
         public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
         {
+            _log.Info($"Start ExportDailySalesAsync ");
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
             try
@@ -340,10 +341,12 @@ namespace SyncAppEntities.Logic
 
         private void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order, bool isSuperPharmOrder = false)
         {
+            _log.Info($"Start WriteOrderTransactions");
             var discountZero = 0;
             var shipRefOrder = order;
 
             string warehouseCode = DefaultWarehouseCode;
+            _log.Info($"DefaultWarehouseCode" + warehouseCode);
             //FOR TESTING INVENTORY STUFF
             var ProductServices = new ProductService(StoreUrl, ApiSecret);
             var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
@@ -354,6 +357,7 @@ namespace SyncAppEntities.Logic
                 if (orderItem.LocationId.HasValue)
                 {
                     warehouseCode = GetWarehouseCodeByLocationId(orderItem.LocationId);
+                    _log.Info($"orderItem:" + orderItem.SKU + "-LocationId:" + orderItem.LocationId + "-DefaultWarehouseCode" + warehouseCode);
                 }
                 else
                 {
@@ -369,18 +373,22 @@ namespace SyncAppEntities.Logic
                         }
 
                         var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
-
+                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();  
+                        
                         var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
+                        _log.Info($"orderItem:" + orderItem.SKU + "-LocationQuery.Items.Count():" + LocationQuery.Items.Count());
+
                         if (orderItem.FulfillmentStatus == "fulfilled" && order.RefundKind == "no_refund"
                             && LocationQuery.Items.Count() > 1)
                         {
                             warehouseCode = "ON01";
+                            _log.Info($"Updated warehouseCode" + warehouseCode);
                         }
                         else
                         {
                             var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
                             warehouseCode = GetWarehouseCodeByLocationId(LocationId);
+                            _log.Info($"warehouseCode" + warehouseCode + "LocationId" + LocationId);
                         }
                     }
                 }
@@ -518,6 +526,7 @@ namespace SyncAppEntities.Logic
 
         private string GetWarehouseCodeByLocationId(long? locationId)
         {
+            _log.Info($"Start GetWarehouseCodeByLocationId");
             string warehouseCode = DefaultWarehouseCode;
 
             if (locationId != null && locationId != 0)
@@ -529,7 +538,7 @@ namespace SyncAppEntities.Logic
                     warehouseCode = NoWarehouseCode;
                 }
             }
-
+            _log.Info($"End GetWarehouseCodeByLocationId");
             return warehouseCode;
         }
     }
