@@ -415,7 +415,7 @@ namespace SyncAppEntities.Logic
                 if (orderItem.Taxable == false || order.TaxesIncluded == true)
                     price /= totalWithVatPercentage;
 
-                if(order.RefundKind != "no_refund" && !order.Transactions.Any())
+                if((order.RefundKind != "no_refund" || order.IsRefundOrder) && !order.Transactions.Any())
                 {
                     price = 0;
                 }

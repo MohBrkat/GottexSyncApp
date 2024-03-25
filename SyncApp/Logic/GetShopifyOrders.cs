@@ -137,7 +137,7 @@ namespace SyncAppEntities.Logic
             foreach (var order in OrdersHasRefunds)
             {
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom.AbsoluteStart() &&
-a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
+                    a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
 
                 foreach (var refund in targetRefunds)
                 {
@@ -201,6 +201,7 @@ a.CreatedAt.GetValueOrDefault().Date <= dateTo.AbsoluteEnd()).ToList();
                     var refundInfo = refund.OrderAdjustments;
 
                     orderToReturn.RefundKind = "refund_discrepancy";
+                    orderToReturn.IsRefundOrder = true;
 
                     if (refundInfo != null && refundInfo.Count() != 0)
                     {
