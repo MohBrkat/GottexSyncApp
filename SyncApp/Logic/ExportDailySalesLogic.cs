@@ -208,7 +208,7 @@ namespace SyncAppEntities.Logic
 
         public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
         {
-            _log.Info($"Start ExportDailySalesAsync ");
+            _log.Info($"Start ExportDailySalesAsync - Start Date:" + dateToRetriveFrom + "- EndDate:" + dateToRetriveTo);
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
             try
