@@ -7,17 +7,25 @@ namespace SyncAppEntities.Models
 {
     public static class DateTimeExtensions
     {
-        public static DateTime AbsoluteStart(this DateTime dateTime)
+        public static DateTimeOffset AbsoluteStart(this DateTime dateTime)
         {
-            return dateTime.Date;
+            TimeZoneInfo infotime = TimeZoneInfo.Local;
+            var date = DateTimeWithZone(dateTime, infotime);
+            return date;
         }
 
         /// <summary>
         /// Gets the 11:59:59 instance of a DateTime
         /// </summary>
-        public static DateTime AbsoluteEnd(this DateTime dateTime)
+        public static DateTimeOffset AbsoluteEnd(this DateTime dateTime)
         {
-            return AbsoluteStart(dateTime).AddDays(1).AddTicks(-1);
+            return AbsoluteStart(dateTime).AddDays(1).AddSeconds(-1);
+        }
+
+        public static DateTimeOffset DateTimeWithZone(DateTime dateTime, TimeZoneInfo timeZone)
+        {
+            var convertedDate = new DateTimeOffset(new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, DateTimeKind.Unspecified), timeZone.BaseUtcOffset);
+            return convertedDate;
         }
     }
 }
