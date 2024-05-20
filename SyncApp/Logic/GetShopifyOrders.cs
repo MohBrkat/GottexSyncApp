@@ -46,9 +46,9 @@ namespace SyncApp.Logic
             {
                 dateFrom = DateTime.Now.AddDays(-1); // by default
                 dateTo = DateTime.Now.AddDays(-1);
-            }
-
-            dateFrom = dateFrom.Date;
+            } 
+               
+            dateFrom = dateFrom.Date.AddDays(-1);
             dateTo = dateTo.Date;
 
             OrderListFilter filter = new OrderListFilter();
