@@ -215,8 +215,8 @@ namespace SyncApp.Logic
             {
                 lsOfOrders.AddRange(refunded?.Orders);
             }
-
-            var countryOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).GroupBy(o => o.ShippingAddress.Country)
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >=  dateToRetriveFrom.AbsoluteStart().DateTime && a.CreatedAt.Value  <= dateToRetriveTo.AbsoluteEnd().DateTime).ToList();
+            var countryOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).GroupBy(o => o.ShippingAddress.Country)
                         .Select(g => new CountryOrders { Country = g.Key, Orders = g.ToList() }).ToList();
 
             //lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
