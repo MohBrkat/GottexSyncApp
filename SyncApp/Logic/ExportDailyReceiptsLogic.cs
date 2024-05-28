@@ -191,9 +191,18 @@ namespace SyncApp.Logic
             {
                 lsOfOrders.AddRange(refunded?.Orders);
             }
+            if (dateToRetriveFrom == default)
+            {
+                dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
+            }
+            if (dateToRetriveTo == default)
+            {
+                dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
+            }
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >= dateToRetriveFrom.AbsoluteStart().DateTime && a.CreatedAt.Value <= dateToRetriveTo.AbsoluteEnd().DateTime).ToList();
 
-            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-            return lsOfOrders;
+            lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            return lsOfFilteredOrders;
         }
         public async Task<string> GenerateReceiptFileAsync(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
