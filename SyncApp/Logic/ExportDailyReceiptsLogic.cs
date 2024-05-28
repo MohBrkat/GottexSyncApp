@@ -334,7 +334,7 @@ namespace SyncAppEntities.Logic
             {
                 foreach (var giftCardItem in giftCardItems)
                 {
-                    var giftCardQuantity = giftCardItem.FulfillableQuantity != null && giftCardItem.FulfillableQuantity != 0 ? giftCardItem.FulfillableQuantity : 1;
+                    var giftCardQuantity = giftCardItem.Quantity != null && giftCardItem.Quantity != 0 ? giftCardItem.Quantity : 1;
                     priceWithTaxes -= (giftCardItem.Price * giftCardQuantity);
                 }
             }
@@ -448,7 +448,7 @@ namespace SyncAppEntities.Logic
                             {
                                 foreach (var giftCardItem in giftCardItems)
                                 {
-                                    var giftCardQuantity = giftCardItem.FulfillableQuantity != null && giftCardItem.FulfillableQuantity != 0 ? giftCardItem.FulfillableQuantity : 1;
+                                    var giftCardQuantity = giftCardItem.Quantity != null && giftCardItem.Quantity != 0 ? giftCardItem.Quantity : 1;
                                     var giftCardAmount = (giftCardItem.Price * giftCardQuantity) * -1;
 
                                     int giftCardPaymentMeanCode = GetPaymentMeanCode("ReceiptGiftCard");
