@@ -239,8 +239,22 @@ namespace SyncAppEntities.Logic
                 lsOfOrders.AddRange(refunded?.Orders);
             }
 
-            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-            return lsOfOrders;
+            if (dateToRetriveFrom == default)
+            {
+                dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
+            }
+            if (dateToRetriveTo == default)
+            {
+                dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
+            }
+
+            dateToRetriveFrom = dateToRetriveFrom.Date;
+            dateToRetriveTo = dateToRetriveTo.Date;
+
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >= dateToRetriveFrom.AbsoluteStart() && a.CreatedAt.Value <= dateToRetriveTo.AbsoluteEnd()).ToList();
+
+            lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            return lsOfFilteredOrders;
         }
 
         public string GenerateSalesFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)

@@ -234,9 +234,24 @@ namespace SyncAppEntities.Logic
                 lsOfOrders.AddRange(refunded?.Orders);
             }
 
-            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-            return lsOfOrders;
+            if (dateToRetriveFrom == default)
+            {
+                dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
+            }
+            if (dateToRetriveTo == default)
+            {
+                dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
+            }
+
+            dateToRetriveFrom = dateToRetriveFrom.Date;
+            dateToRetriveTo = dateToRetriveTo.Date;
+
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >= dateToRetriveFrom.AbsoluteStart() && a.CreatedAt.Value <= dateToRetriveTo.AbsoluteEnd()).ToList();
+
+            lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            return lsOfFilteredOrders;
         }
+
         public async Task<string> GenerateReceiptFileAsync(List<Order> orders, bool fromWeb, DateTime dateToRetriveFrom, DateTime dateToRetriveTo, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = ReceiptsFileName.Clone().ToString();
@@ -503,13 +518,16 @@ namespace SyncAppEntities.Logic
 
         private decimal GetAmountFromTransaction(DateTime dateToRetriveFrom, DateTime dateToRetriveTo, Order order, Receipt transaction, decimal amount)
         {
+            var fromDate = dateToRetriveFrom.Date.AbsoluteStart();
+            var toDate = dateToRetriveTo.Date.AbsoluteEnd();
+
             var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
             if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
             {
                 if (order.RefundKind != "no_refund")
                 {
                     var payplusRefundTransaction = transactionInfo.data.FirstOrDefault(t => t.transaction?.transaction_type?.ToLower() == "refund" &&
-                                                    Convert.ToDateTime(t.transaction?.date).Date >= dateToRetriveFrom && Convert.ToDateTime(t.transaction?.date).Date <= dateToRetriveTo && (string.IsNullOrEmpty(transaction.transaction_uid) || t.transaction?.transaction_uid == transaction.transaction_uid))?.transaction;
+                                                    Convert.ToDateTime(t.transaction?.date).Date >= fromDate.Date && Convert.ToDateTime(t.transaction?.date).Date <= toDate.Date && (string.IsNullOrEmpty(transaction.transaction_uid) || t.transaction?.transaction_uid == transaction.transaction_uid))?.transaction;
 
                     if (payplusRefundTransaction != null)
                     {
@@ -518,7 +536,7 @@ namespace SyncAppEntities.Logic
                     else
                     {
                         var refundTransaction = order.Transactions?.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
-                                                && t.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && t.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo);
+                                                && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date);
 
                         amount = refundTransaction?.Amount ?? 0m;
                     }
@@ -555,8 +573,8 @@ namespace SyncAppEntities.Logic
             List<Transaction> giftCardTransactions = new List<Transaction>();
             Transaction receiptTransaction = new Transaction();
 
-            var fromDate = dateToRetriveFrom.AbsoluteStart();
-            var toDate = dateToRetriveTo.AbsoluteEnd();
+            var fromDate = dateToRetriveFrom.Date.AbsoluteStart();
+            var toDate = dateToRetriveTo.Date.AbsoluteEnd();
 
             var service = new TransactionService(StoreUrl, ApiSecret);
             var serviceTransactions = await service.ListAsync((long)order.Id);
@@ -570,14 +588,14 @@ namespace SyncAppEntities.Logic
                 giftCardTransactions = transactions.Where(t => t.Gateway == "gift_card" && t.Kind.ToLower() != "refund"
                         && t.CreatedAt.GetValueOrDefault().Date >= fromDate && t.CreatedAt.GetValueOrDefault().Date <= toDate).ToList();
                 receiptTransaction = transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success"
-                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate && t.CreatedAt.GetValueOrDefault().Date <= toDate);
+                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date);
             }
             else
             {
                 giftCardTransactions = transactions.Where(t => t.Gateway == "gift_card" && t.Kind.ToLower() == "refund"
                         && t.CreatedAt.GetValueOrDefault().Date >= fromDate && t.CreatedAt.GetValueOrDefault().Date <= toDate).ToList();
                 receiptTransaction = transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
-                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate && t.CreatedAt.GetValueOrDefault().Date <= toDate);
+                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date);
             }
 
             foreach (var giftCardTransaction in giftCardTransactions)
