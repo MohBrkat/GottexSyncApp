@@ -215,6 +215,7 @@ namespace SyncApp.Logic
             {
                 lsOfOrders.AddRange(refunded?.Orders);
             }
+
             if (dateToRetriveFrom == default)
             {
                 dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
@@ -224,7 +225,10 @@ namespace SyncApp.Logic
                 dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
             }
 
-            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >= dateToRetriveFrom.AbsoluteStart().DateTime && a.CreatedAt.Value <= dateToRetriveTo.AbsoluteEnd().DateTime).ToList();
+            dateToRetriveFrom = dateToRetriveFrom.Date;
+            dateToRetriveTo = dateToRetriveTo.Date;
+
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && a.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo).ToList();
 
             var countryOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).GroupBy(o => o.ShippingAddress.Country)
                         .Select(g => new CountryOrders { Country = g.Key, Orders = g.ToList() }).ToList();
@@ -303,7 +307,7 @@ namespace SyncApp.Logic
                             {
                                 file.WriteLine(
                                 "1" + "\t" +
-                                orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                                orderItem.SKU?.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
                                 orderItem.Quantity.ToString().InsertLeadingSpaces(10) + "\t" + // total quantity 
                                 price.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                                 "".InsertLeadingSpaces(4) + "\t" + // agent code
@@ -324,7 +328,7 @@ namespace SyncApp.Logic
                                 {
                                     file.WriteLine(
                                     "1" + "\t" +
-                                    orderItem.SKU.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
+                                    orderItem.SKU?.InsertLeadingSpaces(15) + "\t" + // part number , need confirmation because max lenght is 15
                                     "-1".InsertLeadingSpaces(10) + "\t" + // total quantity 
                                     restockPrice.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                                     "".InsertLeadingSpaces(4) + "\t" + // agent code

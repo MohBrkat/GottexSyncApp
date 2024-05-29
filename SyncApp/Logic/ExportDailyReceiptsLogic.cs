@@ -191,6 +191,7 @@ namespace SyncApp.Logic
             {
                 lsOfOrders.AddRange(refunded?.Orders);
             }
+
             if (dateToRetriveFrom == default)
             {
                 dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
@@ -199,7 +200,11 @@ namespace SyncApp.Logic
             {
                 dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
             }
-            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >= dateToRetriveFrom.AbsoluteStart().DateTime && a.CreatedAt.Value <= dateToRetriveTo.AbsoluteEnd().DateTime).ToList();
+
+            dateToRetriveFrom = dateToRetriveFrom.Date;
+            dateToRetriveTo = dateToRetriveTo.Date;
+
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && a.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo).ToList();
 
             lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
             return lsOfFilteredOrders;
