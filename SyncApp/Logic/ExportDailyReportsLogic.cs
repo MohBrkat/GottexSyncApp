@@ -128,22 +128,8 @@ namespace SyncAppEntities.Logic
                 lsOfOrders.AddRange(refunded?.Orders);
             }
 
-            if (dateToRetriveFrom == default)
-            {
-                dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
-            }
-            if (dateToRetriveTo == default)
-            {
-                dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
-            }
-
-            dateToRetriveFrom = dateToRetriveFrom.Date;
-            dateToRetriveTo = dateToRetriveTo.Date;
-
-            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.Value >= dateToRetriveFrom.AbsoluteStart() && a.CreatedAt.Value <= dateToRetriveTo.AbsoluteEnd()).ToList();
-
-            lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-            return lsOfFilteredOrders;
+            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            return lsOfOrders;
         }
 
         public async Task GenerateDailyReportFilesAsync(FileModel file, List<Order> lsOfOrders)
@@ -223,7 +209,7 @@ namespace SyncAppEntities.Logic
                 {
                     var shippingLine = order.ShippingLines.First();
                     shipping = shippingLine.Code;
-                    if(shipping == "custom")
+                    if (shipping == "custom")
                     {
                         shipping = shippingLine.Title;
                     }
