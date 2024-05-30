@@ -129,23 +129,10 @@ namespace SyncApp.Logic
                 lsOfOrders.AddRange(refunded?.Orders);
             }
 
-            if (dateToRetriveFrom == default)
-            {
-                dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
-            }
-            if (dateToRetriveTo == default)
-            {
-                dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
-            }
-
-            dateToRetriveFrom = dateToRetriveFrom.Date;
-            dateToRetriveTo = dateToRetriveTo.Date;
-
-            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && a.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo).ToList();
-
-            lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
-            return lsOfFilteredOrders;
+            lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
+            return lsOfOrders;
         }
+             
         public async Task GenerateDailyReportFilesAsync(FileModel file, List<Order> lsOfOrders)
         {
             if (lsOfOrders.Count > 0)
