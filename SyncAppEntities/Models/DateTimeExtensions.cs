@@ -24,8 +24,13 @@ namespace SyncAppEntities.Models
 
         public static DateTimeOffset DateTimeWithZone(DateTime dateTime, TimeZoneInfo timeZone)
         {
-            var convertedDate = new DateTimeOffset(new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, DateTimeKind.Unspecified), timeZone.BaseUtcOffset);
-            return convertedDate;
+            // Ensure the DateTime is kind of Unspecified
+            var unspecifiedDateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+            var utcOffset = timeZone.GetUtcOffset(unspecifiedDateTime);
+
+            // Use the calculated utcOffset to create DateTimeOffset
+            var dateTimeWithZone = new DateTimeOffset(unspecifiedDateTime, utcOffset);
+            return dateTimeWithZone;
         }
     }
 }
