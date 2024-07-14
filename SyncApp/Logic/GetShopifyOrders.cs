@@ -224,24 +224,15 @@ namespace SyncAppEntities.Logic
             var refundOrderDays = RefundOrdersHistoryDays;
             List<Order> Orders = new List<Order>();
 
-            var refundedFilter = new OrderListFilter
+            var allOrders = new OrderListFilter
             {
-                FinancialStatus = "refunded",
+                FinancialStatus = "any",
                 Status = "any",
                 FulfillmentStatus = "any",
                 CreatedAtMin = dateFrom.AddDays(-refundOrderDays).AbsoluteStart()
             };
 
-            var partiallyRefundedFilter = new OrderListFilter
-            {
-                FinancialStatus = "partially_refunded",
-                Status = "any",
-                FulfillmentStatus = "any",
-                CreatedAtMin = dateFrom.AddDays(-refundOrderDays).AbsoluteStart()
-            };
-
-            Orders.AddRange(await GetOrderByFiltersAsync(refundedFilter));
-            Orders.AddRange(await GetOrderByFiltersAsync(partiallyRefundedFilter));
+            Orders.AddRange(await GetOrderByFiltersAsync(allOrders));
 
             return Orders;
         }
