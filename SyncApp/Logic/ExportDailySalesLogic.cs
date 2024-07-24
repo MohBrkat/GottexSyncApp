@@ -295,7 +295,24 @@ namespace SyncAppEntities.Logic
                     var regularOrders = DayOrders.Data.Where(o => !o.Tags.ToLower().Contains("super-pharm")).ToList();
                     foreach (var order in regularOrders)
                     {
-                        WriteOrderTransactions(file, taxPercentage, order);
+                       
+                        if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && order.Transactions != null && order.Transactions.Any())
+                        {
+                            Boolean success = false;
+                            foreach (Transaction transaction in order.Transactions)
+                            {
+                                if (transaction.Status == "success")
+                                {
+                                    success = true;
+                                }
+                            }
+                            if (success)
+                            {
+                                WriteOrderTransactions(file, taxPercentage, order);
+                            }
+                        } else {
+                            WriteOrderTransactions(file, taxPercentage, order);
+                        }
                     }
 
 
@@ -317,7 +334,24 @@ namespace SyncAppEntities.Logic
 
                         foreach (var order in superPharmOrders)
                         {
-                            WriteOrderTransactions(file, taxPercentage, order, true);
+                            if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && order.Transactions != null && order.Transactions.Any())
+                            {
+                                Boolean success = false;
+                                foreach (Transaction transaction in order.Transactions)
+                                {
+                                    if (transaction.Status == "success")
+                                    {
+                                        success = true;
+                                    }
+                                }
+                                if (success)
+                                {
+                                    WriteOrderTransactions(file, taxPercentage, order, true);
+                                }
+                            } else
+                            {
+                                WriteOrderTransactions(file, taxPercentage, order, true);
+                            }
                         }
                     }
                 }
