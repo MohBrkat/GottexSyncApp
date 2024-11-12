@@ -308,6 +308,7 @@ namespace ShopifyApp2.Controllers
         [HttpPost]
         public async Task<ActionResult> ExportReceiptsAsync(bool fromWeb, DateTime dateToRetriveFrom = default, DateTime dateToRetriveTo = default)
         {
+            return View("~/Views/Home/ExportDailyReceipts.cshtml", "N/A");
             try
             {
                 List<Order> lsOfOrders = await _exportDailyReceiptsLogic.ExportDailyReceiptsAsync(dateToRetriveFrom, dateToRetriveTo);
