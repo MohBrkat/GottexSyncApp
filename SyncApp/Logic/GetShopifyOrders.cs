@@ -1,7 +1,11 @@
-﻿using ShopifySharp;
+﻿using Microsoft.AspNetCore.DataProtection;
+using Newtonsoft.Json;
+using ShopifySharp;
+using ShopifySharp.Entities;
 using ShopifySharp.Filters;
 using SyncAppEntities.Models;
 using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -138,9 +142,21 @@ namespace SyncAppEntities.Logic
             {
                 var targetRefunds = order.Refunds.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateFrom &&
                     a.CreatedAt.GetValueOrDefault().Date <= dateTo).ToList();
+                var storeCreditValue = new MetaFieldStoreCredit();
+                if (targetRefunds.Count > 0)
+                {
+                    var metaFieldService = new MetaFieldService(_storeUrl, _apiSecret);
+                    var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
+                    var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
+                    if (storeCreditRefunds?.Value != null)
+                    {
+                        storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
+                    }
+                }
 
                 foreach (var refund in targetRefunds)
                 {
+                    var storeCreditRefund = storeCreditValue.Refunds?.FirstOrDefault(x => x.Id == refund.Id);
                     var orderToReturn = new Order
                     {
                         TotalDiscounts = order.TotalDiscounts,
@@ -151,7 +167,8 @@ namespace SyncAppEntities.Logic
                         SubtotalPrice = order.SubtotalPrice,
                         FinancialStatus = order.FinancialStatus,
                         ShippingLines = order.ShippingLines,
-                        Restock = refund.Restock
+                        Restock = refund.Restock,
+                        Refunds = new List<Refund>() { refund }
                     };
 
                     var refundLineItems = refund.RefundLineItems;
@@ -193,6 +210,10 @@ namespace SyncAppEntities.Logic
                     orderToReturn.Transactions = refund.Transactions;
 
                     var totalPrice = refund.Transactions.Sum(t => t.Amount);
+                    if (storeCreditRefund != null)
+                    {
+                        totalPrice = storeCreditRefund.CreditAmount;
+                    }
                     decimal priceWithVat = (decimal)totalPrice / ((taxPercentage / 100.0m) + 1.0m);
 
                     orderToReturn.TotalTax = totalPrice - priceWithVat;

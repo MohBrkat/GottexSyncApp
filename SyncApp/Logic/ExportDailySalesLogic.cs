@@ -11,6 +11,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using SyncAppCommon.Helpers;
 using SyncAppCommon;
+using Newtonsoft.Json;
+using ShopifySharp.Entities;
 
 namespace SyncAppEntities.Logic
 {
@@ -206,32 +208,32 @@ namespace SyncAppEntities.Logic
         }
         #endregion
 
-        public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
+        public async Task<List<Order>> ExportDailySalesAsync(DateTime dateToRetrieveFrom, DateTime dateToRetrieveTo)
         {
-            _log.Info($"Start ExportDailySalesAsync - Start Date:" + dateToRetriveFrom + "- EndDate:" + dateToRetriveTo);
+            _log.Info($"Start ExportDailySalesAsync - Start Date:" + dateToRetrieveFrom + "- EndDate:" + dateToRetrieveTo);
             List<Order> lsOfOrders = new List<Order>();
             RefundedOrders refunded = new RefundedOrders();
             try
             {
-                lsOfOrders = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetNotExportedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetNotExportedOrdersAsync(dateToRetrieveFrom, dateToRetrieveTo);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                lsOfOrders = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetNotExportedOrdersAsync(dateToRetriveFrom, dateToRetriveTo);
+                lsOfOrders = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetNotExportedOrdersAsync(dateToRetrieveFrom, dateToRetrieveTo);
             }
 
             try
             {
                 await Task.Delay(1000);
-                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
+                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetRefundedOrdersAsync(dateToRetrieveFrom, dateToRetrieveTo, TaxPercentage);
             }
             catch (ShopifyException e) when (e.Message.ToLower().Contains("exceeded 2 calls per second for api client") || (int)e.HttpStatusCode == 429 /* Too many requests */)
             {
                 await Task.Delay(10000);
 
-                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetRefundedOrdersAsync(dateToRetriveFrom, dateToRetriveTo, TaxPercentage);
+                refunded = await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetRefundedOrdersAsync(dateToRetrieveFrom, dateToRetrieveTo, TaxPercentage);
             }
 
             if (refunded?.Orders?.Count > 0)
@@ -239,19 +241,19 @@ namespace SyncAppEntities.Logic
                 lsOfOrders.AddRange(refunded?.Orders);
             }
 
-            if (dateToRetriveFrom == default)
+            if (dateToRetrieveFrom == default)
             {
-                dateToRetriveFrom = DateTime.Now.AddDays(-1).Date; // by default
+                dateToRetrieveFrom = DateTime.Now.AddDays(-1).Date; // by default
             }
-            if (dateToRetriveTo == default)
+            if (dateToRetrieveTo == default)
             {
-                dateToRetriveTo = DateTime.Now.AddDays(-1).Date;
+                dateToRetrieveTo = DateTime.Now.AddDays(-1).Date;
             }
 
-            dateToRetriveFrom = dateToRetriveFrom.Date;
-            dateToRetriveTo = dateToRetriveTo.Date;
+            dateToRetrieveFrom = dateToRetrieveFrom.Date;
+            dateToRetrieveTo = dateToRetrieveTo.Date;
 
-            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateToRetriveFrom && a.CreatedAt.GetValueOrDefault().Date <= dateToRetriveTo).ToList();
+            var lsOfFilteredOrders = lsOfOrders.Where(a => a.CreatedAt.GetValueOrDefault().Date >= dateToRetrieveFrom && a.CreatedAt.GetValueOrDefault().Date <= dateToRetrieveTo).ToList();
 
             lsOfFilteredOrders = lsOfFilteredOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
             return lsOfFilteredOrders;
@@ -295,7 +297,7 @@ namespace SyncAppEntities.Logic
                     var regularOrders = DayOrders.Data.Where(o => !o.Tags.ToLower().Contains("super-pharm")).ToList();
                     foreach (var order in regularOrders)
                     {
-                       
+
                         if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && order.Transactions != null && order.Transactions.Any())
                         {
                             Boolean success = false;
@@ -310,7 +312,9 @@ namespace SyncAppEntities.Logic
                             {
                                 WriteOrderTransactions(file, taxPercentage, order);
                             }
-                        } else {
+                        }
+                        else
+                        {
                             WriteOrderTransactions(file, taxPercentage, order);
                         }
                     }
@@ -348,7 +352,8 @@ namespace SyncAppEntities.Logic
                                 {
                                     WriteOrderTransactions(file, taxPercentage, order, true);
                                 }
-                            } else
+                            }
+                            else
                             {
                                 WriteOrderTransactions(file, taxPercentage, order, true);
                             }
@@ -399,6 +404,63 @@ namespace SyncAppEntities.Logic
             var ProductServices = new ProductService(StoreUrl, ApiSecret);
             var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
+            // Get Order MetaFields
+            var metaFieldService = new MetaFieldService(StoreUrl, ApiSecret);
+            var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
+            var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
+
+            var storeCreditLineItems = new Dictionary<long, decimal>();
+            var isShippingRefund = false;
+            if (storeCreditRefunds?.Value != null)
+            {
+                var storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
+                if (storeCreditValue.Refunds.Any())
+                {
+                    if (order.RefundKind == "refund_discrepancy")
+                    {
+                        var originalRefund = order.Refunds.FirstOrDefault();
+                        var storeCreditRefund = storeCreditValue.Refunds.FirstOrDefault(r => r.Id == originalRefund?.Id);
+                        if (storeCreditRefund != null)
+                        {
+                            foreach (var refundLineItem in originalRefund.RefundLineItems)
+                            {
+                                decimal price;
+                                decimal totalDiscount = 0;
+
+                                //Calculate Discount on single lineItem
+                                if (refundLineItem.LineItem.DiscountAllocations != null && refundLineItem.LineItem.DiscountAllocations.Count() != 0)
+                                {
+                                    totalDiscount = refundLineItem.LineItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
+                                }
+
+                                decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
+                                decimal toBePerItem = refundLineItem.Quantity < 0 ? 1 : (decimal)refundLineItem.Quantity;
+                                //Discounted Price without TAX and Discount
+                                price = refundLineItem.LineItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
+
+                                if (refundLineItem.LineItem.Taxable == false || order.TaxesIncluded == true)
+                                    price /= totalWithVatPercentage;
+
+                                storeCreditLineItems = originalRefund.RefundLineItems
+                                    .ToDictionary(
+                                    rli => Convert.ToInt64(rli.LineItem.Id),
+                                    rli => price);
+                            }
+
+                            if (storeCreditRefund.ShippingCreditAmount > 0)
+                            {
+
+                                isShippingRefund = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        isShippingRefund = storeCreditValue.Refunds.Any(r => r.ShippingCreditAmount > 0 && r.Id == 0);
+                    }
+                }
+            }
+
             foreach (var orderItem in order.LineItems)
             {
                 //Product was refunded to another warehouse
@@ -421,8 +483,8 @@ namespace SyncAppEntities.Logic
                         }
 
                         var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();  
-                        
+                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+
                         var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
                         _log.Info($"orderItem:" + orderItem.SKU + "-LocationQuery.Items.Count():" + LocationQuery.Items.Count());
 
@@ -463,9 +525,18 @@ namespace SyncAppEntities.Logic
                 if (orderItem.Taxable == false || order.TaxesIncluded == true)
                     price /= totalWithVatPercentage;
 
-                if((order.RefundKind != "no_refund" || order.IsRefundOrder) && !order.Transactions.Any())
+                if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && !order.Transactions.Any())
                 {
-                    price = 0;
+                    if (order.RefundKind == "refund_discrepancy" &&
+                        storeCreditLineItems.TryGetValue(
+                            Convert.ToInt64(orderItem.Id), out var refundPrice))
+                    {
+                        price = refundPrice;
+                    }
+                    else
+                    {
+                        price = 0;
+                    }
                 }
 
                 lock (salesFileLock)
@@ -522,6 +593,34 @@ namespace SyncAppEntities.Logic
                 {
                     mQuant = "-1";
                 }
+
+                string partNumber = "921";
+                if (isSuperPharmOrder)
+                {
+                    partNumber = "922";
+                }
+
+                lock (salesFileLock)
+                {
+                    file.WriteLine(
+                    "1" + "\t" +
+                    partNumber.InsertLeadingSpaces(15) + "\t" +
+                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                    shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                    discountZero.ToString("F") +
+                    "\t" + "\t" + "\t" +
+                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                    + "\t" +
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
+                }
+            }
+
+            if (shippingAmount > 0 && isShippingRefund)
+            {
+                var mQuant = "-1";
 
                 string partNumber = "921";
                 if (isSuperPharmOrder)

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using ShopifySharp;
 using SyncAppCommon.Helpers;
 using SyncAppCommon;
+using ShopifySharp.Entities;
 
 namespace SyncAppEntities.Logic
 {
@@ -21,7 +22,7 @@ namespace SyncAppEntities.Logic
         private readonly ShopifyAppContext _context;
         private readonly IWebHostEnvironment _hostingEnvironment;
 
-        private static readonly object reciptsFileLock = new object();
+        private static readonly object receiptsFileLock = new object();
 
         public ExportDailyReceiptsLogic(ShopifyAppContext context, IWebHostEnvironment hostingEnvironment)
         {
@@ -360,7 +361,7 @@ namespace SyncAppEntities.Logic
                 priceWithTaxes *= -1;
             }
 
-            lock (reciptsFileLock)
+            lock (receiptsFileLock)
             {
                 if (transactionsModel != null)
                 {
@@ -430,8 +431,23 @@ namespace SyncAppEntities.Logic
                             {
                                 amount = payPlusReceiptAmount ?? 0m;
                             }
-                            
-                            if (order.RefundKind != "no_refund")
+
+                            if (transaction.isStoreCredit)
+                            {
+                                if (transaction.amount != null && decimal.TryParse(transaction.amount, out decimal storeCreditAmount))
+                                {
+                                    amount = storeCreditAmount;
+                                    if (amount >= 0)
+                                    {
+                                        paymentMeanCode = GetPaymentMeanCode("Store Credit");
+                                    }
+                                    else
+                                    {
+                                        paymentMeanCode = GetPaymentMeanCode("Receipt Store Credit");
+                                    }
+                                }
+                            }
+                            else if (order.RefundKind != "no_refund")
                             {
                                 amount *= -1;
                             }
@@ -446,7 +462,7 @@ namespace SyncAppEntities.Logic
                                 invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
                             }
 
-                            if (order.Restock == true)
+                            if (order.Restock == true && !transaction.isStoreCredit)
                                 amount = (order.TotalPrice ?? 0m) * -1;
 
                             file.WriteLine(
@@ -598,6 +614,54 @@ namespace SyncAppEntities.Logic
                                             && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date);
             }
 
+            var metaFieldService = new MetaFieldService(StoreUrl, ApiSecret);
+            var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
+            var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
+
+            if (storeCreditRefunds?.Value != null)
+            {
+                var storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
+                if (storeCreditValue.Refunds.Any())
+                {
+                    if (order.RefundKind == "refund_discrepancy")
+                    {
+                        var originalRefund = order.Refunds.FirstOrDefault();
+                        var storeCreditRefund = storeCreditValue.Refunds.FirstOrDefault(r => r.Id == originalRefund?.Id);
+                        if (storeCreditRefund != null)
+                        {
+                            if (storeCreditRefund.Id > 0 && storeCreditRefund.CreditAmount > 0)
+                            {
+                                transactionsModel.ReceiptTransactions.Add(new Receipt()
+                                {
+                                    isStoreCredit = true,
+                                    amount = (-storeCreditRefund.CreditAmount).ToString()
+                                }); 
+                            }
+                            if (storeCreditRefund.ShippingCreditAmount > 0)
+                            {
+                                transactionsModel.ReceiptTransactions.Add(new Receipt()
+                                {
+                                    isStoreCredit = true,
+                                    amount = (-storeCreditRefund.ShippingCreditAmount).ToString()
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var storeCreditShipping = storeCreditValue.Refunds.FirstOrDefault(x => x.ShippingCreditAmount > 0 && x.Id == 0)?.ShippingCreditAmount ?? 0;
+                        if (storeCreditShipping > 0)
+                        {
+                            transactionsModel.ReceiptTransactions.Add(new Receipt()
+                            {
+                                isStoreCredit = true,
+                                amount = (-storeCreditShipping).ToString()
+                            }); 
+                        }
+                    }
+                }
+            }
+
             foreach (var giftCardTransaction in giftCardTransactions)
             {
                 transactionsModel.GiftCardTransactions.Add(new GiftCardModel
@@ -620,6 +684,11 @@ namespace SyncAppEntities.Logic
                 receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
                 receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
                 receipt.more_info = receipt.more_info.IsNotNullOrEmpty() ? receipt.more_info : originalReceipt?.more_info;
+                receipt.isStoreCredit = receiptTransaction.Gateway == "shopify_store_credit";
+                if (receipt.isStoreCredit)
+                {
+                    receipt.amount = receiptTransaction.Amount?.ToString() ?? null;
+                }
                 transactionsModel.ReceiptTransactions.Add(receipt);
             }
 

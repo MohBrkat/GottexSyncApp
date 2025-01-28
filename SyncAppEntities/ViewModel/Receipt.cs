@@ -65,5 +65,6 @@ namespace SyncAppEntities.ViewModel
         public string token_uid { get; set; }
         public string payment_id { get; set; }
         public string refund_id { get; set; }
+        public bool isStoreCredit { get; set; }
     }
 }
