@@ -637,6 +637,17 @@ namespace SyncAppEntities.Logic
                                     amount = (-storeCreditRefund.CreditAmount).ToString()
                                 }); 
                             }
+                            if (storeCreditRefund.Id > 0 &&
+                                !string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
+                                decimal.TryParse(storeCreditRefund.CreditCompensationAmount, out decimal compVal) &&
+                                compVal > 0)
+                            {
+                                transactionsModel.ReceiptTransactions.Add(new Receipt()
+                                {
+                                    isStoreCredit = true,
+                                    amount = (-compVal).ToString()
+                                });
+                            }
                             if (storeCreditRefund.ShippingCreditAmount > 0)
                             {
                                 transactionsModel.ReceiptTransactions.Add(new Receipt()

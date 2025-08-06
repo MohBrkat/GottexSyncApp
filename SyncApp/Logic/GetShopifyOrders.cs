@@ -213,6 +213,16 @@ namespace SyncAppEntities.Logic
                     if (storeCreditRefund != null)
                     {
                         totalPrice = storeCreditRefund.CreditAmount;
+                        if (storeCreditRefund.ShippingCreditAmount > 0)
+                        {
+                            totalPrice += storeCreditRefund.ShippingCreditAmount;
+                        }
+                        if (!string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
+                            decimal.TryParse(storeCreditRefund.CreditCompensationAmount, out decimal compVal) &&
+                            compVal > 0)
+                        {
+                            totalPrice += compVal;
+                        }
                     }
                     decimal priceWithVat = (decimal)totalPrice / ((taxPercentage / 100.0m) + 1.0m);
 

@@ -411,6 +411,7 @@ namespace SyncAppEntities.Logic
 
             var storeCreditLineItems = new Dictionary<long, decimal>();
             var isShippingRefund = false;
+            decimal? extraStoreCreditVal = null;
             if (storeCreditRefunds?.Value != null)
             {
                 var storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
@@ -451,6 +452,14 @@ namespace SyncAppEntities.Logic
                             {
 
                                 isShippingRefund = true;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
+                                decimal.TryParse(storeCreditRefund.CreditCompensationAmount, out decimal compVal) &&
+                                compVal > 0)
+                            {
+                                decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
+                                extraStoreCreditVal = compVal / totalWithVatPercentage;
                             }
                         }
                     }
@@ -576,6 +585,28 @@ namespace SyncAppEntities.Logic
                         + "\t" +
                         warehouseCode);
                     }
+                }
+            }
+
+            if (extraStoreCreditVal != null)
+            {
+                var partNumber = "951";
+                var mQuant = "-1";
+                lock (salesFileLock)
+                {
+                    file.WriteLine(
+                    "1" + "\t" +
+                    partNumber.InsertLeadingSpaces(15) + "\t" +
+                    mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
+                    extraStoreCreditVal.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                    "".InsertLeadingSpaces(4) + "\t" + // agent code
+                    discountZero.ToString("F") +
+                    "\t" + "\t" + "\t" +
+                    order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
+                    + "\t" +
+                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    + "\t" +
+                    warehouseCode);
                 }
             }
 

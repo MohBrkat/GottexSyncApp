@@ -19,5 +19,8 @@ namespace ShopifySharp.Entities
 
         [JsonProperty("shipping_credit_amount")]
         public decimal ShippingCreditAmount { get; set; }
+
+        [JsonProperty("credit_compensation_amount")]
+        public string CreditCompensationAmount { get; set; }
     }
 }
