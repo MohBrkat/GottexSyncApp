@@ -442,10 +442,7 @@ namespace SyncAppEntities.Logic
                                 if (refundLineItem.LineItem.Taxable == false || order.TaxesIncluded == true)
                                     price /= totalWithVatPercentage;
 
-                                storeCreditLineItems = originalRefund.RefundLineItems
-                                    .ToDictionary(
-                                    rli => Convert.ToInt64(rli.LineItem.Id),
-                                    rli => price);
+                                storeCreditLineItems.Add(Convert.ToInt64(refundLineItem.LineItemId), price);
                             }
 
                             if (storeCreditRefund.ShippingCreditAmount > 0)
