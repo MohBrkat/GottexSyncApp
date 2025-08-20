@@ -12,7 +12,7 @@ namespace ShopifySharp.Entities
     public class StoreCreditRefund
     {
         [JsonProperty("id")]
-        public long Id { get; set; }
+        public long? Id { get; set; }
 
         [JsonProperty("credit_amount")]
         public decimal CreditAmount { get; set; }
