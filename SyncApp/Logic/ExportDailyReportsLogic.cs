@@ -149,6 +149,9 @@ namespace SyncAppEntities.Logic
                 byte[] summarizedFile = GenerateSummarizedReportFile(lsOfOrders, products);
                 string summarizedFileName = $"SummarizedReport{DateTime.Now.ToShortDateString()}.{extension}";
 
+                await Task.Delay(1000);
+                Dictionary<string, byte[]> shippingFiles = GenerateShippingReportFiles(lsOfOrders, products);
+
                 file.DetailedFile = new FileContent()
                 {
                     FileName = detailedFileName,
@@ -168,14 +171,14 @@ namespace SyncAppEntities.Logic
 
                 if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
                 {
-                    Utility.SendReportEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile);
+                    Utility.SendReportEmail(SmtpHost, SmtpPort, EmailUserName, EmailPassword, DisplayName, ReportEmailAddress1, ReportEmailAddress2, body, subject, detailedFileName, detailedFile, summarizedFileName, summarizedFile, shippingFiles);
                 }
                 else
                 {
                     _log.Error("Email Addresses are Empty");
                 }
 
-                _log.Info($"[Daily Report] Generated and sent to : {ReportEmailAddress1} , {ReportEmailAddress2} sucesfully. File Names : {detailedFileName} , {summarizedFileName} - the time is : {DateTime.Now}");
+                _log.Info($"[Daily Report] Generated and sent to : {ReportEmailAddress1} , {ReportEmailAddress2} successfully. File Names : {detailedFileName} , {summarizedFileName} - the time is : {DateTime.Now}");
             }
             else
             {
@@ -346,6 +349,120 @@ namespace SyncAppEntities.Logic
                 throw e;
             }
         }
+
+        private Dictionary<string, byte[]> GenerateShippingReportFiles(List<Order> orders, List<Product> products)
+        {
+            var productsList = products;
+
+            var detailedAutomaticReport = new Dictionary<string, List<DetailedAutomaticReportModel>>();
+            foreach (var order in orders)
+            {
+                var localDetailReportList = new List<DetailedAutomaticReportModel>();
+                string customerName = $"{order.Customer?.FirstName} {order.Customer?.LastName}";
+
+                string shipping = string.Empty;
+                if (order.ShippingLines.Any())
+                {
+                    var shippingLine = order.ShippingLines.First();
+                    shipping = shippingLine.Code;
+                    if (shipping == "custom")
+                    {
+                        shipping = shippingLine.Title;
+                    }
+                }
+
+                foreach (var lineItem in order.LineItems)
+                {
+                    string productVendor = string.Empty;
+                    string variantSKU = string.Empty;
+                    string productBarcode = string.Empty;
+
+                    if (lineItem.ProductId != null)
+                    {
+                        var productObj = productsList.FirstOrDefault(p => p.Id == lineItem.ProductId.Value);
+                        productVendor = productObj.Vendor;
+                        if (lineItem.VariantId != null)
+                        {
+                            variantSKU = productObj.Variants.Where(v => v.Id == lineItem.VariantId).Select(v => v.SKU).FirstOrDefault();
+                            productBarcode = productObj.Variants.Where(v => v.Id == lineItem.VariantId).Select(v => v.Barcode).FirstOrDefault();
+                        }
+                    }
+
+                    var detailedReportModel = new DetailedAutomaticReportModel()
+                    {
+                        OrderName = order.Name,
+                        CustomerName = !string.IsNullOrWhiteSpace(customerName) ? customerName : "N/A",
+                        OrderDay = order.CreatedAt.Value.ToString("dd/MM/yyyy"),
+                        ProductVendor = !string.IsNullOrWhiteSpace(productVendor) ? productVendor : !string.IsNullOrWhiteSpace(lineItem.Vendor) ? lineItem.Vendor : "N/A",
+                        VariantSKU = !string.IsNullOrWhiteSpace(variantSKU) ? variantSKU : !string.IsNullOrWhiteSpace(lineItem.SKU) ? lineItem.SKU : "N/A",
+                        OrderedQuantity = lineItem.Quantity.Value,
+                        ProductBarcode = !string.IsNullOrWhiteSpace(productBarcode) ? productBarcode : "N/A",
+                        Shipping = shipping
+                    };
+
+                    localDetailReportList.Add(detailedReportModel);
+                }
+
+                localDetailReportList = localDetailReportList.OrderBy(r => GetOrderId(r.OrderName)).ThenBy(r => r.ProductVendor).ThenBy(r => r.VariantSKU).ToList();
+                localDetailReportList.FirstOrDefault().CustomerNotes = order.Note;
+
+                var shippingCompany = shipping.ToLower();
+                if (shippingCompany.StartsWith("zigzag"))
+                {
+                    shippingCompany = "zigzag";
+                }
+
+                if (detailedAutomaticReport.TryGetValue(shippingCompany, out var reportModels))
+                {
+                    detailedAutomaticReport[shippingCompany].AddRange(localDetailReportList);
+                }
+                else
+                {
+                    detailedAutomaticReport.Add(shippingCompany, localDetailReportList);
+                }
+            }
+
+            var keys = detailedAutomaticReport.Keys.ToList();
+
+            foreach (var shipping in keys)
+            {
+                detailedAutomaticReport[shipping] = detailedAutomaticReport[shipping]
+                    .OrderBy(r => GetOrderId(r.OrderName))
+                    .ThenBy(r => r.ProductVendor)
+                    .ThenBy(r => r.VariantSKU)
+                    .ToList();
+            }
+
+            string extension = "xlsx";
+
+            var response = new Dictionary<string, byte[]>();
+            foreach (var detailed in detailedAutomaticReport)
+            {
+                try
+                {
+                    List<List<DetailedAutomaticReportModel>> splittedData = Utility.Split(detailed.Value, 1000000);
+                    List<byte> data = new List<byte>();
+                    foreach (var detailedReportModel in splittedData)
+                    {
+                        var result = Utility.ExportToExcel(detailedReportModel, extension).ToList();
+                        data.AddRange(result);
+                    }
+
+                    var fileResult = data.ToArray();
+                    string detailedFileName = $"DetailedReport{DateTime.Now.ToShortDateString()}-{detailed.Key}.{extension}";
+
+                    response.Add(detailedFileName, fileResult);
+                }
+                catch (Exception e)
+                {
+                    _log.Error(e.Message);
+                    throw e;
+                }
+            }
+
+            return response;
+        }
+
 
         private int GetOrderId(string orderName)
         {

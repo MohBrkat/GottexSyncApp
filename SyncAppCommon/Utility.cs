@@ -269,7 +269,7 @@ namespace SyncAppCommon
             smtpClient.Send(mail);
         }
 
-        public static void SendReportEmail(string host, int port, string email, string password, string displayName, string to1, string to2, string message, string subject, string detaileFileName, byte[] detailedFIle, string summarizedFileName, byte[] summarizedFile)
+        public static void SendReportEmail(string host, int port, string email, string password, string displayName, string to1, string to2, string message, string subject, string detailedFileName, byte[] detailedFile, string summarizedFileName, byte[] summarizedFile, Dictionary<string, byte[]> shippingFiles = null)
         {
             SmtpClient smtpClient = new SmtpClient(host, port);
             smtpClient.UseDefaultCredentials = false;
@@ -287,9 +287,9 @@ namespace SyncAppCommon
             mail.Body = message;
             mail.IsBodyHtml = true;
 
-            if (detailedFIle != null)
+            if (detailedFile != null)
             {
-                Attachment att = new Attachment(new MemoryStream(detailedFIle), detaileFileName);
+                Attachment att = new Attachment(new MemoryStream(detailedFile), detailedFileName);
                 mail.Attachments.Add(att);
             }
 
@@ -298,6 +298,16 @@ namespace SyncAppCommon
                 Attachment att = new Attachment(new MemoryStream(summarizedFile), summarizedFileName);
                 mail.Attachments.Add(att);
             }
+
+            if (shippingFiles?.Any() == true)
+            {
+                foreach (var shippingFile in shippingFiles)
+                {
+                    Attachment att = new Attachment(new MemoryStream(shippingFile.Value), shippingFile.Key);
+                    mail.Attachments.Add(att);
+                }
+            }
+
             smtpClient.Send(mail);
         }
 
