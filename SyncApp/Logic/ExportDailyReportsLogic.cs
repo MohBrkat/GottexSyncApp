@@ -407,9 +407,9 @@ namespace SyncAppEntities.Logic
                 localDetailReportList.FirstOrDefault().CustomerNotes = order.Note;
 
                 var shippingCompany = shipping.ToLower();
-                if (shippingCompany.StartsWith("zigzag"))
+                if (shippingCompany.StartsWith("zigzag-"))
                 {
-                    shippingCompany = "zigzag";
+                    shippingCompany = "zigzag-lockers";
                 }
 
                 if (detailedAutomaticReport.TryGetValue(shippingCompany, out var reportModels))
