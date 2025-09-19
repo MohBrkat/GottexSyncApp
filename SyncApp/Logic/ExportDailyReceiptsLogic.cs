@@ -68,7 +68,7 @@ namespace SyncAppEntities.Logic
                 return Config.FtpPassword ?? string.Empty;
             }
         }
-        private string ReceiptsFileName
+        private static string ReceiptsFileName
         {
             get
             {
@@ -82,7 +82,7 @@ namespace SyncAppEntities.Logic
                 return Config.CustoemrCode ?? string.Empty;
             }
         }
-        private string ShortBranchCodeRecipt
+        private string ShortBranchCodeReceipt
         {
             get
             {
@@ -93,7 +93,7 @@ namespace SyncAppEntities.Logic
         {
             get
             {
-                return ShortBranchCodeRecipt.ToString().InsertLeadingSpaces(8);
+                return ShortBranchCodeReceipt.ToString().InsertLeadingSpaces(8);
             }
         }
         private string CustomerCodeWithLeadingSpaces
@@ -416,7 +416,7 @@ namespace SyncAppEntities.Logic
                                         paymentMeanCode = SuperPharmPaymentCode;
                                     }
 
-                                    if (amount == 0)
+                                    if (amount == 0 || transactionsModel.ReceiptTransactions.Count > 1)
                                     {
                                         amount = GetAmountFromTransaction(dateToRetriveFrom, dateToRetriveTo, order, transaction, amount);
                                     }
@@ -587,7 +587,7 @@ namespace SyncAppEntities.Logic
             };
 
             List<Transaction> giftCardTransactions = new List<Transaction>();
-            Transaction receiptTransaction = new Transaction();
+            var receiptTransactions = new List<Transaction>();
 
             var fromDate = dateToRetriveFrom.Date.AbsoluteStart();
             var toDate = dateToRetriveTo.Date.AbsoluteEnd();
@@ -603,15 +603,15 @@ namespace SyncAppEntities.Logic
             {
                 giftCardTransactions = transactions.Where(t => t.Gateway == "gift_card" && t.Kind.ToLower() != "refund"
                         && t.CreatedAt.GetValueOrDefault().Date >= fromDate && t.CreatedAt.GetValueOrDefault().Date <= toDate).ToList();
-                receiptTransaction = transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success"
-                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date);
+                receiptTransactions = transactions.Where(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success"
+                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date).ToList();
             }
             else
             {
                 giftCardTransactions = transactions.Where(t => t.Gateway == "gift_card" && t.Kind.ToLower() == "refund"
                         && t.CreatedAt.GetValueOrDefault().Date >= fromDate && t.CreatedAt.GetValueOrDefault().Date <= toDate).ToList();
-                receiptTransaction = transactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
-                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date);
+                receiptTransactions = transactions.Where(t => t.Gateway != "gift_card" && t.Kind.ToLower() == "refund" && t.Status.ToLower() == "success"
+                                            && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date).ToList();
             }
 
             var metaFieldService = new MetaFieldService(StoreUrl, ApiSecret);
@@ -688,19 +688,25 @@ namespace SyncAppEntities.Logic
                 });
             }
 
-            if (receiptTransaction != null)
+            if (receiptTransactions?.Any() == true)
             {
-                var receipt = JsonConvert.DeserializeObject<Receipt>(receiptTransaction.Receipt.ToString());
-                var originalReceipt = JsonConvert.DeserializeObject<Receipt>(originalTransaction?.Receipt?.ToString());
-                receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
-                receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
-                receipt.more_info = receipt.more_info.IsNotNullOrEmpty() ? receipt.more_info : originalReceipt?.more_info;
-                receipt.isStoreCredit = receiptTransaction.Gateway == "shopify_store_credit";
-                if (receipt.isStoreCredit)
+                foreach (var receiptTransaction in receiptTransactions)
                 {
-                    receipt.amount = receiptTransaction.Amount?.ToString() ?? null;
+                    var receipt = JsonConvert.DeserializeObject<Receipt>(receiptTransaction.Receipt.ToString());
+                    receipt.isStoreCredit = receiptTransaction.Gateway == "shopify_store_credit";
+                    receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
+                    if (receipt.isStoreCredit)
+                    {
+                        receipt.amount = receiptTransaction.Amount?.ToString() ?? null;
+                    }
+                    else
+                    {
+                        var originalReceipt = JsonConvert.DeserializeObject<Receipt>(originalTransaction?.Receipt?.ToString());
+                        receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
+                        receipt.more_info = receipt.more_info.IsNotNullOrEmpty() ? receipt.more_info : originalReceipt?.more_info;
+                    }
+                    transactionsModel.ReceiptTransactions.Add(receipt); 
                 }
-                transactionsModel.ReceiptTransactions.Add(receipt);
             }
 
             return transactionsModel;
