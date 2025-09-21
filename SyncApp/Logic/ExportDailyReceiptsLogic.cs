@@ -89,7 +89,7 @@ namespace SyncAppEntities.Logic
                 return Config.BranchCodeReceipt ?? string.Empty;
             }
         }
-        private string ShortBranchCodeReciptsWithLeadingspaces
+        private string ShortBranchCodeReceiptsWithLeadingSpaces
         {
             get
             {
@@ -194,7 +194,7 @@ namespace SyncAppEntities.Logic
                 return SuperPharmCustomerCode.InsertLeadingSpaces(16);
             }
         }
-        private string SuperPharmReceiptBranchCodeWithLeadingspaces
+        private string SuperPharmReceiptBranchCodeWithLeadingSpaces
         {
             get
             {
@@ -377,7 +377,7 @@ namespace SyncAppEntities.Logic
                                 " " + CustomerCodeWithLeadingSpaces +
                                 " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
                                 " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                                " " + ShortBranchCodeReciptsWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                                " " + ShortBranchCodeReceiptsWithLeadingSpaces + "".InsertLeadingSpaces(18) +
                                 " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
                             }
                             else
@@ -387,7 +387,7 @@ namespace SyncAppEntities.Logic
                                 " " + SuperPharmCustomerCodeWithLeadingSpaces +
                                 " " + invoiceDate + // order . creation , closed , processing date , invloice date must reagrding to payment please confirm.
                                 " " + InvoiceNumber.InsertLeadingSpaces(13) + "".InsertLeadingSpaces(5) + // per indexes
-                                " " + SuperPharmReceiptBranchCodeWithLeadingspaces + "".InsertLeadingSpaces(18) +
+                                " " + SuperPharmReceiptBranchCodeWithLeadingSpaces + "".InsertLeadingSpaces(18) +
                                 " " + priceWithTaxes.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13));
                             }
                         }
@@ -589,7 +589,7 @@ namespace SyncAppEntities.Logic
             List<Transaction> giftCardTransactions = new List<Transaction>();
             var receiptTransactions = new List<Transaction>();
 
-            var fromDate = dateToRetriveFrom.Date.AbsoluteStart();
+            var fromDate = dateToRetriveFrom.Date.AddDays(-2).AbsoluteStart();
             var toDate = dateToRetriveTo.Date.AbsoluteEnd();
 
             var service = new TransactionService(StoreUrl, ApiSecret);
