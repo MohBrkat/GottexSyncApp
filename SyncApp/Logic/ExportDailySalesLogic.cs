@@ -616,6 +616,12 @@ namespace SyncAppEntities.Logic
             //then write shipping data
             if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
             {
+                if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
+                {
+                    var shippingDiscount = shipOrder.DiscountCodes.Where(dc => dc.Type == "shipping").Sum(dc => decimal.Parse(dc.Amount)).ValueWithoutTax(taxPercentage);
+                    shippingAmount -= shippingDiscount;
+                }
+
                 var mQuant = "1";
                 if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
                 {
