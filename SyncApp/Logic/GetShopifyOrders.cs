@@ -157,6 +157,7 @@ namespace SyncAppEntities.Logic
                 foreach (var refund in targetRefunds)
                 {
                     var storeCreditRefund = storeCreditValue.Refunds?.FirstOrDefault(x => x.Id == refund.Id);
+                    var containsShippingRefund = refund.OrderAdjustments.Any(a => a.Kind.ToLower() == "shipping_refund");
                     var orderToReturn = new Order
                     {
                         TotalDiscounts = order.TotalDiscounts,
@@ -166,7 +167,7 @@ namespace SyncAppEntities.Logic
 
                         SubtotalPrice = order.SubtotalPrice,
                         FinancialStatus = order.FinancialStatus,
-                        ShippingLines = order.ShippingLines,
+                        ShippingLines = containsShippingRefund ? order.ShippingLines : new List<ShippingLine>(),
                         Restock = refund.Restock,
                         Refunds = new List<Refund>() { refund }
                     };
