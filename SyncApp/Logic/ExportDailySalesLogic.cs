@@ -488,23 +488,49 @@ namespace SyncAppEntities.Logic
                             orderItem.SKU = VariantObj.SKU;
                         }
 
-                        var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
-                        var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
+                        long inventoryItemId = 0;
+                        var inventoryItemIds = new List<long>();
 
-                        var LocationQuery = InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds }).Result;
-                        _log.Info($"orderItem:" + orderItem.SKU + "-LocationQuery.Items.Count():" + LocationQuery.Items.Count());
-
-                        if (orderItem.FulfillmentStatus == "fulfilled" && order.RefundKind == "no_refund"
-                            && LocationQuery.Items.Count() > 1)
+                        if (VariantObj?.InventoryItemId != null)
                         {
-                            warehouseCode = "ON01";
-                            _log.Info($"Updated warehouseCode" + warehouseCode);
+                            inventoryItemId = VariantObj.InventoryItemId.Value;
+                            inventoryItemIds.Add(inventoryItemId);
                         }
                         else
                         {
-                            var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
-                            warehouseCode = GetWarehouseCodeByLocationId(LocationId);
-                            _log.Info($"warehouseCode" + warehouseCode + "LocationId" + LocationId);
+                            _log.Warn($"VariantObj or InventoryItemId is null for SKU: {orderItem?.SKU}, in order: {order.OrderNumber}");
+                        }
+
+                        var locationQuery = inventoryItemIds.Any()
+                            ? InventoryLevelsServices
+                                .ListAsync(new InventoryLevelListFilter { InventoryItemIds = inventoryItemIds })
+                                .Result
+                            : null;
+
+                        var locationItems = locationQuery?.Items ?? Enumerable.Empty<InventoryLevel>();
+                        _log.Info($"orderItem:{orderItem?.SKU}-LocationQuery.Items.Count():{locationItems.Count()}");
+
+                        if (orderItem?.FulfillmentStatus == "fulfilled"
+                            && order?.RefundKind == "no_refund"
+                            && locationItems.Count() > 1)
+                        {
+                            warehouseCode = "ON01";
+                            _log.Info($"Updated warehouseCode: {warehouseCode}");
+                        }
+                        else
+                        {
+                            var location = locationItems.FirstOrDefault();
+
+                            if (location != null)
+                            {
+                                var locationId = location.LocationId;
+                                warehouseCode = GetWarehouseCodeByLocationId(locationId);
+                                _log.Info($"warehouseCode:{warehouseCode} LocationId:{locationId}");
+                        }
+                        else
+                        {
+                                _log.Warn($"No inventory locations found for SKU: {orderItem?.SKU}, in order: {order.OrderNumber}");
+                            }
                         }
                     }
                 }
