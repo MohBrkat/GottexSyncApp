@@ -397,6 +397,7 @@ namespace SyncAppEntities.Logic
             _log.Info($"Start WriteOrderTransactions");
             var discountZero = 0;
             var shipRefOrder = order;
+            decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
 
             string warehouseCode = DefaultWarehouseCode;
             _log.Info($"DefaultWarehouseCode" + warehouseCode);
@@ -434,7 +435,6 @@ namespace SyncAppEntities.Logic
                                     totalDiscount = refundLineItem.LineItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
                                 }
 
-                                decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
                                 decimal toBePerItem = refundLineItem.Quantity < 0 ? 1 : (decimal)refundLineItem.Quantity;
                                 //Discounted Price without TAX and Discount
                                 price = refundLineItem.LineItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
@@ -455,7 +455,6 @@ namespace SyncAppEntities.Logic
                                 decimal.TryParse(storeCreditRefund.CreditCompensationAmount, out decimal compVal) &&
                                 compVal > 0)
                             {
-                                decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
                                 extraStoreCreditVal = compVal / totalWithVatPercentage;
                             }
                         }
@@ -466,6 +465,67 @@ namespace SyncAppEntities.Logic
                     }
                 }
             }
+
+            // 1. Flatten all refund line items from all refunds
+            var refundLineItems = new List<dynamic>(); // Use a proper type if available
+            decimal totalRefundLineSubtotal = 0m;
+            decimal totalRefundedAmount = 0m; // sum of all actual refunded transactions (cash)
+
+            if (order.Refunds != null)
+            {
+                foreach (var refund in order.Refunds)
+                {
+                    // Sum actual refunded transactions
+                    if (refund.Transactions != null)
+                    {
+                        totalRefundedAmount += refund.Transactions
+                            .Where(t => t.Kind == "refund" && t.Status == "success")
+                            .Sum(t => t.Amount ?? 0);
+            }
+
+                    // Collect item-level subtotals
+                    if (refund.RefundLineItems != null)
+                    {
+                        foreach (var rItem in refund.RefundLineItems)
+                        {
+                            decimal subtotal = rItem.SubTotal ?? 0;
+
+                            // Convert to net if taxes included
+                            if (order.TaxesIncluded == true)
+                                subtotal /= totalWithVatPercentage;
+
+                            refundLineItems.Add(new
+                            {
+                                LineItemId = rItem.LineItemId,
+                                SubtotalNet = subtotal
+                            });
+
+                            totalRefundLineSubtotal += subtotal;
+                        }
+                    }
+                }
+            }
+
+            // 2. Fallback proportional allocation in case some items are missing in refundLineItems
+            decimal totalItemsNetAmount = order.LineItems.Sum(li =>
+            {
+                decimal totalDiscount = 0;
+                if (li.DiscountAllocations != null && li.DiscountAllocations.Any())
+                    totalDiscount = li.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
+
+                decimal qty = Math.Abs(li.Quantity ?? 1);
+                decimal net = li.Price.GetValueOrDefault() * qty - totalDiscount;
+
+                if (li.Taxable == false || order.TaxesIncluded == true)
+                    net /= totalWithVatPercentage;
+
+                return net;
+            });
+
+            decimal fallbackRefundRatio = totalItemsNetAmount > 0
+                ? Math.Min(totalRefundedAmount / totalItemsNetAmount, 1m)
+                : 0m;
+
 
             foreach (var orderItem in order.LineItems)
             {
@@ -549,13 +609,45 @@ namespace SyncAppEntities.Logic
                     totalDiscount = orderItem.DiscountAllocations.Sum(a => decimal.Parse(a.Amount));
                 }
 
-                decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
                 decimal toBePerItem = orderItem.Quantity < 0 ? 1 : (decimal)orderItem.Quantity;
                 //Discounted Price without TAX and Discount
                 price = orderItem.Price.GetValueOrDefault() - Math.Round(totalDiscount / toBePerItem, 2);
 
                 if (orderItem.Taxable == false || order.TaxesIncluded == true)
                     price /= totalWithVatPercentage;
+
+                var defaultPrice = price;
+
+                if (orderItem.Quantity < 0)
+                {
+                    var refundedItem = refundLineItems.FirstOrDefault(r => r.LineItemId == orderItem.Id);
+                    if (refundedItem != null)
+                    {
+                        // Scale subtotal proportionally to actual refunded cash
+                        if (totalRefundLineSubtotal > 0)
+                        {
+                            decimal proportion = refundedItem.SubtotalNet / totalRefundLineSubtotal;
+                            price = proportion * totalRefundedAmount;
+
+                            // Convert to net if taxes included
+                            if (order.TaxesIncluded == true)
+                                price /= totalWithVatPercentage;
+
+                            // Ensure we never exceed full net price
+                            price = Math.Min(price ?? 0, defaultPrice ?? 0);
+                        }
+                        else
+                        {
+                            // If somehow subtotal is zero, fallback to full net price
+                            price = defaultPrice;
+                        }
+                    }
+                    else
+                    {
+                        // Item not in refundLineItems → fallback proportional allocation
+                        price = defaultPrice * fallbackRefundRatio;
+                    }
+                }
 
                 if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && !order.Transactions.Any())
                 {

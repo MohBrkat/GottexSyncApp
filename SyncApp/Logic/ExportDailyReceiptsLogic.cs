@@ -462,7 +462,9 @@ namespace SyncAppEntities.Logic
                                 invoiceDate = Convert.ToDateTime(transaction.x_timestamp).ToString("dd/MM/yy");
                             }
 
-                            if (order.Restock == true && !transaction.isStoreCredit)
+                            if (order.Restock == true && !transaction.isStoreCredit &&
+                                transactionsModel.ReceiptTransactions.Count == 1 &&
+                                transactionsModel.GiftCardTransactions?.Count == 0)
                                 amount = (order.TotalPrice ?? 0m) * -1;
 
                             file.WriteLine(
@@ -514,7 +516,7 @@ namespace SyncAppEntities.Logic
                                 giftCardBalance *= -1;
                             }
 
-                            if (order.Restock == true)
+                            if (order.Restock == true && transactionsModel.ReceiptTransactions?.Count == 0)
                                 giftCardBalance = (order.TotalPrice ?? 0m) * -1;
 
                             file.WriteLine(
@@ -687,8 +689,11 @@ namespace SyncAppEntities.Logic
                     Gateway = giftCardTransaction.Gateway
                 });
             }
+            var totalReceiptTransactions = transactionsModel?.ReceiptTransactions?
+                .Select(r => decimal.TryParse(r.amount, out var value) ? Math.Abs(value) : 0m)
+                .Sum() ?? 0m;
 
-            if (receiptTransactions?.Any() == true)
+            if (receiptTransactions?.Any() == true && order.TotalPrice > totalReceiptTransactions)
             {
                 foreach (var receiptTransaction in receiptTransactions)
                 {
@@ -697,7 +702,15 @@ namespace SyncAppEntities.Logic
                     receipt.x_timestamp = receiptTransaction.CreatedAt.ToString();
                     if (receipt.isStoreCredit)
                     {
-                        receipt.amount = receiptTransaction.Amount?.ToString() ?? null;
+                        var amountText = receiptTransaction.Amount?.ToString();
+
+                        if (!string.IsNullOrEmpty(amountText) &&
+                            string.Equals(receiptTransaction.Kind, "refund", StringComparison.OrdinalIgnoreCase))
+                        {
+                            amountText = "-" + amountText;
+                        }
+
+                        receipt.amount = amountText;
                     }
                     else
                     {
