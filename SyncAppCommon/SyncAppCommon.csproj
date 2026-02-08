@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Log4Net\Log4NetLibrary.csproj" />
+    <ProjectReference Include="..\ShopifySharp\ShopifySharp\ShopifySharp.csproj" />
+    <ProjectReference Include="..\SyncAppEntities\SyncAppEntities.csproj" />
   </ItemGroup>
 
 </Project>
