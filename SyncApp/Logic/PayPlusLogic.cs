@@ -28,16 +28,29 @@ namespace SyncAppEntities.Logic
             }
         }
 
-        public PayPlusIPNResponse GetPaymentInfo(string payment_id, string more_info)
+        public PayPlusIPNResponse GetPaymentInfo(string payment_id, string more_info, bool isManualTransaction)
         {
             string baseUrl = _config.PayPlusUrl?.Trim();
             string path = PayPlusPathConst.GET_PAYMENT_PAGE.Trim();
             string url = baseUrl + path;
 
-            var payPlusIPNRequest = new PayPlusRequest
+            object payPlusIPNRequest;
+
+            if (isManualTransaction)
             {
-                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info
-            };
+                payPlusIPNRequest = new PayPlusManualTransactionRequest
+                {
+                    VoucherNumber = payment_id,
+                    RelatedTransaction = true
+                };
+            }
+            else
+            {
+                payPlusIPNRequest = new PayPlusRequest
+                {
+                    more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info
+                };
+            }
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
             Dictionary<string, string> headers = new Dictionary<string, string>
