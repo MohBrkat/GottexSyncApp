@@ -21,11 +21,11 @@ namespace SyncAppCommon.Helpers
             return manualTransactionsList;
         }
 
-        public void AddManualTransaction(List<Receipt> receiptTransactions, List<ManualTransaction> manualTransaction)
+        public void AddManualTransaction(List<Receipt> receiptTransactions, List<ManualTransaction> manualTransactions)
         {
-            if (manualTransaction == null) return;
+            if (manualTransactions == null || manualTransactions?.Count == 0) return;
 
-            var receipts = manualTransaction.Select(mt => new Receipt
+            var receipts = manualTransactions.Select(mt => new Receipt
             {
                 payment_id = mt.PayplusTransactionReference,
                 x_timestamp = mt.CreatedAt.ToString(),
