@@ -21,6 +21,7 @@ namespace SyncAppEntities.Logic
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
         private readonly IWebHostEnvironment _hostingEnvironment;
+        private readonly ManualTransactionsHelper _manualTransactionsHelper;
 
         private static readonly object salesFileLock = new object();
 
@@ -28,6 +29,7 @@ namespace SyncAppEntities.Logic
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
+            _manualTransactionsHelper = new ManualTransactionsHelper();
         }
 
         private Configrations Config
@@ -410,6 +412,10 @@ namespace SyncAppEntities.Logic
             var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
             var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
 
+            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(orderMetaFields.Items, "manual_transactions", order.OrderNumber);
+
+            var createdAtDate = manualTransactions == null ? order.CreatedAt : manualTransactions.FirstOrDefault()?.CreatedAt;
+
             var storeCreditLineItems = new Dictionary<long, decimal>();
             var isShippingRefund = false;
             decimal? extraStoreCreditVal = null;
@@ -675,7 +681,7 @@ namespace SyncAppEntities.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    createdAtDate.GetValueOrDefault().ToString("dd/MM/y HH:mm")
                     + "\t" +
                     warehouseCode);
                 }
@@ -696,7 +702,7 @@ namespace SyncAppEntities.Logic
                         "\t" + "\t" + "\t" +
                         order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                         + "\t" +
-                        order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                        createdAtDate.GetValueOrDefault().ToString("dd/MM/y HH:mm")
                         + "\t" +
                         warehouseCode);
                     }
@@ -719,7 +725,7 @@ namespace SyncAppEntities.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    createdAtDate.GetValueOrDefault().ToString("dd/MM/y HH:mm")
                     + "\t" +
                     warehouseCode);
                 }
@@ -764,7 +770,7 @@ namespace SyncAppEntities.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    createdAtDate.GetValueOrDefault().ToString("dd/MM/y HH:mm")
                     + "\t" +
                     warehouseCode);
                 }
@@ -792,7 +798,7 @@ namespace SyncAppEntities.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    createdAtDate.GetValueOrDefault().ToString("dd/MM/y HH:mm")
                     + "\t" +
                     warehouseCode);
                 }
@@ -816,7 +822,7 @@ namespace SyncAppEntities.Logic
                     "\t" + "\t" + "\t" +
                     order.OrderNumber.GetValueOrDefault().ToString().InsertLeadingSpaces(24)
                     + "\t" +
-                    order.CreatedAt.GetValueOrDefault().ToString("dd/MM/y HH:mm")
+                    createdAtDate.GetValueOrDefault().ToString("dd/MM/y HH:mm")
                     + "\t" +
                     warehouseCode);
                 }
