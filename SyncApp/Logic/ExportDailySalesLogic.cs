@@ -449,7 +449,7 @@ namespace SyncAppEntities.Logic
                             if (storeCreditRefund.ShippingCreditAmount > 0)
                             {
                                 isShippingRefund = true;
-                                shippingCreditAmount = storeCreditRefund.ShippingCreditAmount;
+                                shippingCreditAmount = storeCreditRefund.ShippingCreditAmount.ValueWithoutTax(taxPercentage);
                             }
 
                             if (!string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
