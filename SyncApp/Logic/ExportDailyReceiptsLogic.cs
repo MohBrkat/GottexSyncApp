@@ -21,6 +21,7 @@ namespace SyncAppEntities.Logic
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
         private readonly IWebHostEnvironment _hostingEnvironment;
+        private readonly ManualTransactionsHelper _manualTransactionsHelper;
 
         private static readonly object receiptsFileLock = new object();
 
@@ -28,6 +29,7 @@ namespace SyncAppEntities.Logic
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
+            _manualTransactionsHelper = new ManualTransactionsHelper();
         }
 
         private Configrations Config
@@ -404,7 +406,7 @@ namespace SyncAppEntities.Logic
                                 {
                                     if (!isSuperPharmOrder)
                                     {
-                                        var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info);
+                                        var paymentInfo = _payPlusLogic.GetPaymentInfo(transaction.payment_id, transaction.more_info, transaction.isManualTransaction);
                                         if (paymentInfo != null && paymentInfo.data != null)
                                         {
                                             paymentMeanCode = GetPaymentMeanCode(paymentInfo.data.clearing_name);
@@ -467,15 +469,19 @@ namespace SyncAppEntities.Logic
                                 transactionsModel.GiftCardTransactions?.Count == 0)
                                 amount = (order.TotalPrice ?? 0m) * -1;
 
-                            file.WriteLine(
-                            "2" +
-                            " " + paymentMeanCode.ToString().InsertLeadingZeros(2) +
-                            " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
-                            " " + "00" + //term code
-                            " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
-                            " " + invoiceDate +
-                            " " + "".InsertLeadingSpaces(8) +//card number
-                            " " + "".InsertLeadingZeros(16));//Payment account
+                            if (!transaction.isManualTransaction || (transaction.isManualTransaction && transaction.amount == payPlusReceiptAmount.ToString()))
+                            {
+                                file.WriteLine(
+                                    "2" +
+                                    " " + paymentMeanCode.ToString().InsertLeadingZeros(2) +
+                                    " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // total payment amount Or Transaction.Amount
+                                    " " + "00" + //term code
+                                    " " + amount.GetNumberWithDecimalPlaces(2).InsertLeadingSpaces(13) + // first payment amount Or Transaction.Amount
+                                    " " + invoiceDate +
+                                    " " + "".InsertLeadingSpaces(8) +//card number
+                                    " " + "".InsertLeadingZeros(16)
+                                );//Payment account
+                            }
 
                             if (giftCardItems != null)
                             {
@@ -674,6 +680,10 @@ namespace SyncAppEntities.Logic
                     }
                 }
             }
+
+            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(orderMetaFields.Items, "manual_transactions", order.OrderNumber);
+
+            _manualTransactionsHelper.AddManualTransaction(transactionsModel.ReceiptTransactions, manualTransactions);
 
             foreach (var giftCardTransaction in giftCardTransactions)
             {
