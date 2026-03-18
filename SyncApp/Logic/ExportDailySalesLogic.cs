@@ -418,6 +418,7 @@ namespace SyncAppEntities.Logic
 
             var storeCreditLineItems = new Dictionary<long, decimal>();
             var isShippingRefund = false;
+            decimal shippingCreditAmount = 0;
             decimal? extraStoreCreditVal = null;
             if (storeCreditRefunds?.Value != null)
             {
@@ -453,8 +454,8 @@ namespace SyncAppEntities.Logic
 
                             if (storeCreditRefund.ShippingCreditAmount > 0)
                             {
-
                                 isShippingRefund = true;
+                                shippingCreditAmount = storeCreditRefund.ShippingCreditAmount.ValueWithoutTax(taxPercentage);
                             }
 
                             if (!string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
@@ -776,7 +777,9 @@ namespace SyncAppEntities.Logic
                 }
             }
 
-            if (shippingAmount > 0 && isShippingRefund)
+            var shipping = isShippingRefund ? shippingCreditAmount : shippingAmount;
+
+            if (shipping > 0 && isShippingRefund)
             {
                 var mQuant = "-1";
 
@@ -792,7 +795,7 @@ namespace SyncAppEntities.Logic
                     "1" + "\t" +
                     partNumber.InsertLeadingSpaces(15) + "\t" +
                     mQuant.ToString().InsertLeadingSpaces(10).InsertLeadingSpaces(10) + "\t" + // total quantity 
-                    shippingAmount.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
+                    shipping.GetNumberWithDecimalPlaces(4).InsertLeadingSpaces(10) + "\t" + // unit price without tax
                     "".InsertLeadingSpaces(4) + "\t" + // agent code
                     discountZero.ToString("F") +
                     "\t" + "\t" + "\t" +
