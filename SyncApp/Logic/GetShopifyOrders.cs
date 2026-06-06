@@ -1,16 +1,16 @@
-﻿using Microsoft.AspNetCore.DataProtection;
-using Newtonsoft.Json;
-using ShopifySharp;
-using ShopifySharp.Entities;
-using ShopifySharp.Filters;
-using SyncAppEntities.Models;
-using SyncAppEntities.Models.EF;
-using SyncAppEntities.ViewModel;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using ShopifySharp;
+using ShopifySharp.Entities;
+using ShopifySharp.Filters;
+using SyncApp.Models.GraphQlDTOs;
+using SyncAppCommon.Helpers;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
 
 namespace SyncAppEntities.Logic
 {
@@ -73,42 +73,40 @@ namespace SyncAppEntities.Logic
 
             return orders;
         }
+
         private async Task<List<Order>> GetNotExportedOrderByFiltersAsync(OrderListFilter filter)
         {
-            List<Order> Orders = new List<Order>();
+            var result = new List<Order>();
 
-            var paidFinancialFilter = new OrderListFilter
+            var financialStatuses = new[]
             {
-                FinancialStatus = "paid",
-                Status = filter.Status,
-                FulfillmentStatus = filter.FulfillmentStatus,
-                CreatedAtMin = filter.CreatedAtMin,
-                CreatedAtMax = filter.CreatedAtMax
+                "paid",
+                "refunded",
+                "partially_refunded"
             };
 
-            var refundedFinancialFilter = new OrderListFilter
+            foreach (var status in financialStatuses)
             {
-                FinancialStatus = "refunded",
-                Status = filter.Status,
-                FulfillmentStatus = filter.FulfillmentStatus,
-                CreatedAtMin = filter.CreatedAtMin,
-                CreatedAtMax = filter.CreatedAtMax
-            };
+                var graphQlOrders = await GetGraphQlOrdersAsync(new OrderListFilter
+                {
+                    FinancialStatus = status,
+                    Status = filter.Status,
+                    FulfillmentStatus = filter.FulfillmentStatus,
+                    CreatedAtMin = filter.CreatedAtMin,
+                    CreatedAtMax = filter.CreatedAtMax
+                });
 
-            var partiallyRefundedFinancialFilter = new OrderListFilter
-            {
-                FinancialStatus = "partially_refunded",
-                Status = filter.Status,
-                FulfillmentStatus = filter.FulfillmentStatus,
-                CreatedAtMin = filter.CreatedAtMin,
-                CreatedAtMax = filter.CreatedAtMax
-            };
+                if (graphQlOrders == null || graphQlOrders.Count == 0)
+                    continue;
 
-            Orders.AddRange(await GetOrderByFiltersAsync(paidFinancialFilter));
-            Orders.AddRange(await GetOrderByFiltersAsync(refundedFinancialFilter));
-            Orders.AddRange(await GetOrderByFiltersAsync(partiallyRefundedFinancialFilter));
+                var mappedOrders = graphQlOrders
+                    .Select(ShopifyGraphQlHelper.Map)
+                    .ToList();
 
-            return Orders;
+                result.AddRange(mappedOrders);
+            }
+
+            return result;
         }
 
         public async Task<RefundedOrders> GetRefundedOrdersAsync(DateTime dateFrom = default, DateTime dateTo = default, int taxPercent = 0)
@@ -397,6 +395,76 @@ namespace SyncAppEntities.Logic
             return refundedOrders;
         }
 
+        public async Task<List<GraphQlOrder>> GetGraphQlOrdersAsync(OrderListFilter orderListFilter)
+        {
+            if (!orderListFilter.CreatedAtMin.HasValue)
+            {
+                throw new ArgumentException(
+                    "CreatedAtMin is required.",
+                    nameof(orderListFilter));
+            }
+
+            var orders = new List<GraphQlOrder>();
+
+            var graphService = new GraphService(_storeUrl, _apiSecret);
+
+            string cursor = null;
+            bool hasNextPage = false;
+
+            do
+            {
+                var query = ShopifyGraphQlHelper.ConstructGraphQlQuery(
+                    orderListFilter.CreatedAtMin.Value.Date,
+                    orderListFilter.CreatedAtMax?.Date,
+                    orderListFilter.FinancialStatus,
+                    150,
+                    cursor);
+
+                var response = await ExecuteOrdersQueryAsync(
+                    graphService,
+                    query);
+
+                if (response?.Orders?.Nodes == null)
+                {
+                    return orders;
+                }
+
+                orders.AddRange(response.Orders.Nodes);
+
+                var previousCursor = cursor;
+
+                cursor = response.Orders.PageInfo?.EndCursor;
+                hasNextPage = response.Orders.PageInfo?.HasNextPage ?? false;
+
+                if (hasNextPage && cursor == previousCursor)
+                {
+                    break;
+                }
+
+            } while (hasNextPage);
+
+            return orders;
+        }
+
+        private static async Task<OrdersResponse> ExecuteOrdersQueryAsync(
+            GraphService graphService,
+            string query)
+        {
+            try
+            {
+                var result = await graphService.PostAsync(query);
+
+                return result.ToObject<OrdersResponse>();
+            }
+            catch (ShopifyRateLimitException)
+            {
+                await Task.Delay(10000);
+
+                var result = await graphService.PostAsync(query);
+
+                return result.ToObject<OrdersResponse>();
+            }
+        }
 
         public async Task<List<Order>> GetOrderByFiltersAsync(OrderListFilter filter)
         {

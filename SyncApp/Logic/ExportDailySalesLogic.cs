@@ -1,18 +1,18 @@
-﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
-using ShopifySharp;
-using ShopifySharp.Filters;
-using SyncAppEntities.Models;
-using SyncAppEntities.Models.EF;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using SyncAppCommon.Helpers;
-using SyncAppCommon;
+using Log4NetLibrary;
+using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
+using ShopifySharp;
 using ShopifySharp.Entities;
+using ShopifySharp.Filters;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
 
 namespace SyncAppEntities.Logic
 {
@@ -398,7 +398,6 @@ namespace SyncAppEntities.Logic
         {
             _log.Info($"Start WriteOrderTransactions");
             var discountZero = 0;
-            var shipRefOrder = order;
             decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
 
             string warehouseCode = DefaultWarehouseCode;
@@ -488,7 +487,7 @@ namespace SyncAppEntities.Logic
                         totalRefundedAmount += refund.Transactions
                             .Where(t => t.Kind == "refund" && t.Status == "success")
                             .Sum(t => t.Amount ?? 0);
-            }
+                    }
 
                     // Collect item-level subtotals
                     if (refund.RefundLineItems != null)
@@ -593,9 +592,9 @@ namespace SyncAppEntities.Logic
                                 var locationId = location.LocationId;
                                 warehouseCode = GetWarehouseCodeByLocationId(locationId);
                                 _log.Info($"warehouseCode:{warehouseCode} LocationId:{locationId}");
-                        }
-                        else
-                        {
+                            }
+                            else
+                            {
                                 _log.Warn($"No inventory locations found for SKU: {orderItem?.SKU}, in order: {order.OrderNumber}");
                             }
                         }
@@ -741,11 +740,14 @@ namespace SyncAppEntities.Logic
             //then write shipping data
             if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
             {
-                if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
-                {
-                    var shippingDiscount = shipOrder.DiscountCodes.Where(dc => dc.Type == "shipping").Sum(dc => decimal.Parse(dc.Amount)).ValueWithoutTax(taxPercentage);
-                    shippingAmount -= shippingDiscount;
-                }
+                // Shipping discount not return in graphQl
+                //if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
+                //{
+                //    var shippingDiscount = shipOrder.DiscountCodes.Where(dc => dc.Type == "shipping").Sum(dc => decimal.Parse(dc.Amount)).ValueWithoutTax(taxPercentage);
+                //    shippingAmount -= shippingDiscount;
+                //}
+
+                shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.DiscountedPrice).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
 
                 var mQuant = "1";
                 if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))
