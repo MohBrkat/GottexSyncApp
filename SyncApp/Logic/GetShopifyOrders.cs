@@ -9,6 +9,7 @@ using ShopifySharp.Entities;
 using ShopifySharp.Filters;
 using SyncApp.Models.GraphQlDTOs;
 using SyncAppCommon.Helpers;
+using SyncAppCommon.Models.GraphQlDTOs;
 using SyncAppEntities.Models;
 using SyncAppEntities.Models.EF;
 
@@ -129,7 +130,7 @@ namespace SyncAppEntities.Logic
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
-            List<Order> orders = await GetRefundedOrdersByFiltersAsync(dateFrom, dateTo);
+            var orders = await GetGraphQlRefundedOrdersAsync(dateFrom);
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
 
@@ -143,9 +144,7 @@ namespace SyncAppEntities.Logic
                 var storeCreditValue = new MetaFieldStoreCredit();
                 if (targetRefunds.Count > 0)
                 {
-                    var metaFieldService = new MetaFieldService(_storeUrl, _apiSecret);
-                    var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
-                    var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
+                    var storeCreditRefunds = order.Metafields?.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
                     if (storeCreditRefunds?.Value != null)
                     {
                         storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
@@ -155,7 +154,6 @@ namespace SyncAppEntities.Logic
                 foreach (var refund in targetRefunds)
                 {
                     var storeCreditRefund = storeCreditValue.Refunds?.FirstOrDefault(x => x.Id == refund.Id);
-                    var containsShippingRefund = refund.OrderAdjustments.Any(a => a.Kind.ToLower() == "shipping_refund");
                     var orderToReturn = new Order
                     {
                         TotalDiscounts = order.TotalDiscounts,
@@ -165,9 +163,11 @@ namespace SyncAppEntities.Logic
 
                         SubtotalPrice = order.SubtotalPrice,
                         FinancialStatus = order.FinancialStatus,
-                        ShippingLines = containsShippingRefund ? order.ShippingLines : new List<ShippingLine>(),
+                        ShippingLines = refund.RefundShippingLines ?? new List<ShippingLine>(),
                         Restock = refund.Restock,
-                        Refunds = new List<Refund>() { refund }
+                        Refunds = new List<Refund>() { refund },
+
+                        Metafields = order.Metafields,
                     };
 
                     var refundLineItems = refund.RefundLineItems;
@@ -211,10 +211,10 @@ namespace SyncAppEntities.Logic
                     var totalPrice = refund.Transactions.Sum(t => t.Amount);
                     if (storeCreditRefund != null)
                     {
-                        totalPrice = storeCreditRefund.CreditAmount;
-                        if (storeCreditRefund.ShippingCreditAmount > 0)
+                        totalPrice = Math.Max(storeCreditRefund.CreditAmount, storeCreditRefund.RefundAmount);
+                        if (storeCreditRefund.ShippingCreditAmount > 0 && storeCreditRefund.ShippingAmount > 0)
                         {
-                            totalPrice += storeCreditRefund.ShippingCreditAmount;
+                            totalPrice += Math.Max(storeCreditRefund.ShippingCreditAmount, storeCreditRefund.ShippingAmount);
                         }
                         if (!string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
                             decimal.TryParse(storeCreditRefund.CreditCompensationAmount, out decimal compVal) &&
@@ -237,7 +237,14 @@ namespace SyncAppEntities.Logic
                     {
                         orderToReturn.RefundAmount = (decimal)((refund.OrderAdjustments.First().Amount +
                                     refund.OrderAdjustments.First().TaxAmount));
-                        orderToReturn.RefundKind = refund.OrderAdjustments.First().Kind;
+                        if (refund?.RefundShippingLines?.Any() == true)
+                        {
+                            orderToReturn.RefundKind = "shipping_refund";
+                        }
+                        else
+                        {
+                            orderToReturn.RefundKind = "refund_discrepancy";
+                        }
                     }
 
                     ordersToReturn.Add(orderToReturn);
@@ -265,6 +272,21 @@ namespace SyncAppEntities.Logic
             Orders.AddRange(await GetOrderByFiltersAsync(allOrders));
 
             return Orders;
+        }
+
+        public async Task<List<Order>> GetGraphQlRefundedOrdersAsync(DateTime dateFrom)
+        {
+            var filter = new OrderListFilter
+            {
+                CreatedAtMin = dateFrom,
+                UpdatedAtMin = dateFrom.AbsoluteStart(),
+            };
+
+            var graphQlOrders = await GetGraphQlOrdersAsync(filter);
+
+            return graphQlOrders
+                .Select(ShopifyGraphQlHelper.Map)
+                .ToList();
         }
 
         public List<Order> GetReportOrders(DateTime dateFrom = default, DateTime dateTo = default)
@@ -417,7 +439,8 @@ namespace SyncAppEntities.Logic
                     orderListFilter.CreatedAtMin.Value.Date,
                     orderListFilter.CreatedAtMax?.Date,
                     orderListFilter.FinancialStatus,
-                    150,
+                    orderListFilter.UpdatedAtMin?.Date,
+                    28,
                     cursor);
 
                 var response = await ExecuteOrdersQueryAsync(
@@ -497,6 +520,35 @@ namespace SyncAppEntities.Logic
             }
 
             return Orders;
+        }
+
+
+        public async Task<List<GraphQlInventoryItemNode>> GetInventoryItemsAsync(
+    IEnumerable<long> inventoryItemIds)
+        {
+            var ids = inventoryItemIds?
+                .Distinct()
+                .ToList();
+
+            if (ids?.Any() != true)
+            {
+                return new List<GraphQlInventoryItemNode>();
+            }
+
+            var graphService = new GraphService(
+                _storeUrl,
+                _apiSecret);
+
+            var query =
+                ShopifyGraphQlHelper.ConstructInventoryItemsQuery(ids);
+
+            var result = await graphService.PostAsync(query);
+
+            var response =
+                result.ToObject<InventoryItemsResponse>();
+
+            return response?.Nodes ??
+                   new List<GraphQlInventoryItemNode>();
         }
     }
 }

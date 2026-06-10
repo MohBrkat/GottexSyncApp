@@ -30,9 +30,6 @@ namespace SyncApp.Models.GraphQlDTOs
         [JsonProperty("customer")]
         public GraphQlCustomer Customer { get; set; }
 
-        [JsonProperty("discountCodes")]
-        public string[] DiscountCodes { get; set; }
-
         [JsonProperty("discountApplications")]
         public GraphQlDiscountApplicationsConnection DiscountApplications { get; set; }
 
@@ -78,26 +75,41 @@ namespace SyncApp.Models.GraphQlDTOs
         [JsonProperty("totalPriceSet")]
         public GraphQlMoneySet TotalPrice { get; set; }
 
-        [JsonProperty("totalTaxSet")]
-        public GraphQlMoneySet TotalTax { get; set; }
-
         [JsonProperty("transactions")]
         public IEnumerable<GraphQlTransaction> Transactions { get; set; }
 
-        // to be mapped
-        public decimal RefundAmount { set; get; } = 0.0m;
-        public string RefundKind { set; get; } = "no_refund";
-        public bool? Restock { set; get; } = false;
-        public bool IsRefundOrder { set; get; } = false;
+        [JsonProperty("metafields")]
+        public GraphQlMetafieldsConnection Metafields { get; set; }
+    }
+
+    public class GraphQlMetafieldsConnection
+    {
+        [JsonProperty("nodes")]
+        public List<GraphQlMetafield> Nodes { get; set; }
+    }
+
+    public class GraphQlMetafield
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("namespace")]
+        public string Namespace { get; set; }
+
+        [JsonProperty("key")]
+        public string Key { get; set; }
+
+        [JsonProperty("value")]
+        public string Value { get; set; }
+
+        [JsonProperty("type")]
+        public string Type { get; set; }
     }
 
     public class GraphQlTaxLine
     {
         [JsonProperty("title")]
         public string Title { get; set; }
-
-        [JsonProperty("rate")]
-        public decimal? Rate { get; set; }
 
         [JsonProperty("priceSet")]
         public GraphQlMoneySet PriceSet { get; set; }
@@ -165,11 +177,11 @@ namespace SyncApp.Models.GraphQlDTOs
 
     public class GraphQlRefund
     {
-        [JsonProperty("createdAt")]
-        public DateTime? CreatedAt { get; set; }
+        [JsonProperty("id")]
+        public string Id { get; set; }
 
-        [JsonProperty("restock")]
-        public bool? Restock { get; set; }
+        [JsonProperty("createdAt")]
+        public DateTimeOffset? CreatedAt { get; set; }
 
         [JsonProperty("orderAdjustments")]
         public GraphQlOrderAdjustmentsConnection OrderAdjustments { get; set; }
@@ -179,6 +191,21 @@ namespace SyncApp.Models.GraphQlDTOs
 
         [JsonProperty("transactions")]
         public GraphQlTransactionsConnection Transactions { get; set; }
+
+        [JsonProperty("refundShippingLines")]
+        public GraphQlRefundShippingLinesConnection RefundShippingLines { get; set; }
+    }
+
+    public class GraphQlRefundShippingLinesConnection
+    {
+        [JsonProperty("nodes")]
+        public List<GraphQlRefundShippingLine> Nodes { get; set; }
+    }
+
+    public class GraphQlRefundShippingLine
+    {
+        [JsonProperty("shippingLine")]
+        public GraphQlShippingLine ShippingLine { get; set; }
     }
 
     public class GraphQlTransactionsConnection
@@ -222,11 +249,23 @@ namespace SyncApp.Models.GraphQlDTOs
         [JsonProperty("id")]
         public string Id { get; set; }
 
+        [JsonProperty("taxable")]
+        public bool Taxable { get; set; }
+
         [JsonProperty("sku")]
         public string Sku { get; set; }
 
-        [JsonProperty("quantity")]
-        public int Quantity { get; set; }
+        [JsonProperty("variant")]
+        public GraphQlVariant Variant { get; set; }
+
+        [JsonProperty("discountAllocations")]
+        public List<GraphQlDiscountAllocation> DiscountAllocations { get; set; }
+
+        [JsonProperty("originalUnitPriceSet")]
+        public GraphQlMoneySet OriginalUnitPrice { get; set; }
+
+        [JsonProperty("discountedUnitPriceSet")]
+        public GraphQlMoneySet DiscountedUnitPrice { get; set; }
     }
 
     public class GraphQlLocation
@@ -253,7 +292,7 @@ namespace SyncApp.Models.GraphQlDTOs
     public class GraphQlTransaction
     {
         [JsonProperty("createdAt")]
-        public DateTime? CreatedAt { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
 
         [JsonProperty("gateway")]
         public string Gateway { get; set; }
@@ -300,9 +339,6 @@ namespace SyncApp.Models.GraphQlDTOs
         [JsonProperty("id")]
         public string Id { get; set; }
 
-        [JsonProperty("title")]
-        public string Title { get; set; }
-
         [JsonProperty("quantity")]
         public int Quantity { get; set; }
 
@@ -332,9 +368,12 @@ namespace SyncApp.Models.GraphQlDTOs
 
         [JsonProperty("originalUnitPriceSet")]
         public GraphQlMoneySet OriginalUnitPrice { get; set; }
+    }
 
-        // to be mapped
-        public string LocationId { get; set; }
+    public class GraphQlInventoryItem
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
     }
 
     public class GraphQlVariant
@@ -350,6 +389,9 @@ namespace SyncApp.Models.GraphQlDTOs
 
         [JsonProperty("product")]
         public GraphQlProduct Product { get; set; }
+
+        [JsonProperty("inventoryItem")]
+        public GraphQlInventoryItem InventoryItem { get; set; }
     }
 
     public class GraphQlProduct
@@ -362,6 +404,9 @@ namespace SyncApp.Models.GraphQlDTOs
     {
         [JsonProperty("allocatedAmount")]
         public GraphQlMoney AllocatedAmount { get; set; }
+
+        [JsonProperty("allocatedAmountSet")]
+        public GraphQlMoneySet AllocatedAmountSet { get; set; }
     }
 
     public class GraphQlFulfillmentService
