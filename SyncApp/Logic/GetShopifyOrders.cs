@@ -168,6 +168,7 @@ namespace SyncAppEntities.Logic
                         Refunds = new List<Refund>() { refund },
 
                         Metafields = order.Metafields,
+                        OriginalTransactions = order.Transactions ?? new List<Transaction>(),
                     };
 
                     var refundLineItems = refund.RefundLineItems;
@@ -266,7 +267,7 @@ namespace SyncAppEntities.Logic
                 FinancialStatus = "any",
                 Status = "any",
                 FulfillmentStatus = "any",
-                CreatedAtMin = dateFrom.AddDays(-refundOrderDays).AbsoluteStart()
+                UpdatedAtMin = dateFrom.AbsoluteStart()
             };
 
             Orders.AddRange(await GetOrderByFiltersAsync(allOrders));

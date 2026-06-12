@@ -268,8 +268,8 @@ namespace SyncAppEntities.Logic
             var path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + FileName;
 
             var ordersGroupedByDate = orders
-        .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
-        .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
+                .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
+                .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
 
             using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(fileStream))

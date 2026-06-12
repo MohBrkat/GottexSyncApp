@@ -402,5 +402,6 @@ namespace ShopifySharp
         public string RefundKind { set; get; } = "no_refund";
         public bool? Restock { set; get; } = false;
         public bool IsRefundOrder { set; get; } = false;
+        public IEnumerable<Transaction> OriginalTransactions { get; set; }
     }
 }

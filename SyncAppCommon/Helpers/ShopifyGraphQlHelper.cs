@@ -13,13 +13,13 @@ namespace SyncAppCommon.Helpers
     {
         #region Orders
         public static string ConstructGraphQlQuery(
-    DateTime dateFrom,
-    DateTime? dateTo,
-    string financialStatus,
-    DateTime? updatedAtFrom = null,
-    int pageSize = 150,
-    string afterCursor = null
-    )
+            DateTime dateFrom,
+            DateTime? dateTo,
+            string financialStatus,
+            DateTime? updatedAtFrom = null,
+            int pageSize = 150,
+            string afterCursor = null
+            )
         {
             var queryFilter = string.Empty;
             if (!updatedAtFrom.HasValue)
@@ -201,18 +201,23 @@ namespace SyncAppCommon.Helpers
 
                       transactions(first: 20) {
                         nodes {
-                          id
-                          kind
-                          status
+                            id
+                            createdAt
+                            gateway
+                            kind
+                            status
 
-                          amountSet {
-                            shopMoney {
-                              amount
-                              currencyCode
+                            amountSet {
+                                shopMoney {
+                                amount
+                                currencyCode
+                                }
                             }
-                          }
+
+                            receiptJson
                         }
                       }
+
                       refundShippingLines(first: 15) {
                         nodes {
                             shippingLine {
@@ -391,9 +396,9 @@ namespace SyncAppCommon.Helpers
                 Amount = x.AmountSet?.ShopMoney?.Amount,
                 CreatedAt = x.CreatedAt?.ToLocalTime(),
                 Gateway = x.Gateway,
-                Kind = x.Kind,
+                Kind = x.Kind?.ToLowerInvariant(),
                 Receipt = x.ReceiptJson,
-                Status = x.Status,
+                Status = x.Status?.ToLowerInvariant(),
                 Currency = x.AmountSet?.ShopMoney?.CurrencyCode
             });
         }
@@ -642,17 +647,11 @@ namespace SyncAppCommon.Helpers
             return connection.Nodes.Select(x => new Transaction
             {
                 Amount = x.AmountSet?.ShopMoney?.Amount,
-
                 CreatedAt = x.CreatedAt?.ToLocalTime(),
-
                 Gateway = x.Gateway,
-
                 Kind = x.Kind?.ToLowerInvariant(),
-
                 Receipt = x.ReceiptJson,
-
                 Status = x.Status?.ToLowerInvariant(),
-
                 Currency = x.AmountSet?.ShopMoney?.CurrencyCode
             });
         }
