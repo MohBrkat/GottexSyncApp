@@ -13,33 +13,42 @@ namespace SyncAppCommon.Helpers
     {
         #region Orders
         public static string ConstructGraphQlQuery(
-            DateTime dateFrom,
-            DateTime? dateTo,
+            DateTime? createdAtMin,
+            DateTime? createdAtMax,
             string financialStatus,
-            DateTime? updatedAtFrom = null,
+            string status,
+            DateTime? updatedAtMin = null,
             int pageSize = 150,
             string afterCursor = null
             )
         {
-            var queryFilter = string.Empty;
-            if (!updatedAtFrom.HasValue)
+            var filterList = new List<string>();
+            if (createdAtMin.HasValue)
             {
-                queryFilter = $"created_at:>={dateFrom.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}";
-            }
-            else
-            {
-                queryFilter = $"updated_at:>={updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}";
+                filterList.Add($"created_at:>={createdAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
             }
 
-            if (dateTo.HasValue == true)
+            if (createdAtMax.HasValue)
             {
-                queryFilter += $"AND created_at:<={dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz} ";
+                filterList.Add($"created_at:<={createdAtMax.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
             }
 
             if (!string.IsNullOrWhiteSpace(financialStatus))
             {
-                queryFilter += $"AND (financial_status:{financialStatus})";
+                filterList.Add($"(financial_status:{financialStatus})");
             }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                filterList.Add($"(status:{status})");
+            }
+
+            if (updatedAtMin.HasValue)
+            {
+                filterList.Add($"updated_at:>={updatedAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+            }
+
+            var queryFilter = string.Join(" AND ", filterList);
 
             var afterClause = string.IsNullOrEmpty(afterCursor)
                 ? string.Empty
@@ -483,7 +492,7 @@ namespace SyncAppCommon.Helpers
             {
                 "FULFILLED" => "fulfilled",
                 "PARTIALLY_FULFILLED" => "partial",
-                "UNFULFILLED" => "unfulfilled",
+                "UNFULFILLED" => null,
                 _ => status?.ToLowerInvariant(),
             };
         }
@@ -660,7 +669,7 @@ namespace SyncAppCommon.Helpers
 
         #region Inventory
         public static string ConstructInventoryItemsQuery(
-    IEnumerable<long> inventoryItemIds)
+            IEnumerable<long> inventoryItemIds)
         {
             var gids = inventoryItemIds
                 .Distinct()
@@ -685,7 +694,7 @@ namespace SyncAppCommon.Helpers
         }
 
         public static Dictionary<long, List<long>> BuildInventoryLocationLookup(
-    IEnumerable<GraphQlInventoryItemNode> inventoryItems)
+         IEnumerable<GraphQlInventoryItemNode> inventoryItems)
         {
             var result =
                 new Dictionary<long, List<long>>();
@@ -713,6 +722,85 @@ namespace SyncAppCommon.Helpers
             }
 
             return result;
+        }
+        #endregion
+
+        #region Products
+        public static string ConstructProductsQuery(
+            int pageSize = 250,
+            string afterCursor = null)
+        {
+            var afterClause = string.IsNullOrWhiteSpace(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            return @"{
+                      products(
+                        first: " + pageSize + @"
+                        " + afterClause + @"
+                      ) {
+                        nodes {
+                          id
+                          vendor
+
+                          variants(first: 250) {
+                            nodes {
+                              id
+                              sku
+                              barcode
+
+                              inventoryItem {
+                                id
+                              }
+                            }
+                          }
+                        }
+
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                      }
+                    }";
+        }
+
+        public static Product MapProduct(
+            GraphQlProduct source)
+        {
+            return new Product
+            {
+                Id = ParseNullableId(source.Id),
+
+                Vendor = source.Vendor,
+
+                Variants =
+                    source.Variants?.Nodes?
+                        .Select(MapVariant)
+                        .ToList()
+                        ?? new List<ProductVariant>()
+            };
+        }
+
+        private static ProductVariant MapVariant(
+            GraphQlProductVariant source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            return new ProductVariant
+            {
+                Id = ParseNullableId(source.Id),
+
+                SKU = source.Sku,
+
+                InventoryItemId =
+                    ParseNullableId(
+                        source.InventoryItem?.Id),
+
+                Barcode = source.Barcode,
+            };
         }
         #endregion
     }

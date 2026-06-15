@@ -1,14 +1,14 @@
-﻿using Log4NetLibrary;
-using ShopifySharp;
-using SyncAppEntities.Models;
-using SyncAppEntities.Models.EF;
-using SyncAppEntities.ViewModel;
-using SyncAppCommon;
-using SyncAppCommon.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Log4NetLibrary;
+using ShopifySharp;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
 
 namespace SyncAppEntities.Logic
 {
@@ -165,6 +165,17 @@ namespace SyncAppEntities.Logic
                     FileContentType = contentType,
                     FileData = summarizedFile
                 };
+
+                file.ShippingFiles = new List<FileContent>();
+                foreach (var item in shippingFiles)
+                {
+                    file.ShippingFiles.Add(new FileContent()
+                    {
+                        FileName = item.Key,
+                        FileContentType = contentType,
+                        FileData = item.Value
+                    });
+                }
 
                 string subject = $"{Config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                 string body = EmailMessages.ReportEmailMessageBody();
@@ -473,7 +484,12 @@ namespace SyncAppEntities.Logic
 
         public async Task<List<Product>> GetProductsAsync()
         {
-            return await new GetShopifyProducts(StoreUrl, ApiSecret).GetProductsAsync();
+            var graphQlProducts = await new GetShopifyProducts(StoreUrl, ApiSecret)
+                .GetGraphQlProductsAsync();
+
+            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
+
+            return products;
         }
 
         public bool CheckWorkingDays()
@@ -481,26 +497,17 @@ namespace SyncAppEntities.Logic
             var culture = new System.Globalization.CultureInfo("en-US");
             string currentDay = culture.DateTimeFormat.GetDayName(DateTime.Today.DayOfWeek);
 
-            switch (currentDay)
+            return currentDay switch
             {
-                case "Saturday":
-                    return Config.Saturday ?? false;
-                case "Sunday":
-                    return Config.Sunday ?? false;
-                case "Monday":
-                    return Config.Monday ?? false;
-                case "Tuesday":
-                    return Config.Tuesday ?? false;
-                case "Wednesday":
-                    return Config.Wednesday ?? false;
-                case "Thursday":
-                    return Config.Thursday ?? false;
-                case "Friday":
-                    return Config.Friday ?? false;
-                default:
-                    return false;
-
-            }
+                "Saturday" => Config.Saturday ?? false,
+                "Sunday" => Config.Sunday ?? false,
+                "Monday" => Config.Monday ?? false,
+                "Tuesday" => Config.Tuesday ?? false,
+                "Wednesday" => Config.Wednesday ?? false,
+                "Thursday" => Config.Thursday ?? false,
+                "Friday" => Config.Friday ?? false,
+                _ => false,
+            };
         }
 
     }

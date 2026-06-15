@@ -279,7 +279,6 @@ namespace SyncAppEntities.Logic
         {
             var filter = new OrderListFilter
             {
-                CreatedAtMin = dateFrom,
                 UpdatedAtMin = dateFrom.AbsoluteStart(),
             };
 
@@ -339,8 +338,13 @@ namespace SyncAppEntities.Logic
 
             }
 
-            List<Order> orders = GetOrderByFiltersAsync(filter).Result.Select(a => a).Where(a => a.FulfillmentStatus == null ||
-                    a.FulfillmentStatus == "partial").ToList();
+            var orders = GetGraphQlOrdersAsync(filter).Result
+                .Select(ShopifyGraphQlHelper.Map).ToList()
+                .Where(a =>
+                    a.FulfillmentStatus == null
+                    || a.FulfillmentStatus == "partial"
+                )
+                .ToList();
 
             return orders;
         }
@@ -396,7 +400,13 @@ namespace SyncAppEntities.Logic
 
             }
 
-            List<Order> orders = GetOrderByFiltersAsync(filter).Result.Select(a => a).Where(a => a.FulfillmentStatus == null || a.FulfillmentStatus == "partial").ToList();
+            var orders = GetGraphQlOrdersAsync(filter).Result
+                .Select(ShopifyGraphQlHelper.Map).ToList()
+                .Where(a =>
+                    a.FulfillmentStatus == null
+                    || a.FulfillmentStatus == "partial"
+                )
+                .ToList();
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             foreach (var order in OrdersHasRefunds)
@@ -420,13 +430,6 @@ namespace SyncAppEntities.Logic
 
         public async Task<List<GraphQlOrder>> GetGraphQlOrdersAsync(OrderListFilter orderListFilter)
         {
-            if (!orderListFilter.CreatedAtMin.HasValue)
-            {
-                throw new ArgumentException(
-                    "CreatedAtMin is required.",
-                    nameof(orderListFilter));
-            }
-
             var orders = new List<GraphQlOrder>();
 
             var graphService = new GraphService(_storeUrl, _apiSecret);
@@ -437,9 +440,10 @@ namespace SyncAppEntities.Logic
             do
             {
                 var query = ShopifyGraphQlHelper.ConstructGraphQlQuery(
-                    orderListFilter.CreatedAtMin.Value.Date,
+                    orderListFilter.CreatedAtMin?.Date,
                     orderListFilter.CreatedAtMax?.Date,
                     orderListFilter.FinancialStatus,
+                    orderListFilter.Status,
                     orderListFilter.UpdatedAtMin?.Date,
                     28,
                     cursor);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using SyncAppCommon.Models.GraphQlDTOs;
 
 namespace SyncApp.Models.GraphQlDTOs
 {
@@ -392,12 +393,6 @@ namespace SyncApp.Models.GraphQlDTOs
 
         [JsonProperty("inventoryItem")]
         public GraphQlInventoryItem InventoryItem { get; set; }
-    }
-
-    public class GraphQlProduct
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
     }
 
     public class GraphQlDiscountAllocation

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace SyncAppEntities.ViewModel
 {
@@ -9,6 +6,7 @@ namespace SyncAppEntities.ViewModel
     {
         public FileContent DetailedFile { get; set; }
         public FileContent SummarizedFile { get; set; }
+        public List<FileContent> ShippingFiles { get; set; }
         public FileContent InvalidProducts { get; set; }
     }
 
