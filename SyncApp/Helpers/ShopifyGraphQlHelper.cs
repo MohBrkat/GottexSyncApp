@@ -4,21 +4,32 @@ using System.Linq;
 using ShopifySharp;
 using SyncApp.Models;
 using SyncApp.Models.GraphQlDTOs;
+using SyncAppCommon.Models.GraphQlDTOs;
 using Transaction = ShopifySharp.Transaction;
 
 namespace SyncAppCommon.Helpers
 {
     public static class ShopifyGraphQlHelper
     {
+        #region Orders
         public static string ConstructGraphQlQuery(
             DateTime dateFrom,
             DateTime? dateTo,
             string financialStatus,
+            DateTime? updatedAtFrom = null,
             int pageSize = 150,
             string afterCursor = null
-            )
+        )
         {
-            var queryFilter = $"created_at:>={dateFrom.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz} ";
+            var queryFilter = string.Empty;
+            if (!updatedAtFrom.HasValue)
+            {
+                queryFilter = $"created_at:>={dateFrom.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}";
+            }
+            else
+            {
+                queryFilter = $"updated_at:>={updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}";
+            }
 
             if (dateTo.HasValue == true)
             {
@@ -47,7 +58,6 @@ namespace SyncAppCommon.Helpers
                         firstName
                         lastName
                       }
-                      discountCodes
                       discountApplications(first: 10) {
                         nodes {
                           targetType
@@ -66,10 +76,9 @@ namespace SyncAppCommon.Helpers
                     displayFinancialStatus
                     displayFulfillmentStatus
                     tags
-                    lineItems(first: 50) {
+                    lineItems(first: 25) {
                       nodes {
                         id
-                        title
                         quantity
                         taxable
                         sku
@@ -86,6 +95,9 @@ namespace SyncAppCommon.Helpers
                           product {
                             id
                           }
+                          inventoryItem {
+                            id
+                          }
                         }
                         originalUnitPriceSet {
                           shopMoney {
@@ -98,6 +110,11 @@ namespace SyncAppCommon.Helpers
                             amount
                             currencyCode
                           }
+                          allocatedAmountSet {
+                            shopMoney {
+                              amount
+                            }
+                          }
                         }
                       }
                     }
@@ -105,8 +122,9 @@ namespace SyncAppCommon.Helpers
                     note
                     number
                     refunds {
+                      id
                       createdAt
-                      orderAdjustments(first: 50) {
+                      orderAdjustments(first: 15) {
                         nodes {
                           id
                           reason
@@ -126,7 +144,7 @@ namespace SyncAppCommon.Helpers
                           }
                         }
                       }
-                      refundLineItems(first: 50) {
+                      refundLineItems(first: 25) {
                         nodes {
                           quantity
                           restockType
@@ -139,7 +157,41 @@ namespace SyncAppCommon.Helpers
 
                           lineItem {
                             id
+                            taxable
                             sku
+                            variant {
+                              id
+                              price
+                              sku
+                              product {
+                                id
+                              }
+                              inventoryItem {
+                                id
+                              }
+                            }
+                            originalUnitPriceSet {
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+                            discountedUnitPriceSet {
+                              shopMoney {
+                                amount
+                              }
+                            }
+                            discountAllocations {
+                              allocatedAmount {
+                                amount
+                                currencyCode
+                              }
+                              allocatedAmountSet {
+                                shopMoney {
+                                  amount
+                                }
+                              }
+                            }
                           }
                           location {
                             id
@@ -147,7 +199,7 @@ namespace SyncAppCommon.Helpers
                         }
                       }
 
-                      transactions(first: 50) {
+                      transactions(first: 20) {
                         nodes {
                           id
                           kind
@@ -161,6 +213,31 @@ namespace SyncAppCommon.Helpers
                           }
                         }
                       }
+
+                      refundShippingLines(first: 15) {
+                        nodes {
+                            shippingLine {
+                                id
+                                title
+                                code
+
+                                originalPriceSet {
+                                    shopMoney {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+
+                                discountedPriceSet {
+                                    shopMoney {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+                            }
+                        }
+                      }
+
                     }
 
                     shippingAddress {
@@ -197,7 +274,6 @@ namespace SyncAppCommon.Helpers
 
                     taxLines {
                       title
-                      rate
                       priceSet {
                         shopMoney {
                           amount
@@ -222,14 +298,7 @@ namespace SyncAppCommon.Helpers
                       }
                     }
 
-                    totalTaxSet {
-                      shopMoney {
-                        amount
-                        currencyCode
-                      }
-                    }
-
-                    transactions(first: 50) {
+                    transactions(first: 20) {
                         id
                         createdAt
                         gateway
@@ -244,6 +313,16 @@ namespace SyncAppCommon.Helpers
                         }
 
                         receiptJson
+                    }
+
+                    metafields(first: 10) {
+                      nodes {
+                        id
+                        namespace
+                        key
+                        value
+                        type
+                      }
                     }
 
                 }
@@ -286,8 +365,25 @@ namespace SyncAppCommon.Helpers
 
                 TotalDiscounts = source.TotalDiscounts?.ShopMoney?.Amount ?? 0,
                 TotalPrice = source.TotalPrice?.ShopMoney?.Amount ?? 0,
-                Transactions = MapTransactions(source.Transactions)
+                Transactions = MapTransactions(source.Transactions),
+                Metafields = MapMetafields(source.Metafields)
             };
+        }
+
+        private static IEnumerable<MetaField> MapMetafields(
+            GraphQlMetafieldsConnection connection)
+        {
+            if (connection?.Nodes == null)
+                return Enumerable.Empty<MetaField>();
+
+            return connection.Nodes.Select(x => new MetaField
+            {
+                Id = ParseNullableId(x.Id),
+                Namespace = x.Namespace,
+                Key = x.Key,
+                Value = x.Value,
+                ValueType = x.Type
+            });
         }
 
         private static Address MapShippingAddress(GraphQlAddress shippingAddress)
@@ -309,7 +405,7 @@ namespace SyncAppCommon.Helpers
             return transactions.Select(x => new Transaction
             {
                 Amount = x.AmountSet?.ShopMoney?.Amount,
-                CreatedAt = x.CreatedAt,
+                CreatedAt = x.CreatedAt?.ToLocalTime(),
                 Gateway = x.Gateway,
                 Kind = x.Kind,
                 Receipt = x.ReceiptJson,
@@ -442,7 +538,8 @@ namespace SyncAppCommon.Helpers
                 new DiscountAllocation()
                 {
                     Amount = x.AllocatedAmount?.Amount.ToString()
-                })
+                }),
+                InventoryItemId = ParseNullableId(source.Variant?.InventoryItem?.Id),
             };
         }
 
@@ -471,13 +568,35 @@ namespace SyncAppCommon.Helpers
 
             return new Refund
             {
-                CreatedAt = source.CreatedAt,
+                Id = ParseNullableId(source.Id),
+                CreatedAt = source.CreatedAt?.ToLocalTime(),
                 OrderAdjustments = MapOrderAdjustments(source.OrderAdjustments),
 
                 RefundLineItems = MapRefundLineItems(source.RefundLineItems),
 
-                Transactions = MapRefundTransactions(source.Transactions)
+                Transactions = MapRefundTransactions(source.Transactions),
+
+                RefundShippingLines = MapRefundShippingLines(source.RefundShippingLines),
             };
+        }
+
+        private static IEnumerable<ShippingLine> MapRefundShippingLines(GraphQlRefundShippingLinesConnection refundShippingLines)
+        {
+            if (refundShippingLines?.Nodes == null)
+            {
+                return new List<ShippingLine>();
+            }
+
+            return refundShippingLines.Nodes
+                .Where(x => x.ShippingLine != null)
+                .Select(x => new ShippingLine
+                {
+                    Code = x.ShippingLine.Code,
+                    Title = x.ShippingLine.Title,
+                    Price = x.ShippingLine.OriginalPriceSet?.ShopMoney?.Amount,
+                    DiscountedPrice = x.ShippingLine.DiscountedPriceSet?.ShopMoney?.Amount
+                })
+                .ToList();
         }
 
         private static IEnumerable<RefundOrderAdjustment> MapOrderAdjustments(
@@ -512,7 +631,16 @@ namespace SyncAppCommon.Helpers
                 LineItem = new LineItem
                 {
                     Id = ParseNullableId(x.LineItem?.Id),
-                    SKU = x.LineItem?.Sku
+                    SKU = x.LineItem?.Sku,
+                    DiscountAllocations = x.LineItem?.DiscountAllocations?.Select(d =>
+                    new DiscountAllocation()
+                    {
+                        Amount = d.AllocatedAmount?.Amount.ToString()
+                    }),
+                    Price = x.LineItem?.OriginalUnitPrice?.ShopMoney?.Amount,
+                    Taxable = x.LineItem?.Taxable,
+                    ProductId = ParseNullableId(x.LineItem?.Variant?.Product?.Id),
+                    InventoryItemId = ParseNullableId(x.LineItem?.Variant?.InventoryItem?.Id),
                 },
 
                 LocationId = ParseNullableId(x.Location?.Id),
@@ -529,18 +657,77 @@ namespace SyncAppCommon.Helpers
             {
                 Amount = x.AmountSet?.ShopMoney?.Amount,
 
-                CreatedAt = x.CreatedAt,
+                CreatedAt = x.CreatedAt?.ToLocalTime(),
 
                 Gateway = x.Gateway,
 
-                Kind = x.Kind,
+                Kind = x.Kind?.ToLowerInvariant(),
 
                 Receipt = x.ReceiptJson,
 
-                Status = x.Status,
+                Status = x.Status?.ToLowerInvariant(),
 
                 Currency = x.AmountSet?.ShopMoney?.CurrencyCode
             });
         }
+        #endregion
+
+        #region Inventory
+        public static string ConstructInventoryItemsQuery(
+            IEnumerable<long> inventoryItemIds)
+        {
+            var gids = inventoryItemIds
+                .Distinct()
+                .Select(id => $"\"gid://shopify/InventoryItem/{id}\"");
+
+            return @"{
+                        nodes(ids: [" + string.Join(",", gids) + @"]) {
+                            ... on InventoryItem {
+                                id
+
+                                inventoryLevels(first: 20) {
+                                    nodes {
+                                        location {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }";
+        }
+
+        public static Dictionary<long, List<long>> BuildInventoryLocationLookup(
+            IEnumerable<GraphQlInventoryItemNode> inventoryItems)
+        {
+            var result =
+                new Dictionary<long, List<long>>();
+
+            foreach (var item in inventoryItems ?? Enumerable.Empty<GraphQlInventoryItemNode>())
+            {
+                var inventoryItemId =
+                    ParseNullableId(item.Id);
+
+                if (!inventoryItemId.HasValue)
+                {
+                    continue;
+                }
+
+                var locationIds =
+                    item.InventoryLevels?.Nodes?
+                        .Select(x => ParseNullableId(x.Location?.Id))
+                        .Where(x => x.HasValue)
+                        .Select(x => x.Value)
+                        .Distinct()
+                        .ToList()
+                    ?? new List<long>();
+
+                result[inventoryItemId.Value] = locationIds;
+            }
+
+            return result;
+        }
+        #endregion
     }
 }

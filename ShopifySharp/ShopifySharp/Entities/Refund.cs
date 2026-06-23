@@ -94,7 +94,9 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("refund_duties")]
         public IEnumerable<RefundDutyType> RefundDuties { get; set; }
-        
+
+        // Added to support shipping lines from graphQl
+        public IEnumerable<ShippingLine> RefundShippingLines { get; set; }
     }
 
     public class Shipping
