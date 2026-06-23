@@ -1,18 +1,16 @@
-﻿using Log4NetLibrary;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Log4NetLibrary;
 using Microsoft.AspNetCore.Hosting;
 using Polly;
-using Polly.Contrib.WaitAndRetry;
 using ShopifyApp2;
 using ShopifySharp;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
-using SyncApp.ViewModel;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SyncApp.Logic
 {
@@ -281,7 +279,6 @@ namespace SyncApp.Logic
 
                     foreach (var order in DayOrders.Data)
                     {
-                        var shipRefOrder = order;
                         foreach (var orderItem in order.LineItems)
                         {
                             var discountPercentage = 0;
@@ -347,7 +344,7 @@ namespace SyncApp.Logic
                         var discountZero = 0;
                         var shipOrder = order;
 
-                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.Price).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
+                        var shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.DiscountedPrice).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
 
                         //If the order (e.g partially/refunded or paid) 
                         //has shipping cost and this cost is not refunded,
