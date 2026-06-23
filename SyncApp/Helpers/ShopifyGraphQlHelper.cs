@@ -202,6 +202,8 @@ namespace SyncAppCommon.Helpers
                       transactions(first: 20) {
                         nodes {
                           id
+                          createdAt
+                          gateway
                           kind
                           status
 
@@ -211,6 +213,7 @@ namespace SyncAppCommon.Helpers
                               currencyCode
                             }
                           }
+                          receiptJson
                         }
                       }
 
@@ -407,9 +410,9 @@ namespace SyncAppCommon.Helpers
                 Amount = x.AmountSet?.ShopMoney?.Amount,
                 CreatedAt = x.CreatedAt?.ToLocalTime(),
                 Gateway = x.Gateway,
-                Kind = x.Kind,
+                Kind = x.Kind?.ToLowerInvariant(),
                 Receipt = x.ReceiptJson,
-                Status = x.Status,
+                Status = x.Status?.ToLowerInvariant(),
                 Currency = x.AmountSet?.ShopMoney?.CurrencyCode
             });
         }
