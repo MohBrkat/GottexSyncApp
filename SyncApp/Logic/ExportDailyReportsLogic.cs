@@ -1,15 +1,14 @@
-﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
-using ShopifyApp2;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Log4NetLibrary;
 using ShopifySharp;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
 using SyncApp.ViewModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using SyncAppCommon.Helpers;
 
 namespace SyncApp.Logic
 {
@@ -132,7 +131,7 @@ namespace SyncApp.Logic
             lsOfOrders = lsOfOrders.OrderByDescending(a => a.CreatedAt.GetValueOrDefault().DateTime).ToList();
             return lsOfOrders;
         }
-             
+
         public async Task GenerateDailyReportFilesAsync(FileModel file, List<Order> lsOfOrders)
         {
             if (lsOfOrders.Count > 0)
@@ -164,7 +163,7 @@ namespace SyncApp.Logic
                     FileData = summarizedFile
                 };
 
-                string subject = $"{ Config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
+                string subject = $"{Config.SiteName} - Detailed And Summarized Report Files - {lsOfOrders.Count} Orders";
                 string body = EmailMessages.ReportEmailMessageBody();
 
                 if (!string.IsNullOrEmpty(ReportEmailAddress1) || !string.IsNullOrEmpty(ReportEmailAddress2))
@@ -376,12 +375,16 @@ namespace SyncApp.Logic
                     return Config.Friday ?? false;
                 default:
                     return false;
-
             }
         }
         public async Task<List<Product>> GetProductsAsync()
         {
-            return await new GetShopifyProducts(StoreUrl, ApiSecret).GetProductsAsync();
+            var graphQlProducts = await new GetShopifyProducts(StoreUrl, ApiSecret)
+                .GetGraphQlProductsAsync();
+
+            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
+
+            return products;
         }
     }
 }

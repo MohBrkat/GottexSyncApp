@@ -13,33 +13,42 @@ namespace SyncAppCommon.Helpers
     {
         #region Orders
         public static string ConstructGraphQlQuery(
-            DateTime dateFrom,
+            DateTime? dateFrom,
             DateTime? dateTo,
             string financialStatus,
+            string status,
             DateTime? updatedAtFrom = null,
             int pageSize = 150,
             string afterCursor = null
         )
         {
-            var queryFilter = string.Empty;
-            if (!updatedAtFrom.HasValue)
+            var filterList = new List<string>();
+            if (dateFrom.HasValue)
             {
-                queryFilter = $"created_at:>={dateFrom.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}";
-            }
-            else
-            {
-                queryFilter = $"updated_at:>={updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}";
+                filterList.Add($"created_at:>={dateFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
             }
 
-            if (dateTo.HasValue == true)
+            if (dateTo.HasValue)
             {
-                queryFilter += $"AND created_at:<={dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz} ";
+                filterList.Add($"created_at:<={dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
             }
 
             if (!string.IsNullOrWhiteSpace(financialStatus))
             {
-                queryFilter += $"AND (financial_status:{financialStatus})";
+                filterList.Add($"(financial_status:{financialStatus})");
             }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                filterList.Add($"(status:{status})");
+            }
+
+            if (updatedAtFrom.HasValue)
+            {
+                filterList.Add($"updated_at:>={updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+            }
+
+            var queryFilter = string.Join(" AND ", filterList);
 
             var afterClause = string.IsNullOrEmpty(afterCursor)
                 ? string.Empty
@@ -502,7 +511,7 @@ namespace SyncAppCommon.Helpers
                 case "PARTIALLY_FULFILLED":
                     return "partial";
                 case "UNFULFILLED":
-                    return "unfulfilled";
+                    return null;
                 default:
                     return status?.ToLowerInvariant();
             }
@@ -730,6 +739,85 @@ namespace SyncAppCommon.Helpers
             }
 
             return result;
+        }
+        #endregion
+
+        #region Products
+        public static string ConstructProductsQuery(
+            int pageSize = 250,
+            string afterCursor = null)
+        {
+            var afterClause = string.IsNullOrWhiteSpace(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            return @"{
+                      products(
+                        first: " + pageSize + @"
+                        " + afterClause + @"
+                      ) {
+                        nodes {
+                          id
+                          vendor
+
+                          variants(first: 250) {
+                            nodes {
+                              id
+                              sku
+                              barcode
+
+                              inventoryItem {
+                                id
+                              }
+                            }
+                          }
+                        }
+
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                      }
+                    }";
+        }
+
+        public static Product MapProduct(
+            GraphQlProduct source)
+        {
+            return new Product
+            {
+                Id = ParseNullableId(source.Id),
+
+                Vendor = source.Vendor,
+
+                Variants =
+                    source.Variants?.Nodes?
+                        .Select(MapVariant)
+                        .ToList()
+                        ?? new List<ProductVariant>()
+            };
+        }
+
+        private static ProductVariant MapVariant(
+            GraphQlProductVariant source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            return new ProductVariant
+            {
+                Id = ParseNullableId(source.Id),
+
+                SKU = source.Sku,
+
+                InventoryItemId =
+                    ParseNullableId(
+                        source.InventoryItem?.Id),
+
+                Barcode = source.Barcode,
+            };
         }
         #endregion
     }
