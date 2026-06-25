@@ -733,16 +733,22 @@ namespace SyncAppCommon.Helpers
         #region Products
         public static string ConstructProductsQuery(
             int pageSize = 250,
-            string afterCursor = null)
+            string afterCursor = null, 
+            string filter = null)
         {
             var afterClause = string.IsNullOrWhiteSpace(afterCursor)
                 ? string.Empty
                 : $@", after: ""{afterCursor}""";
 
+            var queryFilter = string.IsNullOrEmpty(filter)
+                ? string.Empty 
+                : filter;
+
             return @"{
                       products(
-                        first: " + pageSize + @"
-                        " + afterClause + @"
+                        first: " + pageSize + @",
+                        query: """ + queryFilter + @""""
+                        + afterClause + @"
                       ) {
                         nodes {
                           id

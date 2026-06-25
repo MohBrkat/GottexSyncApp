@@ -56,7 +56,7 @@ namespace SyncAppEntities.Logic
             return products;
         }
 
-        public async Task<List<GraphQlProduct>> GetGraphQlProductsAsync()
+        public async Task<List<GraphQlProduct>> GetGraphQlProductsAsync(string graphQLFilter = null)
         {
             var products = new List<GraphQlProduct>();
 
@@ -71,7 +71,8 @@ namespace SyncAppEntities.Logic
                 var query =
                     ShopifyGraphQlHelper.ConstructProductsQuery(
                         250,
-                        cursor);
+                        cursor,
+                        graphQLFilter);
 
                 var result =
                     await graphService.PostAsync(query);
