@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ShopifySharp;
 using ShopifySharp.Filters;
@@ -94,6 +95,15 @@ namespace SyncAppEntities.Logic
 
             }
             while (hasNextPage);
+
+            return products;
+        }
+
+        public async Task<List<Product>> GetProductsListAsync(string graphQLFilter = null)
+        {
+            var graphQlProducts = await GetGraphQlProductsAsync(graphQLFilter);
+
+            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
 
             return products;
         }
