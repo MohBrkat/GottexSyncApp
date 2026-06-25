@@ -395,7 +395,7 @@ namespace SyncAppCommon.Helpers
                 Key = x.Key,
                 Value = x.Value,
                 ValueType = x.Type
-            });
+            }).ToList();
         }
 
         private static Address MapShippingAddress(GraphQlAddress shippingAddress)
@@ -423,7 +423,7 @@ namespace SyncAppCommon.Helpers
                 Receipt = x.ReceiptJson,
                 Status = x.Status?.ToLowerInvariant(),
                 Currency = x.AmountSet?.ShopMoney?.CurrencyCode
-            });
+            }).ToList();
         }
 
         private static IEnumerable<TaxLine> MapTaxLines(IEnumerable<GraphQlTaxLine> taxLines)
@@ -435,7 +435,7 @@ namespace SyncAppCommon.Helpers
             {
                 Price = x.PriceSet?.ShopMoney?.Amount,
                 Title = x.Title
-            });
+            }).ToList();
         }
 
         private static IEnumerable<Refund> MapRefunds(
@@ -444,7 +444,7 @@ namespace SyncAppCommon.Helpers
             if (refunds == null)
                 return new List<Refund>();
 
-            return refunds.Select(MapRefund);
+            return refunds.Select(MapRefund).ToList();
         }
 
         private static IEnumerable<DiscountCode> MapDiscountCodes(GraphQlDiscountApplicationsConnection connection)
@@ -550,7 +550,7 @@ namespace SyncAppCommon.Helpers
                 new DiscountAllocation()
                 {
                     Amount = x.AllocatedAmount?.Amount.ToString()
-                }),
+                }).ToList(),
                 InventoryItemId = ParseNullableId(source.Variant?.InventoryItem?.Id),
             };
         }
@@ -623,7 +623,7 @@ namespace SyncAppCommon.Helpers
                 Amount = x.AmountSet?.ShopMoney?.Amount,
                 Kind = x.Reason,
                 TaxAmount = x.TaxAmountSet?.ShopMoney?.Amount,
-            });
+            }).ToList();
         }
 
         private static IEnumerable<RefundLineItem> MapRefundLineItems(
@@ -648,7 +648,7 @@ namespace SyncAppCommon.Helpers
                     new DiscountAllocation()
                     {
                         Amount = d.AllocatedAmount?.Amount.ToString()
-                    }),
+                    }).ToList(),
                     Price = x.LineItem?.OriginalUnitPrice?.ShopMoney?.Amount,
                     Taxable = x.LineItem?.Taxable,
                     ProductId = ParseNullableId(x.LineItem?.Variant?.Product?.Id),
@@ -656,7 +656,7 @@ namespace SyncAppCommon.Helpers
                 },
 
                 LocationId = ParseNullableId(x.Location?.Id),
-            });
+            }).ToList();
         }
 
         private static IEnumerable<Transaction> MapRefundTransactions(
@@ -680,7 +680,7 @@ namespace SyncAppCommon.Helpers
                 Status = x.Status?.ToLowerInvariant(),
 
                 Currency = x.AmountSet?.ShopMoney?.CurrencyCode
-            });
+            }).ToList();
         }
         #endregion
 
@@ -690,7 +690,7 @@ namespace SyncAppCommon.Helpers
         {
             var gids = inventoryItemIds
                 .Distinct()
-                .Select(id => $"\"gid://shopify/InventoryItem/{id}\"");
+                .Select(id => $"\"gid://shopify/InventoryItem/{id}\"").ToList();
 
             return @"{
                         nodes(ids: [" + string.Join(",", gids) + @"]) {
