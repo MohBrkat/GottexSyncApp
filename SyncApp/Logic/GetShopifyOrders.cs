@@ -494,16 +494,33 @@ namespace SyncApp.Logic
 
         public async Task<List<Order>> GetGraphQlRefundedOrdersAsync(DateTime dateFrom)
         {
-            var filter = new OrderListFilter
+            var result = new List<Order>();
+
+            var financialStatuses = new[]
             {
-                UpdatedAtMin = dateFrom.AbsoluteStart(),
+                "refunded",
+                "partially_refunded"
             };
 
-            var graphQlOrders = await GetGraphQlOrdersAsync(filter);
+            foreach (var status in financialStatuses)
+            {
+                var graphQlOrders = await GetGraphQlOrdersAsync(new OrderListFilter
+                {
+                    FinancialStatus = status,
+                    UpdatedAtMin = dateFrom,
+                });
 
-            return graphQlOrders
-                .Select(ShopifyGraphQlHelper.Map)
-                .ToList();
+                if (graphQlOrders == null || graphQlOrders.Count == 0)
+                    continue;
+
+                var mappedOrders = graphQlOrders
+                    .Select(ShopifyGraphQlHelper.Map)
+                    .ToList();
+
+                result.AddRange(mappedOrders);
+            }
+
+            return result;
         }
 
         public async Task<List<GraphQlInventoryItemNode>> GetInventoryItemsAsync(
