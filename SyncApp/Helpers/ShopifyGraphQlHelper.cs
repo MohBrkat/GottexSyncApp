@@ -67,6 +67,10 @@ namespace SyncAppCommon.Helpers
                         firstName
                         lastName
                       }
+                      customAttributes {
+                        key
+                        value
+                      }
                       discountApplications(first: 10) {
                         nodes {
                           targetType
@@ -356,6 +360,8 @@ namespace SyncAppCommon.Helpers
             {
                 Id = ParseNullableId(source.Id),
                 CreatedAt = source.CreatedAt?.ToLocalTime(),
+                NoteAttributes = MapNoteAttributes(source.CustomAttributes),
+
                 Customer = MapCustomer(source.Customer),
                 DiscountCodes = MapDiscountCodes(source.DiscountApplications),
 
@@ -380,6 +386,18 @@ namespace SyncAppCommon.Helpers
                 Transactions = MapTransactions(source.Transactions),
                 Metafields = MapMetafields(source.Metafields)
             };
+        }
+
+        private static IEnumerable<NoteAttribute> MapNoteAttributes(GraphQlCustomAttribute[] customAttributes)
+        {
+            if (customAttributes == null)
+                return Enumerable.Empty<NoteAttribute>();
+
+            return customAttributes.Select(x => new NoteAttribute
+            {
+                Name = x.Key,
+                Value = x.Value
+            }).ToList();
         }
 
         private static IEnumerable<MetaField> MapMetafields(

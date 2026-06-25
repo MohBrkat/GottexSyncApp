@@ -203,7 +203,7 @@ namespace SyncApp.Logic
                 var localDetailReportList = new List<DetailedAutomaticReportModel>();
                 string customerName = $"{order.Customer?.FirstName} {order.Customer?.LastName}";
                 var GEOrderId = "";
-                if (order.NoteAttributes.Any())
+                if (order.NoteAttributes?.Any() == true)
                 {
                     foreach (var NoteAttribute in order.NoteAttributes)
                     {

@@ -28,6 +28,9 @@ namespace SyncApp.Models.GraphQlDTOs
         [JsonProperty("createdAt")]
         public DateTimeOffset? CreatedAt { get; set; }
 
+        [JsonProperty("customAttributes")]
+        public GraphQlCustomAttribute[] CustomAttributes { get; set; }
+
         [JsonProperty("customer")]
         public GraphQlCustomer Customer { get; set; }
 
@@ -84,6 +87,15 @@ namespace SyncApp.Models.GraphQlDTOs
 
         [JsonProperty("metafields")]
         public GraphQlMetafieldsConnection Metafields { get; set; }
+    }
+
+    public class GraphQlCustomAttribute
+    {
+        [JsonProperty("key")]
+        public string Key { get; set; }
+
+        [JsonProperty("value")]
+        public string Value { get; set; }
     }
 
     public class GraphQlMetafieldsConnection
