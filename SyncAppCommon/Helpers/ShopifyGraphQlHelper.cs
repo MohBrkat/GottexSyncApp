@@ -669,18 +669,23 @@ namespace SyncAppCommon.Helpers
 
         #region Inventory
         public static string ConstructInventoryItemsQuery(
-            IEnumerable<long> inventoryItemIds)
+            IEnumerable<long> inventoryItemIds, 
+            long? locationId = null)
         {
             var gids = inventoryItemIds
                 .Distinct()
                 .Select(id => $"\"gid://shopify/InventoryItem/{id}\"");
+
+            var locationFilter = locationId == null ? "first: 20" : $"first: 1, query: \"location_id:{locationId}\""; // $"locationId: \"gid://shopify/Location/{locationId}\"";
 
             return @"{
                         nodes(ids: [" + string.Join(",", gids) + @"]) {
                             ... on InventoryItem {
                                 id
 
-                                inventoryLevels(first: 20) {
+                                inventoryLevels("
+                                    + locationFilter +   
+                                @") {
                                     nodes {
                                         location {
                                             id
