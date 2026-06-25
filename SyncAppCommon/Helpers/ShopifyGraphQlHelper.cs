@@ -814,5 +814,93 @@ namespace SyncAppCommon.Helpers
             };
         }
         #endregion
+
+        #region Filters
+
+        public static string BuildProductFilter(params (string Field, string Value)[] filters)
+        {
+            return string.Join(
+                " AND ",
+                filters
+                    .Where(f => !string.IsNullOrWhiteSpace(f.Value))
+                    .Select(f => $"{f.Field}:{f.Value}")
+            );
+        }
+
+        #endregion
+
+        #region Inventory mutations
+
+        public static string ConstructInventoryUpdateMutation()
+        {
+            return @"
+                mutation inventorySetOnHandQuantities($input: InventorySetOnHandQuantitiesInput!) {
+                    inventorySetOnHandQuantities(input: $input) {
+                        inventoryAdjustmentGroup {
+                            reason
+                            changes {
+                                name
+                                delta
+                            }
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }";
+        }
+
+        public static object GetInventoryUpdateVariables(long inventoryItemId, long locationId, int quantity)
+        {
+            return new
+            {
+                input = new
+                {
+                    reason = "correction",
+                    setQuantities = new[]
+                    {
+                        new
+                        {
+                            inventoryItemId = $"gid://shopify/InventoryItem/{inventoryItemId}",
+                            locationId = $"gid://shopify/Location/{locationId}",
+                            quantity
+                        }
+                    }
+                }
+            };
+        }
+
+        public static string ConstructInventoryAdjustMutation()
+        {
+            return @"
+                mutation inventoryAdjustQuantity($input: InventoryAdjustQuantityInput!) {
+                    inventoryAdjustQuantity(input: $input) {
+                        inventoryLevel {
+                            id
+                            available
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }";
+        }
+
+        public static object GetInventoryAdjustVariables(long inventoryItemId, long locationId, int quantity)
+        {
+            return new
+            {
+                input = new
+                {
+                    inventoryItemId = $"gid://shopify/InventoryItem/{inventoryItemId}",
+                    locationId = $"gid://shopify/Location/{locationId}",
+                    availableDelta = quantity
+                }
+            };
+        }
+
+        #endregion
     }
 }

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SyncApp.Logic;
 
 namespace SyncAppEntities.Logic
 {
@@ -19,10 +20,16 @@ namespace SyncAppEntities.Logic
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private static readonly object importInventoryLock = new object();
         public const int MAX_RETRY_COUNT = 5;
+        private readonly GetShopifyProducts getShopifyProducts;
+        private readonly GetShopifyOrders getShopifyOrders;
+        private readonly ShopifyInventoryService shopifyInventoryService;
 
         public ImportInventoryFTPLogic(ShopifyAppContext context)
         {
             _context = context;
+            getShopifyProducts = new GetShopifyProducts(StoreUrl, ApiSecret);
+            getShopifyOrders = new GetShopifyOrders(StoreUrl, ApiSecret, _context);
+            shopifyInventoryService = new ShopifyInventoryService(StoreUrl, ApiSecret);
         }
 
         private Configrations Config
@@ -248,9 +255,6 @@ namespace SyncAppEntities.Logic
 
                     var Rows = fileContent.Split(Environment.NewLine).ToArray(); // skip the header
 
-                    var ProductServices = new ProductService(StoreUrl, ApiSecret);
-                    var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
-
                     var Headers = Rows[0];
                     if (ValidateCSV.IsValidHeaders(Headers))
                     {
@@ -276,8 +280,9 @@ namespace SyncAppEntities.Logic
                                     string Quantity = splittedRow[3];
                                     string warehouse = splittedRow[4];
 
-                                    var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
-                                    var ProductObj = Products.Items.FirstOrDefault();
+                                    var productsFilter = ShopifyGraphQlHelper.BuildProductFilter(("handle", Handle));
+                                    var Products = await getShopifyProducts.GetProductsListAsync(productsFilter);
+                                    var ProductObj = Products.FirstOrDefault();
 
                                     if (ProductObj == null)
                                     {
@@ -375,9 +380,6 @@ namespace SyncAppEntities.Logic
             _log.Info($"Start ImportValidInvenotryUpdatesFromCSVAsync");
             List<string> RowsWithoutHeader = info.fileRows;
 
-            var ProductServices = new ProductService(StoreUrl, ApiSecret);
-            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
-
             info.LsOfSucess.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
             info.LsOfErrors.Add("[Inventory] : file name : " + info.fileName + "--" + "discovered and will be processed, rows count: " + RowsWithoutHeader.Count);
 
@@ -400,8 +402,9 @@ namespace SyncAppEntities.Logic
                     long? InventoryItemId = 0;
                     var LocationId = new WarehouseLogic(_context).GetLocationIdByCode(warehouse);
 
-                    var Products = await ProductServices.ListAsync(new ProductListFilter { Handle = Handle });
-                    var ProductObj = Products.Items.FirstOrDefault();
+                    var productsFilter = ShopifyGraphQlHelper.BuildProductFilter(("handle", Handle));
+                    var Products = await getShopifyProducts.GetProductsListAsync(productsFilter);
+                    var ProductObj = Products.FirstOrDefault();
                     var VariantObj = ProductObj.Variants.FirstOrDefault(a => a.SKU == Sku);
 
                     List<long> InventoryItemIds = new List<long>();
@@ -415,18 +418,19 @@ namespace SyncAppEntities.Logic
                         InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
                         InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
-                        var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
-                        LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                        var inventoryItems = await getShopifyOrders.GetInventoryItemsAsync(InventoryItemIds);
+
+                        var inventoryLocationLookup = ShopifyGraphQlHelper.BuildInventoryLocationLookup(inventoryItems);
+
+                        inventoryLocationLookup.TryGetValue(InventoryItemId.GetValueOrDefault(), out var locationIds);
+
+                        LocationId = locationIds.FirstOrDefault();
                     }
 
-                    var inventoryItemLocations = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter
-                    {
-                        InventoryItemIds = InventoryItemIds,
-                        LocationIds = new List<long> { LocationId.GetValueOrDefault() }
-                    });
+                    var inventoryItemLocations = await getShopifyOrders.GetInventoryItemsAsync(InventoryItemIds, LocationId);
 
                     int quantityAdjustment = Convert.ToInt32(Quantity);
-                    if (inventoryItemLocations == null || (inventoryItemLocations != null && inventoryItemLocations.Items.Count() == 0))
+                    if (inventoryItemLocations == null || (inventoryItemLocations != null && inventoryItemLocations.Count == 0))
                     {
                         if (Method.ToLower().Trim() == "out")
                         {
@@ -438,15 +442,15 @@ namespace SyncAppEntities.Logic
 
                     if (Method.ToLower().Trim() == "set")
                     {
-                        var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = quantityAdjustment });
+                        await shopifyInventoryService.SetQuantityAsync(InventoryItemId, LocationId, quantityAdjustment);
                     }
                     else if (Method.ToLower().Trim() == "in")
                     {
-                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = quantityAdjustment });
+                        await shopifyInventoryService.AdjustQuantityAsync(InventoryItemId, LocationId, quantityAdjustment);
                     }
                     else if (Method.ToLower().Trim() == "out")
                     {
-                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = -1 * quantityAdjustment });
+                        await shopifyInventoryService.AdjustQuantityAsync(InventoryItemId, LocationId, -1 * quantityAdjustment);
                     }
 
                     _log.Info("the handle : " + Handle + "--" + "processed, row#: " + rowIndex);
