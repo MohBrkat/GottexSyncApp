@@ -831,14 +831,14 @@ namespace SyncAppCommon.Helpers
 
         #region Inventory mutations
 
-        public static string ConstructInventoryUpdateMutation(long inventoryItemId, long locationId, int quantity, bool ignoreCompareQuantity = false)
+        public static string ConstructInventoryUpdateMutation(long inventoryItemId, long locationId, int quantity)
         {
             return $@"
                 mutation InventorySet {{
                     inventorySetQuantities(input: {{
                         name: ""available"",
                         reason: ""correction"",
-                        ignoreCompareQuantity: {ignoreCompareQuantity},
+                        ignoreCompareQuantity: true,
                         quantities: [
                             {{
                                 inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",

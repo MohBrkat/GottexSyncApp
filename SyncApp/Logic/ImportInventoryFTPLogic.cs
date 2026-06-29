@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SyncApp.Logic;
+using SyncAppCommon.Exceptions;
 
 namespace SyncAppEntities.Logic
 {
@@ -459,6 +460,10 @@ namespace SyncAppEntities.Logic
 
                     i++;
                     rowIndex++;
+                }
+                catch (InventoryUpdateException e)
+                {
+                    _log.Error("An error occured while updating inventory in the row# " + rowIndex + " : " + e.Message);
                 }
                 catch (Exception ex)
                 {
