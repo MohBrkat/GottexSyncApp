@@ -19,7 +19,7 @@ namespace SyncApp.Logic
         {
             if (inventoryItemId == null || locationId == null) return;
 
-            var mutationQuery = ShopifyGraphQlHelper.ConstructInventoryUpdateMutation(inventoryItemId.GetValueOrDefault(), locationId.GetValueOrDefault(), quantity);
+            var mutationQuery = ShopifyGraphQlHelper.ConstructInventoryUpdateMutation(inventoryItemId.GetValueOrDefault(), locationId.GetValueOrDefault(), quantity, true);
 
             var result = await graphService.PostAsync(mutationQuery);
 
