@@ -831,74 +831,68 @@ namespace SyncAppCommon.Helpers
 
         #region Inventory mutations
 
-        public static string ConstructInventoryUpdateMutation()
+        public static string ConstructInventoryUpdateMutation(long inventoryItemId, long locationId, int quantity, bool ignoreCompareQuantity = false)
         {
-            return @"
-                mutation inventorySetOnHandQuantities($input: InventorySetOnHandQuantitiesInput!) {
-                    inventorySetOnHandQuantities(input: $input) {
-                        inventoryAdjustmentGroup {
+            return $@"
+                mutation InventorySet {{
+                    inventorySetQuantities(input: {{
+                        name: ""available"",
+                        reason: ""correction"",
+                        ignoreCompareQuantity: {ignoreCompareQuantity},
+                        quantities: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                quantity: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            createdAt
                             reason
-                            changes {
+                            changes {{
                                 name
                                 delta
-                            }
-                        }
-                        userErrors {
+                            }}
+                        }}
+                        userErrors {{
                             field
                             message
-                        }
-                    }
-                }";
+                        }}
+                    }}
+                }}";
         }
 
-        public static object GetInventoryUpdateVariables(long inventoryItemId, long locationId, int quantity)
+        public static string ConstructInventoryAdjustMutation(long inventoryItemId, long locationId, int quantity)
         {
-            return new
-            {
-                input = new
-                {
-                    reason = "correction",
-                    setQuantities = new[]
-                    {
-                        new
-                        {
-                            inventoryItemId = $"gid://shopify/InventoryItem/{inventoryItemId}",
-                            locationId = $"gid://shopify/Location/{locationId}",
-                            quantity
-                        }
-                    }
-                }
-            };
-        }
-
-        public static string ConstructInventoryAdjustMutation()
-        {
-            return @"
-                mutation inventoryAdjustQuantity($input: InventoryAdjustQuantityInput!) {
-                    inventoryAdjustQuantity(input: $input) {
-                        inventoryLevel {
+            return $@"
+                mutation {{
+                    inventoryAdjustQuantities(input: {{
+                        reason: ""correction"",
+                        name: ""available"",
+                        changes: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                delta: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
                             id
-                            available
-                        }
-                        userErrors {
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                quantityAfterChange
+                            }}
+                        }}
+                        userErrors {{
                             field
                             message
-                        }
-                    }
-                }";
-        }
-
-        public static object GetInventoryAdjustVariables(long inventoryItemId, long locationId, int quantity)
-        {
-            return new
-            {
-                input = new
-                {
-                    inventoryItemId = $"gid://shopify/InventoryItem/{inventoryItemId}",
-                    locationId = $"gid://shopify/Location/{locationId}",
-                    availableDelta = quantity
-                }
-            };
+                        }}
+                    }}
+                }}";
         }
 
         #endregion

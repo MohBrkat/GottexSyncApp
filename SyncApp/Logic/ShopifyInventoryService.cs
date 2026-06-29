@@ -1,5 +1,6 @@
 ﻿using ShopifySharp;
 using SyncAppCommon.Helpers;
+using SyncAppCommon.Models.GraphQlDTOs;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -16,19 +17,9 @@ namespace SyncApp.Logic
         {
             if (inventoryItemId == null || locationId == null) return null;
 
-            var mutation = ShopifyGraphQlHelper.ConstructInventoryUpdateMutation();
+            var mutationQuery = ShopifyGraphQlHelper.ConstructInventoryUpdateMutation(inventoryItemId.GetValueOrDefault(), locationId.GetValueOrDefault(), quantity, true);
 
-            var variables = ShopifyGraphQlHelper.GetInventoryUpdateVariables(inventoryItemId.GetValueOrDefault(), locationId.GetValueOrDefault(), quantity);
-
-            var requestBody = new
-            {
-                query = mutation,
-                variables
-            };
-
-            string bodyString = JsonSerializer.Serialize(requestBody);
-
-            var response = await graphService.PostAsync(bodyString);
+            var response = await graphService.PostAsync(mutationQuery);
 
             return "";
         }
@@ -37,19 +28,9 @@ namespace SyncApp.Logic
         {
             if (inventoryItemId == null || locationId == null) return null;
 
-            var mutation = ShopifyGraphQlHelper.ConstructInventoryAdjustMutation();
+            var mutationQuery = ShopifyGraphQlHelper.ConstructInventoryAdjustMutation(inventoryItemId.GetValueOrDefault(), locationId.GetValueOrDefault(), adjustedQuantity);
 
-            var variables = ShopifyGraphQlHelper.GetInventoryAdjustVariables(inventoryItemId.GetValueOrDefault(), locationId.GetValueOrDefault(), adjustedQuantity);
-
-            var requestBody = new
-            {
-                query = mutation,
-                variables
-            };
-
-            string bodyString = JsonSerializer.Serialize(requestBody);
-
-            var response = await graphService.PostAsync(bodyString);
+            var response = await graphService.PostAsync(mutationQuery);
 
             return "";
         }
