@@ -27,6 +27,9 @@ namespace SyncAppCommon.Models.GraphQlDTOs
         [JsonProperty("vendor")]
         public string Vendor { get; set; }
 
+        [JsonProperty("handle")]
+        public string Handle { get; set; }
+
         [JsonProperty("variants")]
         public GraphQlVariantsConnection Variants { get; set; }
     }

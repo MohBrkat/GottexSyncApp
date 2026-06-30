@@ -759,6 +759,7 @@ namespace SyncAppCommon.Helpers
                         nodes {
                           id
                           vendor
+                          handle
 
                           variants(first: 250) {
                             nodes {
@@ -789,6 +790,7 @@ namespace SyncAppCommon.Helpers
                 Id = ParseNullableId(source.Id),
 
                 Vendor = source.Vendor,
+                Handle = source.Handle,
 
                 Variants =
                     source.Variants?.Nodes?
