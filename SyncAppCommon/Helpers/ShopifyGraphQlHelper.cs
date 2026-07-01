@@ -742,13 +742,13 @@ namespace SyncAppCommon.Helpers
 
             var queryFilter = string.IsNullOrEmpty(filter)
                 ? string.Empty 
-                : filter;
+                : $"query: \"{filter}\"";
 
             return @"{
                       products(
                         first: " + pageSize + @",
-                        query: """ + queryFilter + @""""
-                        + afterClause + @"
+                        " + queryFilter + 
+                         afterClause + @"
                       ) {
                         nodes {
                           id
