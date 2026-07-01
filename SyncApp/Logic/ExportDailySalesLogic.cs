@@ -425,7 +425,7 @@ namespace SyncAppEntities.Logic
                 var storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
                 if (storeCreditValue.Refunds.Any())
                 {
-                    if (order.RefundKind == "refund_discrepancy")
+                    if (order.RefundKind == "refund_discrepancy" || order.RefundKind == "shipping_refund")
                     {
                         var originalRefund = order.Refunds.FirstOrDefault();
                         var storeCreditRefund = storeCreditValue.Refunds.FirstOrDefault(r => r.Id == originalRefund?.Id);
@@ -488,7 +488,7 @@ namespace SyncAppEntities.Logic
                         totalRefundedAmount += refund.Transactions
                             .Where(t => t.Kind == "refund" && t.Status == "success")
                             .Sum(t => t.Amount ?? 0);
-            }
+                    }
 
                     // Collect item-level subtotals
                     if (refund.RefundLineItems != null)
@@ -593,9 +593,9 @@ namespace SyncAppEntities.Logic
                                 var locationId = location.LocationId;
                                 warehouseCode = GetWarehouseCodeByLocationId(locationId);
                                 _log.Info($"warehouseCode:{warehouseCode} LocationId:{locationId}");
-                        }
-                        else
-                        {
+                            }
+                            else
+                            {
                                 _log.Warn($"No inventory locations found for SKU: {orderItem?.SKU}, in order: {order.OrderNumber}");
                             }
                         }
@@ -658,7 +658,7 @@ namespace SyncAppEntities.Logic
 
                 if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && !order.Transactions.Any())
                 {
-                    if (order.RefundKind == "refund_discrepancy" &&
+                    if ((order.RefundKind == "refund_discrepancy" || order.RefundKind == "shipping_refund") &&
                         storeCreditLineItems.TryGetValue(
                             Convert.ToInt64(orderItem.Id), out var refundPrice))
                     {
@@ -739,7 +739,7 @@ namespace SyncAppEntities.Logic
             //If the order (e.g partially/refunded or paid) 
             //has shipping cost and this cost is not refunded,
             //then write shipping data
-            if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
+            if (!isShippingRefund && shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
             {
                 if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
                 {

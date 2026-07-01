@@ -631,7 +631,7 @@ namespace SyncAppEntities.Logic
                 var storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
                 if (storeCreditValue.Refunds.Any())
                 {
-                    if (order.RefundKind == "refund_discrepancy")
+                    if (order.RefundKind == "refund_discrepancy" || order.RefundKind == "shipping_refund")
                     {
                         var originalRefund = order.Refunds.FirstOrDefault();
                         var storeCreditRefund = storeCreditValue.Refunds.FirstOrDefault(r => r.Id == originalRefund?.Id);
