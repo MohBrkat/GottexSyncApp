@@ -529,7 +529,7 @@ namespace SyncAppEntities.Logic
 
 
         public async Task<List<GraphQlInventoryItemNode>> GetInventoryItemsAsync(
-    IEnumerable<long> inventoryItemIds)
+    IEnumerable<long> inventoryItemIds, long? locationId = null)
         {
             var ids = inventoryItemIds?
                 .Distinct()
@@ -545,7 +545,7 @@ namespace SyncAppEntities.Logic
                 _apiSecret);
 
             var query =
-                ShopifyGraphQlHelper.ConstructInventoryItemsQuery(ids);
+                ShopifyGraphQlHelper.ConstructInventoryItemsQuery(ids, locationId);
 
             var result = await graphService.PostAsync(query);
 

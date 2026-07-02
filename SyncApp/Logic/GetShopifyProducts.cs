@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ShopifySharp;
 using ShopifySharp.Filters;
@@ -55,7 +56,7 @@ namespace SyncAppEntities.Logic
             return products;
         }
 
-        public async Task<List<GraphQlProduct>> GetGraphQlProductsAsync()
+        public async Task<List<GraphQlProduct>> GetGraphQlProductsAsync(string graphQLFilter = null)
         {
             var products = new List<GraphQlProduct>();
 
@@ -70,7 +71,8 @@ namespace SyncAppEntities.Logic
                 var query =
                     ShopifyGraphQlHelper.ConstructProductsQuery(
                         250,
-                        cursor);
+                        cursor,
+                        graphQLFilter);
 
                 var result =
                     await graphService.PostAsync(query);
@@ -94,6 +96,15 @@ namespace SyncAppEntities.Logic
 
             }
             while (hasNextPage);
+
+            return products;
+        }
+
+        public async Task<List<Product>> GetProductsListAsync(string graphQLFilter = null)
+        {
+            var graphQlProducts = await GetGraphQlProductsAsync(graphQLFilter);
+
+            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
 
             return products;
         }
