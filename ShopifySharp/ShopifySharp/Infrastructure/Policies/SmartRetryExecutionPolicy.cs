@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Config;
+using log4net;
 
 namespace ShopifySharp
 {
@@ -33,6 +35,12 @@ namespace ShopifySharp
 
         private readonly bool _retryOnlyIfLeakyBucketFull;
 
+        private readonly RetryConfig retryConfig = new RetryConfig();
+
+        private static readonly ILog _log = LogManager.GetLogger(typeof(SmartRetryExecutionPolicy));
+
+        private static readonly int THROTTLE_DELAY_TIME = 500;
+
         public SmartRetryExecutionPolicy(bool retryOnlyIfLeakyBucketFull = true)
         {
             _retryOnlyIfLeakyBucketFull = retryOnlyIfLeakyBucketFull;
@@ -47,6 +55,8 @@ namespace ShopifySharp
             {
                 bucket = _shopAccessTokenToLeakyBucket.GetOrAdd(accessToken, _ => new LeakyBucket());
             }
+
+            int retryAttempt = 0;
 
             while (true)
             {
@@ -81,9 +91,39 @@ namespace ShopifySharp
                     //-There may be timing and latency delays
                     //-Multiple programs may use the same access token
                     //-Multiple instances of the same program may use the same access token
-                    await Task.Delay(THROTTLE_DELAY, cancellationToken);
+
+                    TimeSpan delay = TimeSpan.FromMilliseconds(ex.RetryAfterSeconds ?? THROTTLE_DELAY_TIME);
+
+                    await Task.Delay(delay, cancellationToken);
+                }
+                catch(ShopifyTimeoutException e)
+                {
+                    if (retryAttempt == retryConfig.MaxRetryLimit)
+                    {
+                        _log.Error($"Max retry attempts reached, retry attempt {retryAttempt}", e);
+                        throw; // or break
+                    }
+
+                    retryAttempt++;
+
+                    TimeSpan delay = CalculateExponentialBackoff(retryAttempt, retryConfig.BaseDelayMs);
+
+                    _log.Warn($"Retry {retryAttempt}/{retryConfig.MaxRetryLimit} | Status: {(int)e.HttpStatusCode} | Waiting: {delay.TotalMilliseconds} ms");
+
+                    await Task.Delay(delay, cancellationToken);
                 }
             }
+        }
+
+        private static TimeSpan CalculateExponentialBackoff(int attempt, int baseDelayMs)
+        {
+            var random = new Random();
+
+            var exponentialDelay = baseDelayMs * Math.Pow(2, attempt - 1); // Exponential: base * 2^(attempt-1)
+
+            var jitter = random.Next(0, 300); // Add jitter (random 0–300ms)
+
+            return TimeSpan.FromMilliseconds(exponentialDelay + jitter);
         }
 
         private string GetAccessToken(HttpRequestMessage client)

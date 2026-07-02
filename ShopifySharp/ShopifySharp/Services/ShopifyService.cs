@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading;
 using ShopifySharp.Lists;
 using ShopifySharp.Filters;
+using System.Net;
 
 namespace ShopifySharp
 {
@@ -301,22 +302,15 @@ namespace ShopifySharp
             // If the error was caused by reaching the API rate limit, throw a rate limit exception.
             if ((int)code == 429 /* Too many requests */)
             {
-                string rateExceptionMessage;
-                IEnumerable<string> errors;
-                
-                if (TryParseErrorJson(rawResponse, out var rateLimitErrors))
-                {
-                    rateExceptionMessage = $"({statusMessage}) {rateLimitErrors.First()}";
-                    errors = rateLimitErrors;
-                }
-                else
-                {
-                    var baseMessage = "Exceeded the rate limit for api client. Reduce request rates to resume uninterrupted service.";
-                    rateExceptionMessage = $"({statusMessage}) {baseMessage}";
-                    errors = new List<string>{ baseMessage };
-                }
+                extractResponseErrors(rawResponse, statusMessage, statusCode, out string exceptionMessage, out IEnumerable<string> errors);
 
-                throw new ShopifyRateLimitException(response, code, errors, rateExceptionMessage, rawResponse, requestId, LeakyBucketState.Get(response));
+                throw new ShopifyRateLimitException(response, code, errors, exceptionMessage, rawResponse, requestId, LeakyBucketState.Get(response));
+            }
+            else if (code == HttpStatusCode.BadGateway || code == HttpStatusCode.ServiceUnavailable || code == HttpStatusCode.GatewayTimeout)
+            {
+                extractResponseErrors(rawResponse, statusMessage, statusCode, out string exceptionMessage, out IEnumerable<string> errors);
+
+                throw new ShopifyTimeoutException(response, code, errors, exceptionMessage, rawResponse, requestId);
             }
 
             var contentType = response.Content.Headers.GetValues("Content-Type").FirstOrDefault();
@@ -368,6 +362,23 @@ namespace ShopifySharp
             };
 
             throw new ShopifyException(response, code, customErrors, message, rawResponse, requestId);
+        }
+
+        private static void extractResponseErrors(string rawResponse, string statusMessage, int statusCode , out string rateExceptionMessage, out IEnumerable<string> errors)
+        {
+            if (TryParseErrorJson(rawResponse, out var rateLimitErrors))
+            {
+                rateExceptionMessage = $"({statusMessage}) {rateLimitErrors.First()}";
+                errors = rateLimitErrors;
+            }
+            else
+            {
+                var baseMessage = statusCode == 429 
+                    ? "Exceeded the rate limit for api client. Reduce request rates to resume uninterrupted service."
+                    : "Shopify API or Gateway timed out. Reduce request rates to resume uninterrupted service.";
+                rateExceptionMessage = $"({statusMessage}) {baseMessage}";
+                errors = new List<string> { baseMessage };
+            }
         }
 
         /// <summary>

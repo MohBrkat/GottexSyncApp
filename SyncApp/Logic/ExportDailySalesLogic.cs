@@ -420,7 +420,7 @@ namespace SyncAppEntities.Logic
                 var storeCreditValue = JsonConvert.DeserializeObject<MetaFieldStoreCredit>(storeCreditRefunds.Value.ToString());
                 if (storeCreditValue.Refunds.Any())
                 {
-                    if (order.RefundKind == "refund_discrepancy")
+                    if (order.RefundKind == "refund_discrepancy" || order.RefundKind == "shipping_refund")
                     {
                         var originalRefund = order.Refunds.FirstOrDefault();
                         var storeCreditRefund = storeCreditValue.Refunds.FirstOrDefault(r => r.Id == originalRefund?.Id);
@@ -654,7 +654,7 @@ namespace SyncAppEntities.Logic
 
                 if ((order.RefundKind != "no_refund" || order.IsRefundOrder) && !order.Transactions.Any())
                 {
-                    if (order.RefundKind == "refund_discrepancy" &&
+                    if ((order.RefundKind == "refund_discrepancy" || order.RefundKind == "shipping_refund") &&
                         storeCreditLineItems.TryGetValue(
                             Convert.ToInt64(orderItem.Id), out var refundPrice))
                     {
@@ -735,7 +735,7 @@ namespace SyncAppEntities.Logic
             //If the order (e.g partially/refunded or paid) 
             //has shipping cost and this cost is not refunded,
             //then write shipping data
-            if (shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
+            if (!isShippingRefund && shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
             {
                 // Shipping discount not return in graphQl
                 //if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
