@@ -669,18 +669,23 @@ namespace SyncAppCommon.Helpers
 
         #region Inventory
         public static string ConstructInventoryItemsQuery(
-            IEnumerable<long> inventoryItemIds)
+            IEnumerable<long> inventoryItemIds, 
+            long? locationId = null)
         {
             var gids = inventoryItemIds
                 .Distinct()
                 .Select(id => $"\"gid://shopify/InventoryItem/{id}\"");
+
+            var locationFilter = locationId == null ? "first: 20" : $"first: 1, query: \"location_id:{locationId}\""; // $"locationId: \"gid://shopify/Location/{locationId}\"";
 
             return @"{
                         nodes(ids: [" + string.Join(",", gids) + @"]) {
                             ... on InventoryItem {
                                 id
 
-                                inventoryLevels(first: 20) {
+                                inventoryLevels("
+                                    + locationFilter +   
+                                @") {
                                     nodes {
                                         location {
                                             id
@@ -728,16 +733,22 @@ namespace SyncAppCommon.Helpers
         #region Products
         public static string ConstructProductsQuery(
             int pageSize = 250,
-            string afterCursor = null)
+            string afterCursor = null, 
+            string filter = null)
         {
             var afterClause = string.IsNullOrWhiteSpace(afterCursor)
                 ? string.Empty
                 : $@", after: ""{afterCursor}""";
 
+            var queryFilter = string.IsNullOrEmpty(filter)
+                ? string.Empty 
+                : $"query: \"{filter}\"";
+
             return @"{
                       products(
-                        first: " + pageSize + @"
-                        " + afterClause + @"
+                        first: " + pageSize + @",
+                        " + queryFilter + 
+                         afterClause + @"
                       ) {
                         nodes {
                           id
@@ -802,6 +813,88 @@ namespace SyncAppCommon.Helpers
                 Barcode = source.Barcode,
             };
         }
+        #endregion
+
+        #region Filters
+
+        public static string BuildProductFilter(params (string Field, string Value)[] filters)
+        {
+            return string.Join(
+                " AND ",
+                filters
+                    .Where(f => !string.IsNullOrWhiteSpace(f.Value))
+                    .Select(f => $"{f.Field}:{f.Value}")
+            );
+        }
+
+        #endregion
+
+        #region Inventory mutations
+
+        public static string ConstructInventoryUpdateMutation(long inventoryItemId, long locationId, int quantity, bool ignoreCompareQuantity = false)
+        {
+            return $@"
+                mutation InventorySet {{
+                    inventorySetQuantities(input: {{
+                        name: ""available"",
+                        reason: ""correction"",
+                        ignoreCompareQuantity: {ignoreCompareQuantity.ToString().ToLower()},
+                        quantities: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                quantity: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                delta
+                            }}
+                        }}
+                        userErrors {{
+                            field
+                            message
+                        }}
+                    }}
+                }}";
+        }
+
+        public static string ConstructInventoryAdjustMutation(long inventoryItemId, long locationId, int quantity)
+        {
+            return $@"
+                mutation {{
+                    inventoryAdjustQuantities(input: {{
+                        reason: ""correction"",
+                        name: ""available"",
+                        changes: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                delta: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            id
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                quantityAfterChange
+                            }}
+                        }}
+                        userErrors {{
+                            field
+                            message
+                        }}
+                    }}
+                }}";
+        }
+
         #endregion
     }
 }

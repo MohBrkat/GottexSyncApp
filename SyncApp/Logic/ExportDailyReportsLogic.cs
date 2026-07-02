@@ -16,10 +16,12 @@ namespace SyncAppEntities.Logic
     {
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
+        private readonly GetShopifyProducts getShopifyProducts;
 
         public ExportDailyReportsLogic(ShopifyAppContext context)
         {
             _context = context;
+            getShopifyProducts = new GetShopifyProducts(StoreUrl, ApiSecret);
         }
 
         private Configrations Config
@@ -139,7 +141,7 @@ namespace SyncAppEntities.Logic
                 var contentType = "application/octet-stream";
                 string extension = "xlsx";
 
-                var products = await GetProductsAsync();
+                var products = await getShopifyProducts.GetProductsListAsync();
 
                 await Task.Delay(1000);
                 byte[] detailedFile = GenerateDetailedReportFile(lsOfOrders, products);
@@ -480,16 +482,6 @@ namespace SyncAppEntities.Logic
             var orderSplitted = orderName.Split('#');
             var order = int.Parse(orderSplitted[1]);
             return order;
-        }
-
-        public async Task<List<Product>> GetProductsAsync()
-        {
-            var graphQlProducts = await new GetShopifyProducts(StoreUrl, ApiSecret)
-                .GetGraphQlProductsAsync();
-
-            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
-
-            return products;
         }
 
         public bool CheckWorkingDays()
