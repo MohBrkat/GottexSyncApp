@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using ShopifySharp;
+﻿using ShopifySharp;
 using SyncApp.Models;
 using SyncApp.Models.GraphQlDTOs;
 using SyncAppCommon.Models.GraphQlDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Transaction = ShopifySharp.Transaction;
 
 namespace SyncAppCommon.Helpers
@@ -777,6 +777,7 @@ namespace SyncAppCommon.Helpers
                         nodes {
                           id
                           vendor
+                          handle
 
                           variants(first: 250) {
                             nodes {
@@ -807,6 +808,7 @@ namespace SyncAppCommon.Helpers
                 Id = ParseNullableId(source.Id),
 
                 Vendor = source.Vendor,
+                Handle = source.Handle,
 
                 Variants =
                     source.Variants?.Nodes?
@@ -837,6 +839,74 @@ namespace SyncAppCommon.Helpers
                 Barcode = source.Barcode,
             };
         }
+        #endregion
+
+        #region Inventory mutations
+
+        public static string ConstructInventoryUpdateMutation(long inventoryItemId, long locationId, int quantity, bool ignoreCompareQuantity = false)
+        {
+            return $@"
+                mutation InventorySet {{
+                    inventorySetQuantities(input: {{
+                        name: ""available"",
+                        reason: ""correction"",
+                        ignoreCompareQuantity: {ignoreCompareQuantity.ToString().ToLower()},
+                        quantities: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                quantity: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                delta
+                            }}
+                        }}
+                        userErrors {{
+                            field
+                            message
+                        }}
+                    }}
+                }}";
+        }
+
+        public static string ConstructInventoryAdjustMutation(long inventoryItemId, long locationId, int quantity)
+        {
+            return $@"
+                mutation {{
+                    inventoryAdjustQuantities(input: {{
+                        reason: ""correction"",
+                        name: ""available"",
+                        changes: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                delta: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            id
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                quantityAfterChange
+                            }}
+                        }}
+                        userErrors {{
+                            field
+                            message
+                        }}
+                    }}
+                }}";
+        }
+
         #endregion
     }
 }

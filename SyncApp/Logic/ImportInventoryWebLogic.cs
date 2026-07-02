@@ -5,10 +5,12 @@ using ShopifyApp2;
 using ShopifyApp2.ViewModel;
 using ShopifySharp;
 using ShopifySharp.Filters;
+using SyncApp.Exceptions;
 using SyncApp.Helpers;
 using SyncApp.Models;
 using SyncApp.Models.EF;
 using SyncApp.ViewModel;
+using SyncAppCommon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +26,9 @@ namespace SyncApp.Logic
         private static readonly log4net.ILog _log = Logger.GetLogger();
         private readonly ShopifyAppContext _context;
         public const int MAX_RETRY_COUNT = 5;
+        private readonly GetShopifyProducts getShopifyProducts;
+        private readonly GetShopifyOrders getShopifyOrders;
+        private readonly ShopifyInventoryService shopifyInventoryService;
 
         List<string> LsOfManualSuccess = new List<string>();
         List<string> LsOfManualErrors = new List<string>();
@@ -31,6 +36,9 @@ namespace SyncApp.Logic
         public ImportInventoryWebLogic(ShopifyAppContext context)
         {
             _context = context;
+            getShopifyProducts = new GetShopifyProducts(StoreUrl, ApiSecret);
+            getShopifyOrders = new GetShopifyOrders(StoreUrl, ApiSecret, _context);
+            shopifyInventoryService = new ShopifyInventoryService(StoreUrl, ApiSecret);
         }
 
         private Configrations Config
@@ -171,7 +179,7 @@ namespace SyncApp.Logic
 
                         int rowIndex = 2; // first row in csv sheet is 2 (after header)
 
-                        var Products = await GetProductsAsync();
+                        var Products = await getShopifyProducts.GetProductsListAsync();
 
                         foreach (var row in Rows)
                         {
@@ -266,7 +274,7 @@ namespace SyncApp.Logic
 
             int rowIndex = 1;
 
-            var Products = await GetProductsAsync();
+            var Products = await getShopifyProducts.GetProductsListAsync();
 
             for (int i = 0; i < RowsWithoutHeader.Count;)
             {
@@ -288,22 +296,27 @@ namespace SyncApp.Logic
                     var InventoryItemIds = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() };
                     var InventoryItemId = new List<long>() { VariantObj.InventoryItemId.GetValueOrDefault() }.FirstOrDefault();
 
-                    var LocationQuery = await InventoryLevelsServices.ListAsync(new InventoryLevelListFilter { InventoryItemIds = InventoryItemIds });
-                    var LocationId = LocationQuery.Items.FirstOrDefault().LocationId;
+                    var inventoryItems = await getShopifyOrders.GetInventoryItemsAsync(InventoryItemIds);
+
+                    var inventoryLocationLookup = ShopifyGraphQlHelper.BuildInventoryLocationLookup(inventoryItems);
+
+                    inventoryLocationLookup.TryGetValue(InventoryItemId, out var locationIds);
+
+                    var LocationId = locationIds.FirstOrDefault();
 
                     if (Method.ToLower().Trim() == "set")
                     {
-                        var Result = await InventoryLevelsServices.SetAsync(new InventoryLevel { LocationId = LocationId, InventoryItemId = InventoryItemId, Available = Convert.ToInt32(Quantity) });
+                        await shopifyInventoryService.SetQuantityAsync(InventoryItemId, LocationId, Convert.ToInt32(Quantity));
                         LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "in")
                     {
-                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) });
+                        await shopifyInventoryService.AdjustQuantityAsync(InventoryItemId, LocationId, Convert.ToInt32(Quantity));
                         LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
                     }
                     else if (Method.ToLower().Trim() == "out")
                     {
-                        var Result = await InventoryLevelsServices.AdjustAsync(new InventoryLevelAdjust { LocationId = LocationId, InventoryItemId = InventoryItemId, AvailableAdjustment = Convert.ToInt32(Quantity) * -1 });
+                        await shopifyInventoryService.AdjustQuantityAsync(InventoryItemId, LocationId, Convert.ToInt32(Quantity) * -1);
                         LsOfManualSuccess.Add(string.Format("Row# {0}-Inventory {1}.", rowIndex, "Updated"));
                     }
 
@@ -313,6 +326,10 @@ namespace SyncApp.Logic
 
                     i++;
                     rowIndex++;
+                }
+                catch (InventoryUpdateException e)
+                {
+                    _log.Error("An error occured while updating inventory in the row# " + rowIndex + " : " + e.Message);
                 }
                 catch (Exception ex)
                 {
@@ -334,11 +351,6 @@ namespace SyncApp.Logic
             info.LsOfSucess.Add("file: " + info.fileName + "processed sucesfully");
 
             return true;
-        }
-
-        public async Task<List<Product>> GetProductsAsync()
-        {
-            return await new GetShopifyProducts(StoreUrl, ApiSecret).GetProductsAsync();
         }
     }
 }

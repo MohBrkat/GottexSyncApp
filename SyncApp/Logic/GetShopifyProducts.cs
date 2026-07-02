@@ -100,5 +100,15 @@ namespace SyncApp.Logic
 
             return products;
         }
+
+        public async Task<List<Product>> GetProductsListAsync()
+        {
+            var graphQlProducts = await new GetShopifyProducts(_storeUrl, _apiSecret)
+                .GetGraphQlProductsAsync();
+
+            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
+
+            return products;
+        }
     }
 }
