@@ -212,10 +212,10 @@ namespace SyncAppEntities.Logic
                     var totalPrice = refund.Transactions.Sum(t => t.Amount);
                     if (storeCreditRefund != null)
                     {
-                        totalPrice = Math.Max(storeCreditRefund.CreditAmount, storeCreditRefund.RefundAmount);
-                        if (storeCreditRefund.ShippingCreditAmount > 0 && storeCreditRefund.ShippingAmount > 0)
+                        totalPrice = storeCreditRefund.CreditAmount;
+                        if (storeCreditRefund.ShippingCreditAmount > 0)
                         {
-                            totalPrice += Math.Max(storeCreditRefund.ShippingCreditAmount, storeCreditRefund.ShippingAmount);
+                            totalPrice += storeCreditRefund.ShippingCreditAmount;
                         }
                         if (!string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
                             decimal.TryParse(storeCreditRefund.CreditCompensationAmount, out decimal compVal) &&
