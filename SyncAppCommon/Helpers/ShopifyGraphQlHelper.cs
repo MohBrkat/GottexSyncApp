@@ -85,7 +85,7 @@ namespace SyncAppCommon.Helpers
                     displayFinancialStatus
                     displayFulfillmentStatus
                     tags
-                    lineItems(first: 100) {
+                    lineItems(first: 50) {
                       nodes {
                         id
                         quantity
@@ -153,7 +153,7 @@ namespace SyncAppCommon.Helpers
                           }
                         }
                       }
-                      refundLineItems(first: 100) {
+                      refundLineItems(first: 50) {
                         nodes {
                           quantity
                           restockType
