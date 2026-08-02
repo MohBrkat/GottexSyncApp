@@ -180,5 +180,8 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("duties")]
         public IEnumerable<LineItemDuty> Duties { get; set; }
+
+        // Added to support graphQl
+        public long? InventoryItemId { get; set; }
     }
 }
