@@ -28,7 +28,7 @@ namespace SyncAppJob
 
             //Add Headers
             request.AddHeader("cache-control", "no-cache");
-            request.Timeout = 3 * 60 * 1000;
+            request.Timeout = 290 * 1000;
 
             var response = client.Get(request);
 

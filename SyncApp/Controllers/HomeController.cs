@@ -1,25 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Hangfire;
+using Log4NetLibrary;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using ShopifyApp2.ViewModel;
 using ShopifySharp;
-using SyncAppEntities.Models.EF;
 using SyncAppEntities.Filters;
-using SyncAppEntities.ViewModel;
-using System.Threading.Tasks;
 using SyncAppEntities.Logic;
-using Log4NetLibrary;
-using Newtonsoft.Json;
+using SyncAppEntities.Models.EF;
 using SyncAppEntities.Models.Enums;
+using SyncAppEntities.ViewModel;
 
 namespace ShopifyApp2.Controllers
 {
     [Auth]
-    public class HomeController : Controller
+    public class HomeController: Controller
     {
         private readonly ShopifyAppContext _context;
         private readonly IWebHostEnvironment _hostingEnvironment;
@@ -190,7 +190,7 @@ namespace ShopifyApp2.Controllers
                 List<Order> lsOfOrders = await _exportDailySalesLogic.ExportDailySalesAsync(dateToRetriveFrom, dateToRetriveTo);
                 if (lsOfOrders.Count() > 0)
                 {
-                    string path = _exportDailySalesLogic.GenerateSalesFile(lsOfOrders, fromWeb);
+                    string path = await _exportDailySalesLogic.GenerateSalesFile(lsOfOrders, fromWeb);
                     return View("~/Views/Home/ExportDailySales.cshtml", path);
                 }
             }

@@ -1,0 +1,899 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using ShopifySharp;
+using SyncApp.Models.GraphQlDTOs;
+using SyncAppCommon.Models.GraphQlDTOs;
+using SyncAppEntities.Models;
+using Transaction = ShopifySharp.Transaction;
+
+namespace SyncAppCommon.Helpers
+{
+    public static class ShopifyGraphQlHelper
+    {
+        #region Orders
+        public static string ConstructGraphQlQuery(
+            DateTime? createdAtMin,
+            DateTime? createdAtMax,
+            string financialStatus,
+            string status,
+            DateTime? updatedAtMin = null,
+            int pageSize = 150,
+            string afterCursor = null
+            )
+        {
+            var filterList = new List<string>();
+            if (createdAtMin.HasValue)
+            {
+                filterList.Add($"created_at:>={createdAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+            }
+
+            if (createdAtMax.HasValue)
+            {
+                filterList.Add($"created_at:<={createdAtMax.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(financialStatus))
+            {
+                filterList.Add($"(financial_status:{financialStatus})");
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                filterList.Add($"(status:{status})");
+            }
+
+            if (updatedAtMin.HasValue)
+            {
+                filterList.Add($"updated_at:>={updatedAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+            }
+
+            var queryFilter = string.Join(" AND ", filterList);
+
+            var afterClause = string.IsNullOrEmpty(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            return @"{
+              orders(
+                first: " + pageSize + @",
+                query: """ + queryFilter + @"""" +
+                afterClause + @"
+                ) {
+                nodes {
+                      id
+                      createdAt
+                      customer {
+                        firstName
+                        lastName
+                      }
+                      discountApplications(first: 10) {
+                        nodes {
+                          targetType
+                          value {
+                            __typename
+                            ... on MoneyV2 {
+                              amount
+                              currencyCode
+                            }
+                            ... on PricingPercentageValue {
+                              percentage
+                            }
+                          }
+                        }
+                      }
+                    displayFinancialStatus
+                    displayFulfillmentStatus
+                    tags
+                    lineItems(first: 50) {
+                      nodes {
+                        id
+                        quantity
+                        taxable
+                        sku
+                        vendor
+                        isGiftCard
+                        fulfillmentStatus
+                        fulfillmentService {
+                          serviceName
+                        }
+                        variant {
+                          id
+                          price
+                          sku
+                          product {
+                            id
+                          }
+                          inventoryItem {
+                            id
+                          }
+                        }
+                        originalUnitPriceSet {
+                          shopMoney {
+                            amount
+                            currencyCode
+                          }
+                        }
+                        discountAllocations {
+                          allocatedAmount {
+                            amount
+                            currencyCode
+                          }
+                          allocatedAmountSet {
+                            shopMoney {
+                              amount
+                            }
+                          }
+                        }
+                      }
+                    }
+                    name
+                    note
+                    number
+                    refunds {
+                      id
+                      createdAt
+                      orderAdjustments(first: 15) {
+                        nodes {
+                          id
+                          reason
+
+                          amountSet {
+                            shopMoney {
+                              amount
+                              currencyCode
+                            }
+                          }
+
+                          taxAmountSet {
+                            shopMoney {
+                              amount
+                              currencyCode
+                            }
+                          }
+                        }
+                      }
+                      refundLineItems(first: 50) {
+                        nodes {
+                          quantity
+                          restockType
+                          subtotalSet {
+                            shopMoney {
+                              amount
+                              currencyCode
+                            }
+                          }
+
+                          lineItem {
+                            id
+                            taxable
+                            sku
+                            variant {
+                              id
+                              price
+                              sku
+                              product {
+                                id
+                              }
+                              inventoryItem {
+                                id
+                              }
+                            }
+                            originalUnitPriceSet {
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+                            discountedUnitPriceSet {
+                              shopMoney {
+                                amount
+                              }
+                            }
+                            discountAllocations {
+                              allocatedAmount {
+                                amount
+                                currencyCode
+                              }
+                              allocatedAmountSet {
+                                shopMoney {
+                                  amount
+                                }
+                              }
+                            }
+                          }
+                          location {
+                            id
+                          }
+                        }
+                      }
+
+                      transactions(first: 20) {
+                        nodes {
+                            id
+                            createdAt
+                            gateway
+                            kind
+                            status
+
+                            amountSet {
+                                shopMoney {
+                                amount
+                                currencyCode
+                                }
+                            }
+
+                            receiptJson
+                        }
+                      }
+
+                      refundShippingLines(first: 15) {
+                        nodes {
+                            shippingLine {
+                                id
+                                title
+                                code
+
+                                originalPriceSet {
+                                    shopMoney {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+
+                                discountedPriceSet {
+                                    shopMoney {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+                            }
+                        }
+                      }
+
+                    }
+
+                    shippingLines(first: 20) {
+                      nodes {
+                        title
+                        code
+
+                        discountedPriceSet {
+                          shopMoney {
+                            amount
+                            currencyCode
+                          }
+                        }
+
+                        originalPriceSet {
+                          shopMoney {
+                            amount
+                            currencyCode
+                          }
+                        }
+                      }
+                    }
+
+                    subtotalPriceSet {
+                      shopMoney {
+                        amount
+                        currencyCode
+                      }
+                    }
+
+                    taxLines {
+                      title
+                      priceSet {
+                        shopMoney {
+                          amount
+                          currencyCode
+                        }
+                      }
+                    }
+
+                    taxesIncluded
+                   
+                    totalDiscountsSet {
+                      shopMoney {
+                        amount
+                        currencyCode
+                      }
+                    }
+
+                    totalPriceSet {
+                      shopMoney {
+                        amount
+                        currencyCode
+                      }
+                    }
+
+                    transactions(first: 20) {
+                        id
+                        createdAt
+                        gateway
+                        kind
+                        status
+
+                        amountSet {
+                            shopMoney {
+                            amount
+                            currencyCode
+                            }
+                        }
+
+                        receiptJson
+                    }
+
+                    metafields(first: 10) {
+                      nodes {
+                        id
+                        namespace
+                        key
+                        value
+                        type
+                      }
+                    }
+
+                }
+
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }";
+        }
+
+        public static Order Map(GraphQlOrder source)
+        {
+            if (source == null)
+                return null;
+
+            return new Order
+            {
+                Id = ParseNullableId(source.Id),
+                CreatedAt = source.CreatedAt?.ToLocalTime(),
+                Customer = MapCustomer(source.Customer),
+                DiscountCodes = MapDiscountCodes(source.DiscountApplications),
+
+                FinancialStatus = source.DisplayFinancialStatus?.ToLowerInvariant(),
+                FulfillmentStatus = MapFulfillmentStatus(source.DisplayFulfillmentStatus),
+                Tags = string.Join(",", source.Tags),
+                LineItems = MapLineItems(source.LineItems),
+
+                Name = source.Name,
+                Note = source.Note,
+                OrderNumber = source.OrderNumber,
+                Refunds = MapRefunds(source.Refunds),
+
+                ShippingLines = MapShippingLines(source.ShippingLines),
+                SubtotalPrice = source.SubtotalPrice?.ShopMoney?.Amount ?? 0,
+                TaxLines = MapTaxLines(source.TaxLines),
+                TaxesIncluded = source.TaxesIncluded,
+
+                TotalDiscounts = source.TotalDiscounts?.ShopMoney?.Amount ?? 0,
+                TotalPrice = source.TotalPrice?.ShopMoney?.Amount ?? 0,
+                Transactions = MapTransactions(source.Transactions),
+
+                Metafields = MapMetafields(source.Metafields)
+            };
+        }
+
+        private static IEnumerable<MetaField> MapMetafields(
+            GraphQlMetafieldsConnection connection)
+        {
+            if (connection?.Nodes == null)
+                return Enumerable.Empty<MetaField>();
+
+            return connection.Nodes.Select(x => new MetaField
+            {
+                Id = ParseNullableId(x.Id),
+                Namespace = x.Namespace,
+                Key = x.Key,
+                Value = x.Value,
+                ValueType = x.Type
+            }).ToList();
+        }
+
+        private static IEnumerable<Transaction> MapTransactions(IEnumerable<GraphQlTransaction> transactions)
+        {
+            if (transactions == null)
+                return null;
+
+            return transactions.Select(x => new Transaction
+            {
+                Amount = x.AmountSet?.ShopMoney?.Amount,
+                CreatedAt = x.CreatedAt?.ToLocalTime(),
+                Gateway = x.Gateway,
+                Kind = x.Kind?.ToLowerInvariant(),
+                Receipt = x.ReceiptJson,
+                Status = x.Status?.ToLowerInvariant(),
+                Currency = x.AmountSet?.ShopMoney?.CurrencyCode
+            }).ToList();
+        }
+
+        private static IEnumerable<TaxLine> MapTaxLines(IEnumerable<GraphQlTaxLine> taxLines)
+        {
+            if (taxLines == null)
+                return null;
+
+            return taxLines.Select(x => new TaxLine
+            {
+                Price = x.PriceSet?.ShopMoney?.Amount,
+                Title = x.Title
+            }).ToList();
+        }
+
+        private static IEnumerable<Refund> MapRefunds(
+            IEnumerable<GraphQlRefund> refunds)
+        {
+            if (refunds == null)
+                return new List<Refund>();
+
+            return refunds.Select(MapRefund).ToList();
+        }
+
+        private static IEnumerable<DiscountCode> MapDiscountCodes(GraphQlDiscountApplicationsConnection connection)
+        {
+            var result = new List<DiscountCode>();
+
+            if (connection?.Nodes == null)
+                return result;
+
+            foreach (var application in connection.Nodes)
+            {
+                result.Add(new DiscountCode
+                {
+                    Type = MapDiscountCodeType(application.TargetType),
+                    Amount = application.Value?.Amount?.ToString(),
+                });
+            }
+
+            return result;
+        }
+
+        private static string MapDiscountCodeType(string targetType)
+        {
+            return targetType switch
+            {
+                "SHIPPING_LINE" => "shipping",
+                _ => targetType?.ToLowerInvariant(),
+            };
+        }
+
+        private static Customer MapCustomer(GraphQlCustomer customer)
+        {
+            if (customer == null)
+                return null;
+
+            return new Customer
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+            };
+        }
+
+        private static long? ParseNullableId(string gid)
+        {
+            if (string.IsNullOrWhiteSpace(gid))
+                return null;
+
+            var lastPart = gid.Split('/').LastOrDefault();
+
+            if (long.TryParse(lastPart, out long id))
+                return id;
+
+            return null;
+        }
+
+        private static string MapFulfillmentStatus(string status)
+        {
+            return status switch
+            {
+                "FULFILLED" => "fulfilled",
+                "PARTIALLY_FULFILLED" => "partial",
+                "UNFULFILLED" => null,
+                _ => status?.ToLowerInvariant(),
+            };
+        }
+
+        private static List<LineItem> MapLineItems(
+            GraphQlLineItemsConnection connection)
+        {
+            if (connection?.Nodes == null)
+                return new List<LineItem>();
+
+            return connection.Nodes
+                .Select(MapLineItem)
+                .ToList();
+        }
+
+        private static LineItem MapLineItem(GraphQlLineItem source)
+        {
+            if (source == null)
+                return null;
+
+            return new LineItem
+            {
+                Id = ParseNullableId(source.Id),
+                FulfillmentService = source.FulfillmentService?.ServiceName?.ToLowerInvariant(),
+                FulfillmentStatus = source.FulfillmentStatus,
+                Price = source.OriginalUnitPrice?.ShopMoney?.Amount ?? source.Variant?.Price,
+                ProductId = ParseNullableId(source.Variant?.Product?.Id),
+                Quantity = source.Quantity,
+                SKU = source.Sku ?? source.Variant?.Sku,
+                VariantId = ParseNullableId(source.Variant?.Id),
+                Vendor = source.Vendor,
+                GiftCard = source.GiftCard,
+                Taxable = source.Taxable,
+                DiscountAllocations = source.DiscountAllocations?.Select(x =>
+                new DiscountAllocation()
+                {
+                    Amount = x.AllocatedAmount?.Amount.ToString()
+                }).ToList(),
+                InventoryItemId = ParseNullableId(source.Variant?.InventoryItem?.Id),
+            };
+        }
+
+
+        private static List<ShippingLine> MapShippingLines(
+            GraphQlShippingLineConnection source)
+        {
+            if (source?.Nodes == null)
+                return new List<ShippingLine>();
+
+            return source.Nodes.Select(x => new ShippingLine
+            {
+                Code = x.Code,
+
+                Title = x.Title,
+
+                Price = x.OriginalPriceSet?.ShopMoney?.Amount,
+                DiscountedPrice = x.DiscountedPriceSet?.ShopMoney?.Amount
+            }).ToList();
+        }
+
+        private static Refund MapRefund(GraphQlRefund source)
+        {
+            if (source == null)
+                return null;
+
+            return new Refund
+            {
+                Id = ParseNullableId(source.Id),
+                CreatedAt = source.CreatedAt?.ToLocalTime(),
+                OrderAdjustments = MapOrderAdjustments(source.OrderAdjustments),
+
+                RefundLineItems = MapRefundLineItems(source.RefundLineItems),
+
+                Transactions = MapRefundTransactions(source.Transactions),
+
+                Restock = HasRestockedItems(source),
+
+                RefundShippingLines = MapRefundShippingLines(source.RefundShippingLines),
+            };
+        }
+
+        private static IEnumerable<ShippingLine> MapRefundShippingLines(GraphQlRefundShippingLinesConnection refundShippingLines)
+        {
+            if (refundShippingLines?.Nodes == null)
+            {
+                return new List<ShippingLine>();
+            }
+
+            return refundShippingLines.Nodes
+                .Where(x => x.ShippingLine != null)
+                .Select(x => new ShippingLine
+                {
+                    Code = x.ShippingLine.Code,
+                    Title = x.ShippingLine.Title,
+                    Price = x.ShippingLine.OriginalPriceSet?.ShopMoney?.Amount,
+                    DiscountedPrice = x.ShippingLine.DiscountedPriceSet?.ShopMoney?.Amount
+                })
+                .ToList();
+        }
+
+        private static bool HasRestockedItems(GraphQlRefund refund)
+        {
+            return refund?.RefundLineItems?.Nodes?
+                .Any(x => x.RestockType != "NO_RESTOCK") == true;
+        }
+
+        private static IEnumerable<RefundOrderAdjustment> MapOrderAdjustments(
+            GraphQlOrderAdjustmentsConnection connection)
+        {
+            if (connection?.Nodes == null)
+                return new List<RefundOrderAdjustment>();
+
+            return connection.Nodes.Select(x => new RefundOrderAdjustment
+            {
+                Id = ParseNullableId(x.Id),
+                Amount = x.AmountSet?.ShopMoney?.Amount,
+                Kind = x.Reason,
+                TaxAmount = x.TaxAmountSet?.ShopMoney?.Amount,
+            }).ToList();
+        }
+
+        private static IEnumerable<RefundLineItem> MapRefundLineItems(
+            GraphQlRefundLineItemsConnection connection)
+        {
+            if (connection?.Nodes == null)
+                return new List<RefundLineItem>();
+
+            return connection.Nodes.Select(x => new RefundLineItem
+            {
+                LineItemId = ParseNullableId(x.LineItem?.Id),
+
+                Quantity = x.Quantity,
+
+                SubTotal = x.SubtotalSet?.ShopMoney?.Amount,
+
+                LineItem = new LineItem
+                {
+                    Id = ParseNullableId(x.LineItem?.Id),
+                    SKU = x.LineItem?.Sku,
+                    DiscountAllocations = x.LineItem?.DiscountAllocations?.Select(x =>
+                    new DiscountAllocation()
+                    {
+                        Amount = x.AllocatedAmount?.Amount.ToString()
+                    }).ToList(),
+                    Price = x.LineItem?.OriginalUnitPrice?.ShopMoney?.Amount,
+                    Taxable = x.LineItem?.Taxable,
+                    ProductId = ParseNullableId(x.LineItem?.Variant?.Product?.Id),
+                    InventoryItemId = ParseNullableId(x.LineItem?.Variant?.InventoryItem?.Id),
+                },
+
+                LocationId = ParseNullableId(x.Location?.Id),
+            }).ToList();
+        }
+
+        private static IEnumerable<Transaction> MapRefundTransactions(
+            GraphQlTransactionsConnection connection)
+        {
+            if (connection?.Nodes == null)
+                return new List<Transaction>();
+
+            return connection.Nodes.Select(x => new Transaction
+            {
+                Amount = x.AmountSet?.ShopMoney?.Amount,
+                CreatedAt = x.CreatedAt?.ToLocalTime(),
+                Gateway = x.Gateway,
+                Kind = x.Kind?.ToLowerInvariant(),
+                Receipt = x.ReceiptJson,
+                Status = x.Status?.ToLowerInvariant(),
+                Currency = x.AmountSet?.ShopMoney?.CurrencyCode
+            }).ToList();
+        }
+        #endregion
+
+        #region Inventory
+        public static string ConstructInventoryItemsQuery(
+            IEnumerable<long> inventoryItemIds, 
+            long? locationId = null)
+        {
+            var gids = inventoryItemIds
+                .Distinct()
+                .Select(id => $"\"gid://shopify/InventoryItem/{id}\"");
+
+            var locationFilter = locationId == null ? "first: 20" : $"first: 1, query: \"location_id:{locationId}\""; // $"locationId: \"gid://shopify/Location/{locationId}\"";
+
+            return @"{
+                        nodes(ids: [" + string.Join(",", gids) + @"]) {
+                            ... on InventoryItem {
+                                id
+
+                                inventoryLevels("
+                                    + locationFilter +   
+                                @") {
+                                    nodes {
+                                        location {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }";
+        }
+
+        public static Dictionary<long, List<long>> BuildInventoryLocationLookup(
+         IEnumerable<GraphQlInventoryItemNode> inventoryItems)
+        {
+            var result =
+                new Dictionary<long, List<long>>();
+
+            foreach (var item in inventoryItems ?? Enumerable.Empty<GraphQlInventoryItemNode>())
+            {
+                var inventoryItemId =
+                    ParseNullableId(item.Id);
+
+                if (!inventoryItemId.HasValue)
+                {
+                    continue;
+                }
+
+                var locationIds =
+                    item.InventoryLevels?.Nodes?
+                        .Select(x => ParseNullableId(x.Location?.Id))
+                        .Where(x => x.HasValue)
+                        .Select(x => x.Value)
+                        .Distinct()
+                        .ToList()
+                    ?? new List<long>();
+
+                result[inventoryItemId.Value] = locationIds;
+            }
+
+            return result;
+        }
+        #endregion
+
+        #region Products
+        public static string ConstructProductsQuery(
+            int pageSize = 250,
+            string afterCursor = null, 
+            string filter = null)
+        {
+            var afterClause = string.IsNullOrWhiteSpace(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            var queryFilter = string.IsNullOrEmpty(filter)
+                ? string.Empty 
+                : $"query: \"{filter}\"";
+
+            return @"{
+                      products(
+                        first: " + pageSize + @",
+                        " + queryFilter + 
+                         afterClause + @"
+                      ) {
+                        nodes {
+                          id
+                          vendor
+
+                          variants(first: 250) {
+                            nodes {
+                              id
+                              sku
+                              barcode
+
+                              inventoryItem {
+                                id
+                              }
+                            }
+                          }
+                        }
+
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                      }
+                    }";
+        }
+
+        public static Product MapProduct(
+            GraphQlProduct source)
+        {
+            return new Product
+            {
+                Id = ParseNullableId(source.Id),
+
+                Vendor = source.Vendor,
+
+                Variants =
+                    source.Variants?.Nodes?
+                        .Select(MapVariant)
+                        .ToList()
+                        ?? new List<ProductVariant>()
+            };
+        }
+
+        private static ProductVariant MapVariant(
+            GraphQlProductVariant source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            return new ProductVariant
+            {
+                Id = ParseNullableId(source.Id),
+
+                SKU = source.Sku,
+
+                InventoryItemId =
+                    ParseNullableId(
+                        source.InventoryItem?.Id),
+
+                Barcode = source.Barcode,
+            };
+        }
+        #endregion
+
+        #region Filters
+
+        public static string BuildProductFilter(params (string Field, string Value)[] filters)
+        {
+            return string.Join(
+                " AND ",
+                filters
+                    .Where(f => !string.IsNullOrWhiteSpace(f.Value))
+                    .Select(f => $"{f.Field}:{f.Value}")
+            );
+        }
+
+        #endregion
+
+        #region Inventory mutations
+
+        public static string ConstructInventoryUpdateMutation(long inventoryItemId, long locationId, int quantity, bool ignoreCompareQuantity = false)
+        {
+            return $@"
+                mutation InventorySet {{
+                    inventorySetQuantities(input: {{
+                        name: ""available"",
+                        reason: ""correction"",
+                        ignoreCompareQuantity: {ignoreCompareQuantity.ToString().ToLower()},
+                        quantities: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                quantity: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                delta
+                            }}
+                        }}
+                        userErrors {{
+                            field
+                            message
+                        }}
+                    }}
+                }}";
+        }
+
+        public static string ConstructInventoryAdjustMutation(long inventoryItemId, long locationId, int quantity)
+        {
+            return $@"
+                mutation {{
+                    inventoryAdjustQuantities(input: {{
+                        reason: ""correction"",
+                        name: ""available"",
+                        changes: [
+                            {{
+                                inventoryItemId: ""gid://shopify/InventoryItem/{inventoryItemId}"",
+                                locationId: ""gid://shopify/Location/{locationId}"",
+                                delta: {quantity}
+                            }}
+                        ]
+                    }}) {{
+                        inventoryAdjustmentGroup {{
+                            id
+                            createdAt
+                            reason
+                            changes {{
+                                name
+                                quantityAfterChange
+                            }}
+                        }}
+                        userErrors {{
+                            field
+                            message
+                        }}
+                    }}
+                }}";
+        }
+
+        #endregion
+    }
+}

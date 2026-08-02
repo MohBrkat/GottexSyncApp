@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 using ShopifySharp;
 using ShopifySharp.Entities;
 using SyncAppEntities.ViewModel;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace SyncAppCommon.Helpers
 {
@@ -12,7 +12,7 @@ namespace SyncAppCommon.Helpers
     {
         public List<ManualTransaction> GetManualTransactions(IEnumerable<MetaField> metaFields, string key, [Optional] int? orderNumber)
         {
-            var manualTransactions = metaFields.FirstOrDefault(mf => mf.Key == key);
+            var manualTransactions = metaFields?.FirstOrDefault(mf => mf.Key == key);
 
             if (manualTransactions?.Value == null) return null;
 

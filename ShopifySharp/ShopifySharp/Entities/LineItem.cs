@@ -1,16 +1,11 @@
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using ShopifySharp.Converters;
-using ShopifySharp.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
-    public class LineItem : ShopifyObject
+    public class LineItem: ShopifyObject
     {
         /// <summary>
         /// The amount available to fulfill. This is the quantity - max(refunded_quantity, fulfilled_quantity) - pending_fulfilled_quantity.
@@ -185,5 +180,8 @@ namespace ShopifySharp
         /// Location Id when refunded
         /// </summary>
         public long? LocationId { get; set; }
+
+        // custom
+        public long? InventoryItemId { get; set; }
     }
 }

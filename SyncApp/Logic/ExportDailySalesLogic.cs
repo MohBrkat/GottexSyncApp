@@ -1,18 +1,17 @@
-﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
-using ShopifySharp;
-using ShopifySharp.Filters;
-using SyncAppEntities.Models;
-using SyncAppEntities.Models.EF;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using SyncAppCommon.Helpers;
-using SyncAppCommon;
+using Log4NetLibrary;
+using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
+using ShopifySharp;
 using ShopifySharp.Entities;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
 
 namespace SyncAppEntities.Logic
 {
@@ -261,7 +260,7 @@ namespace SyncAppEntities.Logic
             return lsOfFilteredOrders;
         }
 
-        public string GenerateSalesFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
+        public async Task<string> GenerateSalesFile(List<Order> orders, bool fromWeb, Dictionary<string, List<string>> lsOfTagTobeAdded = null)
         {
             var FileName = InvoiceFileName.Clone().ToString();
             var FolderDirectory = "/Data/invoices/";
@@ -269,8 +268,8 @@ namespace SyncAppEntities.Logic
             var path = _hostingEnvironment.WebRootPath + "/" + FolderDirectory + FileName;
 
             var ordersGroupedByDate = orders
-        .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
-        .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
+                .GroupBy(o => o.CreatedAt.GetValueOrDefault().Date)
+                .Select(g => new { OrdersDate = g.Key, Data = g.ToList() });
 
             using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(fileStream))
@@ -312,12 +311,12 @@ namespace SyncAppEntities.Logic
                             }
                             if (success)
                             {
-                                WriteOrderTransactions(file, taxPercentage, order);
+                                await WriteOrderTransactions(file, taxPercentage, order);
                             }
                         }
                         else
                         {
-                            WriteOrderTransactions(file, taxPercentage, order);
+                            await WriteOrderTransactions(file, taxPercentage, order);
                         }
                     }
 
@@ -352,12 +351,12 @@ namespace SyncAppEntities.Logic
                                 }
                                 if (success)
                                 {
-                                    WriteOrderTransactions(file, taxPercentage, order, true);
+                                    await WriteOrderTransactions(file, taxPercentage, order, true);
                                 }
                             }
                             else
                             {
-                                WriteOrderTransactions(file, taxPercentage, order, true);
+                                await WriteOrderTransactions(file, taxPercentage, order, true);
                             }
                         }
                     }
@@ -394,25 +393,21 @@ namespace SyncAppEntities.Logic
             return FileName;
         }
 
-        private void WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order, bool isSuperPharmOrder = false)
+        private async Task WriteOrderTransactions(StreamWriter file, decimal taxPercentage, Order order, bool isSuperPharmOrder = false)
         {
             _log.Info($"Start WriteOrderTransactions");
             var discountZero = 0;
-            var shipRefOrder = order;
             decimal totalWithVatPercentage = ((taxPercentage / 100.0m) + 1.0m);
 
             string warehouseCode = DefaultWarehouseCode;
             _log.Info($"DefaultWarehouseCode" + warehouseCode);
             //FOR TESTING INVENTORY STUFF
-            var ProductServices = new ProductService(StoreUrl, ApiSecret);
-            var InventoryLevelsServices = new InventoryLevelService(StoreUrl, ApiSecret);
 
             // Get Order MetaFields
-            var metaFieldService = new MetaFieldService(StoreUrl, ApiSecret);
-            var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
-            var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
 
-            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(orderMetaFields.Items, "manual_transactions", order.OrderNumber);
+            var storeCreditRefunds = order.Metafields?.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
+
+            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
 
             var createdAtDate = manualTransactions == null ? order.CreatedAt : manualTransactions.FirstOrDefault()?.CreatedAt;
 
@@ -533,7 +528,18 @@ namespace SyncAppEntities.Logic
                 ? Math.Min(totalRefundedAmount / totalItemsNetAmount, 1m)
                 : 0m;
 
+            var inventoryItemIds =
+                order.LineItems
+                    .Where(x => x.InventoryItemId.HasValue)
+                    .Select(x => x.InventoryItemId.Value)
+                    .Distinct()
+                    .ToList();
 
+            var inventoryItems =
+                await new GetShopifyOrders(StoreUrl, ApiSecret, _context).GetInventoryItemsAsync(inventoryItemIds);
+
+            var inventoryLocationLookup =
+                ShopifyGraphQlHelper.BuildInventoryLocationLookup(inventoryItems);
             foreach (var orderItem in order.LineItems)
             {
                 //Product was refunded to another warehouse
@@ -547,50 +553,40 @@ namespace SyncAppEntities.Logic
                     //product is still in the same warehouse
                     if (orderItem.ProductId.HasValue)
                     {
-                        var ProductObj = ProductServices.GetAsync(orderItem.ProductId.Value).Result;
-                        var VariantObj = ProductObj.Variants.FirstOrDefault(a => (a.Id == orderItem.VariantId) || (a.SKU == orderItem.SKU));
 
-                        if (VariantObj != null && !string.IsNullOrEmpty(VariantObj.SKU))
-                        {
-                            orderItem.SKU = VariantObj.SKU;
-                        }
 
                         long inventoryItemId = 0;
-                        var inventoryItemIds = new List<long>();
 
-                        if (VariantObj?.InventoryItemId != null)
+                        if (orderItem?.InventoryItemId != null)
                         {
-                            inventoryItemId = VariantObj.InventoryItemId.Value;
-                            inventoryItemIds.Add(inventoryItemId);
+                            inventoryItemId = orderItem.InventoryItemId.Value;
                         }
                         else
                         {
                             _log.Warn($"VariantObj or InventoryItemId is null for SKU: {orderItem?.SKU}, in order: {order.OrderNumber}");
                         }
 
-                        var locationQuery = inventoryItemIds.Any()
-                            ? InventoryLevelsServices
-                                .ListAsync(new InventoryLevelListFilter { InventoryItemIds = inventoryItemIds })
-                                .Result
-                            : null;
+                        inventoryLocationLookup.TryGetValue(
+                            inventoryItemId,
+                            out var locationIds);
 
-                        var locationItems = locationQuery?.Items ?? Enumerable.Empty<InventoryLevel>();
-                        _log.Info($"orderItem:{orderItem?.SKU}-LocationQuery.Items.Count():{locationItems.Count()}");
+                        locationIds ??= new List<long>();
+
+                        _log.Info($"orderItem:{orderItem?.SKU}-LocationQuery.Items.Count():{locationIds.Count()}");
 
                         if (orderItem?.FulfillmentStatus == "fulfilled"
                             && order?.RefundKind == "no_refund"
-                            && locationItems.Count() > 1)
+                            && locationIds.Count > 1)
                         {
                             warehouseCode = "ON01";
                             _log.Info($"Updated warehouseCode: {warehouseCode}");
                         }
                         else
                         {
-                            var location = locationItems.FirstOrDefault();
+                            var locationId = locationIds.FirstOrDefault();
 
-                            if (location != null)
+                            if (locationId > 0)
                             {
-                                var locationId = location.LocationId;
                                 warehouseCode = GetWarehouseCodeByLocationId(locationId);
                                 _log.Info($"warehouseCode:{warehouseCode} LocationId:{locationId}");
                             }
@@ -741,11 +737,14 @@ namespace SyncAppEntities.Logic
             //then write shipping data
             if (!isShippingRefund && shippingAmount > 0 && (shipOrder.FinancialStatus == "refunded" || shipOrder.RefundKind != "refund_discrepancy"))
             {
-                if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
-                {
-                    var shippingDiscount = shipOrder.DiscountCodes.Where(dc => dc.Type == "shipping").Sum(dc => decimal.Parse(dc.Amount)).ValueWithoutTax(taxPercentage);
-                    shippingAmount -= shippingDiscount;
-                }
+                // Shipping discount not return in graphQl
+                //if (shipOrder.DiscountCodes?.Any(dc => dc.Type == "shipping") == true)
+                //{
+                //    var shippingDiscount = shipOrder.DiscountCodes.Where(dc => dc.Type == "shipping").Sum(dc => decimal.Parse(dc.Amount)).ValueWithoutTax(taxPercentage);
+                //    shippingAmount -= shippingDiscount;
+                //}
+
+                shippingAmount = (shipOrder.ShippingLines?.Sum(a => a.DiscountedPrice).GetValueOrDefault()).ValueWithoutTax(taxPercentage);
 
                 var mQuant = "1";
                 if (shipOrder.RefundKind == "shipping_refund" || (shipOrder.FinancialStatus == "refunded" && shipOrder.RefundKind != "no_refund"))

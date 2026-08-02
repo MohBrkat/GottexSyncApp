@@ -1,10 +1,10 @@
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ShopifySharp
 {
-    public class Refund : ShopifyObject
+    public class Refund: ShopifyObject
     {
         /// <summary>
         /// The unique identifier of the order.
@@ -101,6 +101,8 @@ namespace ShopifySharp
         [JsonProperty("restock")]
         public bool? Restock { get; set; }
 
+        // Added to support shipping lines from graphQl
+        public IEnumerable<ShippingLine> RefundShippingLines { get; set; }
     }
 
     public class Shipping

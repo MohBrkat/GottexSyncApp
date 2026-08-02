@@ -1,18 +1,18 @@
-﻿using Log4NetLibrary;
-using Microsoft.AspNetCore.Hosting;
-using Newtonsoft.Json;
-using SyncAppEntities.Models;
-using SyncAppEntities.Models.EF;
-using SyncAppEntities.ViewModel;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Log4NetLibrary;
+using Microsoft.AspNetCore.Hosting;
+using Newtonsoft.Json;
 using ShopifySharp;
-using SyncAppCommon.Helpers;
-using SyncAppCommon;
 using ShopifySharp.Entities;
+using SyncAppCommon;
+using SyncAppCommon.Helpers;
+using SyncAppEntities.Models;
+using SyncAppEntities.Models.EF;
+using SyncAppEntities.ViewModel;
 
 namespace SyncAppEntities.Logic
 {
@@ -587,7 +587,7 @@ namespace SyncAppEntities.Logic
         }
 
         private async Task<TransactionsModel> GetTransactionModelByOrderAsync(Order order, DateTime dateToRetriveFrom, DateTime dateToRetriveTo)
-        {            
+        {
             TransactionsModel transactionsModel = new TransactionsModel()
             {
                 ReceiptTransactions = new List<Receipt>(),
@@ -600,12 +600,23 @@ namespace SyncAppEntities.Logic
             var fromDate = dateToRetriveFrom.Date.AddDays(-2).AbsoluteStart();
             var toDate = dateToRetriveTo.Date.AbsoluteEnd();
 
-            var service = new TransactionService(StoreUrl, ApiSecret);
-            var serviceTransactions = await service.ListAsync((long)order.Id);
+            var serviceTransactions =
+                order.OriginalTransactions?.Count() > 0
+                ? order.OriginalTransactions
+                : order.Transactions;
 
-            var transactions = order.Transactions?.Count() > 0 ? order.Transactions : serviceTransactions;
+            var transactions = order.Transactions?.Count() > 0 || order.OriginalTransactions == null
+                ? order.Transactions
+                : order.OriginalTransactions;
 
-            var originalTransaction = serviceTransactions.FirstOrDefault(t => t.Gateway != "gift_card" && t.Kind.ToLower() != "refund" && t.Status.ToLower() == "success");
+            var originalTransaction =
+                serviceTransactions
+                    ?.Where(t =>
+                        t.Gateway != "gift_card" &&
+                        !string.Equals(t.Kind, "refund", StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(t.Status, "success", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(t => t.CreatedAt)
+                    .FirstOrDefault();
 
             if (order.RefundKind == "no_refund")
             {
@@ -622,9 +633,7 @@ namespace SyncAppEntities.Logic
                                             && t.CreatedAt.GetValueOrDefault().Date >= fromDate.Date && t.CreatedAt.GetValueOrDefault().Date <= toDate.Date).ToList();
             }
 
-            var metaFieldService = new MetaFieldService(StoreUrl, ApiSecret);
-            var orderMetaFields = metaFieldService.ListAsync(Convert.ToInt64(order.Id), "orders").Result;
-            var storeCreditRefunds = orderMetaFields.Items.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
+            var storeCreditRefunds = order.Metafields?.FirstOrDefault(mf => mf.Key.Equals("store_credit_refunds"));
 
             if (storeCreditRefunds?.Value != null)
             {
@@ -643,7 +652,7 @@ namespace SyncAppEntities.Logic
                                 {
                                     isStoreCredit = true,
                                     amount = (-storeCreditRefund.CreditAmount).ToString()
-                                }); 
+                                });
                             }
                             if (storeCreditRefund.Id > 0 &&
                                 !string.IsNullOrWhiteSpace(storeCreditRefund.CreditCompensationAmount) &&
@@ -675,13 +684,13 @@ namespace SyncAppEntities.Logic
                             {
                                 isStoreCredit = true,
                                 amount = (-storeCreditShipping).ToString()
-                            }); 
+                            });
                         }
                     }
                 }
             }
 
-            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(orderMetaFields.Items, "manual_transactions", order.OrderNumber);
+            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
 
             _manualTransactionsHelper.AddManualTransaction(transactionsModel.ReceiptTransactions, manualTransactions);
 
@@ -722,13 +731,13 @@ namespace SyncAppEntities.Logic
 
                         receipt.amount = amountText;
                     }
-                    else
+                    else if (originalTransaction?.Receipt != null)
                     {
                         var originalReceipt = JsonConvert.DeserializeObject<Receipt>(originalTransaction?.Receipt?.ToString());
                         receipt.payment_id = receipt.payment_id.IsNotNullOrEmpty() ? receipt.payment_id : originalReceipt?.payment_id;
                         receipt.more_info = receipt.more_info.IsNotNullOrEmpty() ? receipt.more_info : originalReceipt?.more_info;
                     }
-                    transactionsModel.ReceiptTransactions.Add(receipt); 
+                    transactionsModel.ReceiptTransactions.Add(receipt);
                 }
             }
 

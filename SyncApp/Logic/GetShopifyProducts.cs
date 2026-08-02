@@ -1,9 +1,10 @@
-﻿using ShopifySharp;
-using ShopifySharp.Filters;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ShopifySharp;
+using ShopifySharp.Filters;
+using SyncAppCommon.Helpers;
+using SyncAppCommon.Models.GraphQlDTOs;
 
 namespace SyncAppEntities.Logic
 {
@@ -55,5 +56,57 @@ namespace SyncAppEntities.Logic
             return products;
         }
 
+        public async Task<List<GraphQlProduct>> GetGraphQlProductsAsync(string graphQLFilter = null)
+        {
+            var products = new List<GraphQlProduct>();
+
+            var graphService =
+                new GraphService(_storeUrl, _apiSecret);
+
+            string cursor = null;
+            bool hasNextPage;
+
+            do
+            {
+                var query =
+                    ShopifyGraphQlHelper.ConstructProductsQuery(
+                        250,
+                        cursor,
+                        graphQLFilter);
+
+                var result =
+                    await graphService.PostAsync(query);
+
+                var response =
+                    result.ToObject<ProductsResponse>();
+
+                if (response?.Products?.Nodes == null)
+                {
+                    return products;
+                }
+
+                products.AddRange(
+                    response.Products.Nodes);
+
+                cursor =
+                    response.Products.PageInfo?.EndCursor;
+
+                hasNextPage =
+                    response.Products.PageInfo?.HasNextPage == true;
+
+            }
+            while (hasNextPage);
+
+            return products;
+        }
+
+        public async Task<List<Product>> GetProductsListAsync(string graphQLFilter = null)
+        {
+            var graphQlProducts = await GetGraphQlProductsAsync(graphQLFilter);
+
+            var products = graphQlProducts.Select(ShopifyGraphQlHelper.MapProduct).ToList();
+
+            return products;
+        }
     }
 }
