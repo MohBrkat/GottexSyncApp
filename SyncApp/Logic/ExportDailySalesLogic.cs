@@ -309,9 +309,20 @@ namespace SyncAppEntities.Logic
                                     success = true;
                                 }
                             }
+
+                            if (!success)
+                            {
+                                var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
+                                success = manualTransactions?.Any() == true;
+                            }
+
                             if (success)
                             {
                                 await WriteOrderTransactions(file, taxPercentage, order);
+                            }
+                            else
+                            {
+                                _log.Warn($"[sales] : Skipping order {order.OrderNumber} - refund has no successful transaction and no manual_transactions record");
                             }
                         }
                         else
@@ -349,9 +360,20 @@ namespace SyncAppEntities.Logic
                                         success = true;
                                     }
                                 }
+
+                                if (!success)
+                                {
+                                    var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
+                                    success = manualTransactions?.Any() == true;
+                                }
+
                                 if (success)
                                 {
                                     await WriteOrderTransactions(file, taxPercentage, order, true);
+                                }
+                                else
+                                {
+                                    _log.Warn($"[sales] : Skipping SuperPharm order {order.OrderNumber} - refund has no successful transaction and no manual_transactions record");
                                 }
                             }
                             else
