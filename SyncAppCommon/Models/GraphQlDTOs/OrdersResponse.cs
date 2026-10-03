@@ -16,8 +16,17 @@ namespace SyncApp.Models.GraphQlDTOs
         [JsonProperty("nodes")]
         public List<GraphQlOrder> Nodes { get; set; }
 
+        [JsonProperty("edges")]
+        public List<GraphQlOrderEdge> Edges { get; set; }
+
         [JsonProperty("pageInfo")]
         public GraphQlPageInfo PageInfo { get; set; }
+    }
+
+    public class GraphQlOrderEdge
+    {
+        [JsonProperty("node")]
+        public GraphQlOrder Node { get; set; }
     }
 
     public class GraphQlOrder
