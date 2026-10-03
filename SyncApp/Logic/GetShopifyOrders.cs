@@ -289,7 +289,7 @@ namespace SyncAppEntities.Logic
                 var query = ShopifyGraphQlHelper.ConstructRefundedOrdersByMetafieldQuery(
                     dateFrom,
                     dateTo,
-                    100,
+                    28,
                     cursor);
 
                 var response = await ExecuteOrdersQueryAsync(

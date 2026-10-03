@@ -91,7 +91,7 @@ namespace SyncAppCommon.Helpers
                 afterClause + @"
                 ) {
                 edges {
-                  node {" + RefundedOrderNodeFieldsSelection + @"}
+                  node {" + OrderNodeFieldsSelection + @"}
                 }
 
                 pageInfo {
