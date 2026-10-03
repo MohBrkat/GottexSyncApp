@@ -310,11 +310,7 @@ namespace SyncAppEntities.Logic
                                 }
                             }
 
-                            if (!success)
-                            {
-                                var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
-                                success = manualTransactions?.Any() == true;
-                            }
+                            success = hasManualTransactions(order);
 
                             if (success)
                             {
@@ -361,11 +357,7 @@ namespace SyncAppEntities.Logic
                                     }
                                 }
 
-                                if (!success)
-                                {
-                                    var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
-                                    success = manualTransactions?.Any() == true;
-                                }
+                                success = hasManualTransactions(order);
 
                                 if (success)
                                 {
@@ -869,6 +861,13 @@ namespace SyncAppEntities.Logic
             }
             _log.Info($"End GetWarehouseCodeByLocationId");
             return warehouseCode;
+        }
+
+        private bool hasManualTransactions(Order order)
+        {
+            var manualTransactions = _manualTransactionsHelper.GetManualTransactions(order.Metafields, "manual_transactions", order.OrderNumber);
+
+            return manualTransactions != null && manualTransactions?.Count > 0;
         }
     }
 }
