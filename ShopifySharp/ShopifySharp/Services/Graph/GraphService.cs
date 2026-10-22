@@ -16,12 +16,19 @@ namespace ShopifySharp
     /// </summary>
     public class GraphService : ShopifyService
     {
+        private readonly string _apiVersion;
+
         /// <summary>
         /// Creates a new instance of <see cref="GraphService" />.
         /// </summary>
         /// <param name="myShopifyUrl">The shop's *.myshopify.com URL.</param>
         /// <param name="shopAccessToken">An API access token for the shop.</param>
-        public GraphService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }        
+        public GraphService(string myShopifyUrl, string shopAccessToken, string apiVersion = null) : base(myShopifyUrl, shopAccessToken)
+        {
+            _apiVersion = apiVersion;
+        }
+
+        public override string APIVersion => _apiVersion ?? base.APIVersion;
 
         /// <summary>
         /// Executes a Graph API Call.
@@ -33,7 +40,9 @@ namespace ShopifySharp
         {
             var req = PrepareRequest("graphql.json");
 
-            var content = new StringContent(body, Encoding.UTF8, "application/graphql");
+            HttpContent content = _apiVersion != null
+                ? new StringContent(JsonConvert.SerializeObject(new { query = body }), Encoding.UTF8, "application/json")
+                : new StringContent(body, Encoding.UTF8, "application/graphql");
 
             return await SendAsync(req, content, cancellationToken);
         }

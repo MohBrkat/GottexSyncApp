@@ -25,12 +25,12 @@ namespace SyncAppCommon.Helpers
             var filterList = new List<string>();
             if (createdAtMin.HasValue)
             {
-                filterList.Add($"created_at:>={createdAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:>='{createdAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (createdAtMax.HasValue)
             {
-                filterList.Add($"created_at:<={createdAtMax.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:<='{createdAtMax.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (!string.IsNullOrWhiteSpace(financialStatus))
@@ -45,7 +45,7 @@ namespace SyncAppCommon.Helpers
 
             if (updatedAtMin.HasValue)
             {
-                filterList.Add($"updated_at:>={updatedAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"updated_at:>='{updatedAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             var queryFilter = string.Join(" AND ", filterList);
@@ -60,7 +60,224 @@ namespace SyncAppCommon.Helpers
                 query: """ + queryFilter + @"""" +
                 afterClause + @"
                 ) {
-                nodes {
+                nodes {" + OrderNodeFieldsSelection + @"}
+
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }";
+        }
+
+        public static string ConstructRefundedOrdersByMetafieldQuery(
+            DateTime dateFrom,
+            DateTime dateTo,
+            int pageSize = 100,
+            string afterCursor = null
+            )
+        {
+            var queryFilter =
+                $"metafields.custom.refunds_dates:>={dateFrom:yyyy-MM-dd} AND metafields.custom.refunds_dates:<={dateTo:yyyy-MM-dd}";
+
+            var afterClause = string.IsNullOrEmpty(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            return @"{
+              orders(
+                first: " + pageSize + @",
+                query: """ + queryFilter + @"""" +
+                afterClause + @"
+                ) {
+                edges {
+                  node {" + OrderNodeFieldsSelection + @"}
+                }
+
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }";
+        }
+
+        private const string RefundedOrderNodeFieldsSelection = @"
+                      id
+                      name
+                      createdAt
+                      number
+                      tags
+                      displayFinancialStatus
+                      taxesIncluded
+                      subtotalPriceSet {
+                        shopMoney {
+                          amount
+                          currencyCode
+                        }
+                      }
+                      totalDiscountsSet {
+                        shopMoney {
+                          amount
+                          currencyCode
+                        }
+                      }
+                      taxLines {
+                        title
+                        priceSet {
+                          shopMoney {
+                            amount
+                            currencyCode
+                          }
+                        }
+                      }
+                      lineItems(first: 50) {
+                        nodes {
+                          id
+                          quantity
+                        }
+                      }
+                      transactions(first: 20) {
+                          id
+                          createdAt
+                          gateway
+                          kind
+                          status
+
+                          amountSet {
+                              shopMoney {
+                              amount
+                              currencyCode
+                              }
+                          }
+
+                          receiptJson
+                      }
+                      metafields(first: 10) {
+                        nodes {
+                          id
+                          namespace
+                          key
+                          value
+                          type
+                        }
+                      }
+                      refunds {
+                        id
+                        createdAt
+                        orderAdjustments(first: 15) {
+                          nodes {
+                            id
+                            reason
+
+                            amountSet {
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+
+                            taxAmountSet {
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+                          }
+                        }
+                        refundLineItems(first: 50) {
+                          nodes {
+                            quantity
+                            restockType
+                            subtotalSet {
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+
+                            lineItem {
+                              id
+                              taxable
+                              sku
+                              variant {
+                                product {
+                                  id
+                                }
+                                inventoryItem {
+                                  id
+                                }
+                              }
+                              originalUnitPriceSet {
+                                shopMoney {
+                                  amount
+                                  currencyCode
+                                }
+                              }
+                              discountAllocations {
+                                allocatedAmount {
+                                  amount
+                                  currencyCode
+                                }
+                                allocatedAmountSet {
+                                  shopMoney {
+                                    amount
+                                  }
+                                }
+                              }
+                            }
+                            location {
+                              id
+                            }
+                          }
+                        }
+
+                        transactions(first: 20) {
+                          nodes {
+                              id
+                              createdAt
+                              gateway
+                              kind
+                              status
+
+                              amountSet {
+                                  shopMoney {
+                                  amount
+                                  currencyCode
+                                  }
+                              }
+
+                              receiptJson
+                          }
+                        }
+
+                        refundShippingLines(first: 15) {
+                          nodes {
+                              shippingLine {
+                                  id
+                                  title
+                                  code
+
+                                  originalPriceSet {
+                                      shopMoney {
+                                          amount
+                                          currencyCode
+                                      }
+                                  }
+
+                                  discountedPriceSet {
+                                      shopMoney {
+                                          amount
+                                          currencyCode
+                                      }
+                                  }
+                              }
+                          }
+                        }
+                      }
+";
+
+        private const string OrderNodeFieldsSelection = @"
                       id
                       createdAt
                       customer {
@@ -292,7 +509,7 @@ namespace SyncAppCommon.Helpers
                     }
 
                     taxesIncluded
-                   
+
                     totalDiscountsSet {
                       shopMoney {
                         amount
@@ -333,16 +550,7 @@ namespace SyncAppCommon.Helpers
                         type
                       }
                     }
-
-                }
-
-                pageInfo {
-                    hasNextPage
-                    endCursor
-                }
-            }
-        }";
-        }
+";
 
         public static Order Map(GraphQlOrder source)
         {
