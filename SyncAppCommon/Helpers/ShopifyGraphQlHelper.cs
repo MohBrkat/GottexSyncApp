@@ -25,12 +25,12 @@ namespace SyncAppCommon.Helpers
             var filterList = new List<string>();
             if (createdAtMin.HasValue)
             {
-                filterList.Add($"created_at:>={createdAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:>='{createdAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (createdAtMax.HasValue)
             {
-                filterList.Add($"created_at:<={createdAtMax.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:<='{createdAtMax.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (!string.IsNullOrWhiteSpace(financialStatus))
@@ -45,7 +45,7 @@ namespace SyncAppCommon.Helpers
 
             if (updatedAtMin.HasValue)
             {
-                filterList.Add($"updated_at:>={updatedAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"updated_at:>='{updatedAtMin.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             var queryFilter = string.Join(" AND ", filterList);
