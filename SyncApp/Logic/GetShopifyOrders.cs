@@ -149,7 +149,7 @@ namespace SyncApp.Logic
             dateFrom = dateFrom.Date;
             dateTo = dateTo.Date;
 
-            var orders = await GetGraphQlRefundedOrdersAsync(dateFrom);
+            var orders = await GetGraphQlRefundedOrdersByMetafieldAsync(dateFrom, dateTo);
 
             var OrdersHasRefunds = orders.Where(a => a.Refunds.Count() > 0);
             var ordersToReturn = new List<Order>();
@@ -521,6 +521,51 @@ namespace SyncApp.Logic
             }
 
             return result;
+        }
+
+        public async Task<List<Order>> GetGraphQlRefundedOrdersByMetafieldAsync(DateTime dateFrom, DateTime dateTo)
+        {
+            var orders = new List<GraphQlOrder>();
+
+            var graphService = new GraphService(_storeUrl, _apiSecret, "2026-07");
+
+            string cursor = null;
+            bool hasNextPage = false;
+
+            do
+            {
+                var query = ShopifyGraphQlHelper.ConstructRefundedOrdersByMetafieldQuery(
+                    dateFrom,
+                    dateTo,
+                    28,
+                    cursor);
+
+                var response = await ExecuteOrdersQueryAsync(
+                    graphService,
+                    query);
+
+                if (response?.Orders?.Edges == null)
+                {
+                    break;
+                }
+
+                orders.AddRange(response.Orders.Edges.Select(e => e.Node));
+
+                var previousCursor = cursor;
+
+                cursor = response.Orders.PageInfo?.EndCursor;
+                hasNextPage = response.Orders.PageInfo?.HasNextPage ?? false;
+
+                if (hasNextPage && cursor == previousCursor)
+                {
+                    break;
+                }
+
+            } while (hasNextPage);
+
+            return orders
+                .Select(ShopifyGraphQlHelper.Map)
+                .ToList();
         }
 
         public async Task<List<GraphQlInventoryItemNode>> GetInventoryItemsAsync(

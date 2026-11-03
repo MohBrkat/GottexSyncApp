@@ -25,12 +25,12 @@ namespace SyncAppCommon.Helpers
             var filterList = new List<string>();
             if (dateFrom.HasValue)
             {
-                filterList.Add($"created_at:>={dateFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:>='{dateFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (dateTo.HasValue)
             {
-                filterList.Add($"created_at:<={dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:<='{dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (!string.IsNullOrWhiteSpace(financialStatus))
@@ -45,7 +45,7 @@ namespace SyncAppCommon.Helpers
 
             if (updatedAtFrom.HasValue)
             {
-                filterList.Add($"updated_at:>={updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"updated_at:>='{updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             var queryFilter = string.Join(" AND ", filterList);
@@ -60,32 +60,74 @@ namespace SyncAppCommon.Helpers
                 query: """ + queryFilter + @"""" +
                 afterClause + @"
                 ) {
-                nodes {
-                      id
-                      createdAt
-                      customer {
-                        firstName
-                        lastName
-                      }
-                      customAttributes {
-                        key
-                        value
-                      }
-                      discountApplications(first: 10) {
-                        nodes {
-                          targetType
-                          value {
-                            __typename
-                            ... on MoneyV2 {
-                              amount
-                              currencyCode
-                            }
-                            ... on PricingPercentageValue {
-                              percentage
-                            }
-                          }
+                    nodes {" + OrderNodeFieldsSelection + @"}
+
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }";
+        }
+
+        public static string ConstructRefundedOrdersByMetafieldQuery(
+            DateTime dateFrom,
+            DateTime dateTo,
+            int pageSize = 100,
+            string afterCursor = null
+            )
+        {
+            var queryFilter =
+                $"metafields.custom.refunds_dates:>={dateFrom:yyyy-MM-dd} AND metafields.custom.refunds_dates:<={dateTo:yyyy-MM-dd}";
+
+            var afterClause = string.IsNullOrEmpty(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            return @"{
+                  orders(
+                    first: " + pageSize + @",
+                    query: """ + queryFilter + @"""" +
+                    afterClause + @"
+                    ) {
+                    edges {
+                      node {" + OrderNodeFieldsSelection + @"}
+                    }
+
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }";
+        }
+
+        private const string OrderNodeFieldsSelection = @"
+                    id
+                    createdAt
+                    customer {
+                    firstName
+                    lastName
+                    }
+                    customAttributes {
+                    key
+                    value
+                    }
+                    discountApplications(first: 10) {
+                    nodes {
+                        targetType
+                        value {
+                        __typename
+                        ... on MoneyV2 {
+                            amount
+                            currencyCode
                         }
-                      }
+                        ... on PricingPercentageValue {
+                            percentage
+                        }
+                        }
+                    }
+                    }
                     displayFinancialStatus
                     displayFulfillmentStatus
                     tags
@@ -349,7 +391,6 @@ namespace SyncAppCommon.Helpers
                 }
             }
         }";
-        }
 
         public static Order Map(GraphQlOrder source)
         {
