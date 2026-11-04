@@ -25,12 +25,12 @@ namespace SyncAppCommon.Helpers
             var filterList = new List<string>();
             if (dateFrom.HasValue)
             {
-                filterList.Add($"created_at:>={dateFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:>='{dateFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (dateTo.HasValue)
             {
-                filterList.Add($"created_at:<={dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"created_at:<='{dateTo.Value.AbsoluteEnd():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             if (!string.IsNullOrWhiteSpace(financialStatus))
@@ -45,7 +45,7 @@ namespace SyncAppCommon.Helpers
 
             if (updatedAtFrom.HasValue)
             {
-                filterList.Add($"updated_at:>={updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}");
+                filterList.Add($"updated_at:>='{updatedAtFrom.Value.AbsoluteStart():yyyy-MM-ddTHH:mm:sszzz}'");
             }
 
             var queryFilter = string.Join(" AND ", filterList);
@@ -60,17 +60,59 @@ namespace SyncAppCommon.Helpers
                 query: """ + queryFilter + @"""" +
                 afterClause + @"
                 ) {
-                nodes {
+                    nodes {" + OrderNodeFieldsSelection + @"}
+
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }";
+        }
+
+        public static string ConstructRefundedOrdersByMetafieldQuery(
+            DateTime dateFrom,
+            DateTime dateTo,
+            int pageSize = 100,
+            string afterCursor = null
+            )
+        {
+            var queryFilter =
+                $"metafields.custom.refunds_dates:>={dateFrom:yyyy-MM-dd} AND metafields.custom.refunds_dates:<={dateTo:yyyy-MM-dd}";
+
+            var afterClause = string.IsNullOrEmpty(afterCursor)
+                ? string.Empty
+                : $@", after: ""{afterCursor}""";
+
+            return @"{
+                  orders(
+                    first: " + pageSize + @",
+                    query: """ + queryFilter + @"""" +
+                    afterClause + @"
+                    ) {
+                    edges {
+                      node {" + OrderNodeFieldsSelection + @"}
+                    }
+
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }";
+        }
+
+        private const string OrderNodeFieldsSelection = @"
                       id
                       createdAt
                       customer {
                         firstName
                         lastName
                       }
-                      customAttributes {
-                        key
-                        value
-                      }
+                    customAttributes {
+                    key
+                    value
+                    }
                       discountApplications(first: 10) {
                         nodes {
                           targetType
@@ -214,19 +256,19 @@ namespace SyncAppCommon.Helpers
 
                       transactions(first: 20) {
                         nodes {
-                          id
-                          createdAt
-                          gateway
-                          kind
-                          status
+                            id
+                            createdAt
+                            gateway
+                            kind
+                            status
 
-                          amountSet {
-                            shopMoney {
-                              amount
-                              currencyCode
+                            amountSet {
+                                shopMoney {
+                                amount
+                                currencyCode
+                                }
                             }
-                          }
-                          receiptJson
+                            receiptJson
                         }
                       }
 
@@ -299,7 +341,7 @@ namespace SyncAppCommon.Helpers
                     }
 
                     taxesIncluded
-                   
+
                     totalDiscountsSet {
                       shopMoney {
                         amount
@@ -340,16 +382,7 @@ namespace SyncAppCommon.Helpers
                         type
                       }
                     }
-
-                }
-
-                pageInfo {
-                    hasNextPage
-                    endCursor
-                }
-            }
-        }";
-        }
+        ";
 
         public static Order Map(GraphQlOrder source)
         {
