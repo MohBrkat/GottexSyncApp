@@ -103,31 +103,31 @@ namespace SyncAppCommon.Helpers
         }
 
         private const string OrderNodeFieldsSelection = @"
-                    id
-                    createdAt
-                    customer {
-                    firstName
-                    lastName
-                    }
+                      id
+                      createdAt
+                      customer {
+                        firstName
+                        lastName
+                      }
                     customAttributes {
                     key
                     value
                     }
-                    discountApplications(first: 10) {
-                    nodes {
-                        targetType
-                        value {
-                        __typename
-                        ... on MoneyV2 {
-                            amount
-                            currencyCode
+                      discountApplications(first: 10) {
+                        nodes {
+                          targetType
+                          value {
+                            __typename
+                            ... on MoneyV2 {
+                              amount
+                              currencyCode
+                            }
+                            ... on PricingPercentageValue {
+                              percentage
+                            }
+                          }
                         }
-                        ... on PricingPercentageValue {
-                            percentage
-                        }
-                        }
-                    }
-                    }
+                      }
                     displayFinancialStatus
                     displayFulfillmentStatus
                     tags
@@ -256,19 +256,19 @@ namespace SyncAppCommon.Helpers
 
                       transactions(first: 20) {
                         nodes {
-                          id
-                          createdAt
-                          gateway
-                          kind
-                          status
+                            id
+                            createdAt
+                            gateway
+                            kind
+                            status
 
-                          amountSet {
-                            shopMoney {
-                              amount
-                              currencyCode
+                            amountSet {
+                                shopMoney {
+                                amount
+                                currencyCode
+                                }
                             }
-                          }
-                          receiptJson
+                            receiptJson
                         }
                       }
 
@@ -341,7 +341,7 @@ namespace SyncAppCommon.Helpers
                     }
 
                     taxesIncluded
-                   
+
                     totalDiscountsSet {
                       shopMoney {
                         amount
@@ -382,15 +382,7 @@ namespace SyncAppCommon.Helpers
                         type
                       }
                     }
-
-                }
-
-                pageInfo {
-                    hasNextPage
-                    endCursor
-                }
-            }
-        }";
+        ";
 
         public static Order Map(GraphQlOrder source)
         {
