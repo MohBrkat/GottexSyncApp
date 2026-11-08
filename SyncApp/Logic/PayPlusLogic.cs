@@ -34,23 +34,9 @@ namespace SyncAppEntities.Logic
             string path = PayPlusPathConst.GET_PAYMENT_PAGE.Trim();
             string url = baseUrl + path;
 
-            object payPlusIPNRequest;
-
-            if (isManualTransaction)
-            {
-                payPlusIPNRequest = new PayPlusManualTransactionRequest
-                {
-                    VoucherNumber = payment_id,
-                    RelatedTransaction = true
-                };
-            }
-            else
-            {
-                payPlusIPNRequest = new PayPlusRequest
-                {
-                    more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info
-                };
-            }
+            object payPlusIPNRequest = isManualTransaction
+                ? new PayPlusRequest { transaction_uid = payment_id }
+                : new PayPlusRequest { more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info };
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
             Dictionary<string, string> headers = new Dictionary<string, string>
@@ -93,16 +79,15 @@ namespace SyncAppEntities.Logic
             throw new Exception("Error retrieving clearing companies from payplus");
         }
 
-        public PayPlusTransactionResponse GetTransactionDetails(string payment_id, string more_info)
+        public PayPlusTransactionResponse GetTransactionDetails(string payment_id, string more_info, bool isManualTransaction = false)
         {
             string baseUrl = _config.PayPlusUrl?.Trim();
             string path = PayPlusPathConst.GET_TRANSACTION.Trim();
             string url = baseUrl + path;
 
-            var payPlusTransactionRequest = new PayPlusRequest
-            {
-                more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info
-            };
+            var payPlusTransactionRequest = isManualTransaction
+                ? new PayPlusRequest { transaction_uid = payment_id }
+                : new PayPlusRequest { more_info = !string.IsNullOrEmpty(payment_id) ? payment_id : more_info };
 
             string authorizationValue = "{\"api_key\":\"" + _config.PayPlusApiKey + "\", \"secret_key\":\"" + _config.PayPlusSecretKey + "\"}";
             Dictionary<string, string> headers = new Dictionary<string, string>

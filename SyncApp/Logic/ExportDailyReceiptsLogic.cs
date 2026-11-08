@@ -545,7 +545,7 @@ namespace SyncAppEntities.Logic
             var fromDate = dateToRetriveFrom.Date.AbsoluteStart();
             var toDate = dateToRetriveTo.Date.AbsoluteEnd();
 
-            var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info);
+            var transactionInfo = _payPlusLogic.GetTransactionDetails(transaction.payment_id, transaction.more_info, transaction.isManualTransaction);
             if (transactionInfo != null && transactionInfo.data != null && transactionInfo.data.Count > 0)
             {
                 if (order.RefundKind != "no_refund")

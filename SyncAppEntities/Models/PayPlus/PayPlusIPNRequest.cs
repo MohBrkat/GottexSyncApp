@@ -8,5 +8,6 @@ namespace SyncAppEntities.Models.PayPlus
     public class PayPlusRequest
     {
         public string more_info { get; set; }
+        public string transaction_uid { get; set; }
     }
 }
