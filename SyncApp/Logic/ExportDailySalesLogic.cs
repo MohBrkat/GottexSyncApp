@@ -310,7 +310,7 @@ namespace SyncAppEntities.Logic
                                 }
                             }
 
-                            success = hasManualTransactions(order);
+                            success = success || hasManualTransactions(order);
 
                             if (success)
                             {
@@ -357,7 +357,7 @@ namespace SyncAppEntities.Logic
                                     }
                                 }
 
-                                success = hasManualTransactions(order);
+                                success = success || hasManualTransactions(order);
 
                                 if (success)
                                 {
